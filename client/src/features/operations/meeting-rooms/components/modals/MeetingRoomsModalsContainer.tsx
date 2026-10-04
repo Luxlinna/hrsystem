@@ -6,7 +6,6 @@ import { CancellationReasonModal } from "./CancellationReasonModal";
 import { CreateRoomModal } from "./CreateRoomModal";
 import { RoomDetailsModal } from "./RoomDetailsModal";
 import { BookingSuccessModal } from "./BookingSuccessModal";
-import { RoomFilterModal } from "./RoomFilterModal";
 import type { MeetingRoom, Booking, BookingFormData, ReasonModalState, ApprovalModalState, BookingEmployee } from "../../types";
 
 interface ModalsContainerProps {
@@ -47,15 +46,6 @@ interface ModalsContainerProps {
   setSelectedRoomDetails?: (room: MeetingRoom | null) => void;
   successBooking?: { room: MeetingRoom; form: BookingFormData } | null;
   setSuccessBooking?: (val: { room: MeetingRoom; form: BookingFormData } | null) => void;
-  filterModalOpen?: boolean;
-  setFilterModalOpen?: (open: boolean) => void;
-  selectedRoomTypes?: string[];
-  setSelectedRoomTypes?: (types: string[]) => void;
-  capacityFilter?: string;
-  setCapacityFilter?: (cap: string) => void;
-  availabilityFilter?: string;
-  setAvailabilityFilter?: (avail: string) => void;
-  onResetFilters?: () => void;
   bookings?: Booking[];
 }
 
@@ -94,21 +84,6 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
           onViewMyBookings={() => {
             p.setSuccessBooking && p.setSuccessBooking(null);
           }}
-        />
-      )}
-
-      {p.filterModalOpen !== undefined && p.setFilterModalOpen && (
-        <RoomFilterModal
-          isOpen={p.filterModalOpen}
-          onClose={() => p.setFilterModalOpen && p.setFilterModalOpen(false)}
-          rooms={p.rooms}
-          selectedRoomTypes={p.selectedRoomTypes || []}
-          setSelectedRoomTypes={p.setSelectedRoomTypes || (() => {})}
-          capacityFilter={p.capacityFilter || "all"}
-          setCapacityFilter={p.setCapacityFilter || (() => {})}
-          availabilityFilter={p.availabilityFilter || "all"}
-          setAvailabilityFilter={p.setAvailabilityFilter || (() => {})}
-          onReset={p.onResetFilters || (() => {})}
         />
       )}
 

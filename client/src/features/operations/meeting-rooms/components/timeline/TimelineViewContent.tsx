@@ -18,7 +18,6 @@ interface TimelineViewContentProps {
   onCreateRoom?: () => void;
   canManageRooms?: boolean;
   totalRoomsCount?: number;
-  onOpenFilter?: () => void;
   onSelectRoomDetails?: (room: MeetingRoom) => void;
   mobileViewStyle?: "timeline" | "cards";
 }
@@ -36,7 +35,6 @@ export const TimelineViewContent = memo(function TimelineViewContent({
   onCreateRoom,
   canManageRooms,
   totalRoomsCount = 0,
-  onOpenFilter,
   onSelectRoomDetails,
   mobileViewStyle = "cards",
 }: TimelineViewContentProps) {
@@ -90,7 +88,6 @@ export const TimelineViewContent = memo(function TimelineViewContent({
             onSelectDate={onSelectDate}
             onOpenBookModal={(r, start) => onOpenBookModal(r, start)}
             onSelectBooking={onSelectBooking}
-            onOpenFilter={onOpenFilter || (() => {})}
           />
         ) : (
           <MobileRoomScheduleList
@@ -100,7 +97,6 @@ export const TimelineViewContent = memo(function TimelineViewContent({
             setSearchQuery={setSearchQuery}
             onOpenBookModal={(r, start) => onOpenBookModal(r, start)}
             onSelectBooking={onSelectBooking}
-            onOpenFilter={onOpenFilter}
             onSelectRoomDetails={onSelectRoomDetails}
           />
         )}

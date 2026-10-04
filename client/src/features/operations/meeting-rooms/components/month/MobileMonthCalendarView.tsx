@@ -11,7 +11,6 @@ interface MobileMonthCalendarViewProps {
   rooms: MeetingRoom[];
   onSelectBooking: (b: Booking) => void;
   onOpenBookModal: () => void;
-  onOpenFilter?: () => void;
   onViewAll?: () => void;
 }
 
@@ -23,7 +22,6 @@ export const MobileMonthCalendarView = memo(function MobileMonthCalendarView({
   rooms,
   onSelectBooking,
   onOpenBookModal,
-  onOpenFilter,
   onViewAll,
 }: MobileMonthCalendarViewProps) {
   const current = new Date(`${selectedDate}T00:00:00`);
@@ -87,24 +85,13 @@ export const MobileMonthCalendarView = memo(function MobileMonthCalendarView({
           <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
             {monthTitle}
           </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => onShiftMonth(1)}
-              className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer active:scale-95"
-            >
-              <i className="ri-arrow-right-s-line text-lg" />
-            </button>
-            {onOpenFilter && (
-              <button
-                type="button"
-                onClick={onOpenFilter}
-                className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 flex items-center justify-center text-slate-600 dark:text-slate-300 border border-slate-200/60 cursor-pointer"
-              >
-                <i className="ri-equalizer-line text-sm" />
-              </button>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => onShiftMonth(1)}
+            className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer active:scale-95"
+          >
+            <i className="ri-arrow-right-s-line text-lg" />
+          </button>
         </div>
 
         {/* Days Header */}

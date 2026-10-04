@@ -1,5 +1,5 @@
-import { Outlet } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
@@ -9,6 +9,20 @@ import { usePermissions, isBootstrapAdminEmail } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import GeofenceCheckInAlert from "@/components/GeofenceCheckInAlert";
 import UrgentAnnouncementAlert from "@/components/UrgentAnnouncementAlert";
+
+function getRouteIndex(pathname: string, search: string): number {
+  const currentTab = new URLSearchParams(search).get("tab");
+  if (pathname === "/self-service") {
+    if (currentTab === "leave") return 1;
+    if (currentTab === "attendance") return 2;
+    if (currentTab === "payslips") return 3;
+    return 0;
+  }
+  if (pathname.startsWith("/leave")) return 1;
+  if (pathname.startsWith("/payroll")) return 3;
+  if (pathname.startsWith("/meeting-rooms")) return 4;
+  return 0;
+}
 
 function NotInDirectoryScreen() {
   const { logout } = useAuth();
@@ -35,10 +49,27 @@ function NotInDirectoryScreen() {
 }
 
 function LayoutContent() {
+  const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const { collapsed } = useSidebar();
   const { user } = useAuth();
   const { role, loading: permsLoading } = usePermissions();
+
+  const routeIdx = useMemo(
+    () => getRouteIndex(location.pathname, location.search),
+    [location.pathname, location.search]
+  );
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
+  const prevRouteRef = useRef(routeIdx);
+
+  useEffect(() => {
+    if (routeIdx > prevRouteRef.current) {
+      setSlideDirection("next");
+    } else if (routeIdx < prevRouteRef.current) {
+      setSlideDirection("prev");
+    }
+    prevRouteRef.current = routeIdx;
+  }, [routeIdx]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -64,7 +95,12 @@ function LayoutContent() {
           className="flex-1 min-w-0 w-full max-w-full pb-20 lg:pb-0"
           style={{ paddingBottom: isMobile ? "calc(4.5rem + env(safe-area-inset-bottom, 0px))" : undefined }}
         >
-          <Outlet />
+          <div
+            key={location.pathname + location.search}
+            className={isMobile ? (slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next") : undefined}
+          >
+            <Outlet />
+          </div>
         </main>
         <BottomNav />
       </div>

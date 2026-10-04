@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { MeetingRoom, Booking, BookingFormData } from "../../types";
 import { WorkspaceSelectDropdown } from "./WorkspaceSelectDropdown";
@@ -32,24 +32,40 @@ export const BookingModal = memo(function BookingModal({
   saving,
   onSubmit,
 }: BookingModalProps) {
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleAnimatedClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 260);
+  }, [onClose]);
+
   if (!isOpen || !modalRoom) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Clean semi-transparent backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        className={`fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity duration-300 ${
+          isClosing ? "opacity-0" : "opacity-100"
+        }`}
+        onClick={handleAnimatedClose}
       />
 
       {/* Bottom Sheet Modal on Mobile / Centered Card on Tablet & Desktop */}
-      <div className="relative w-full sm:max-w-xl md:max-w-2xl max-h-[92vh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-[36px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 animate-cover-up overflow-y-auto space-y-4 pb-8 sm:pb-6">
+      <div
+        className={`relative w-full sm:max-w-xl md:max-w-2xl max-h-[92vh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-[36px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 overflow-y-auto space-y-4 pb-8 sm:pb-6 ${
+          isClosing ? "animate-cover-down-exit" : "animate-cover-up"
+        }`}
+      >
         {/* Mobile Pull Handle */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto -mt-1 mb-1 block sm:hidden" />
 
         {/* Header */}
         <BookingModalHeader
-          onClose={onClose}
+          onClose={handleAnimatedClose}
           modalRoom={modalRoom}
           isEditing={Boolean(editingBooking)}
         />
@@ -91,7 +107,7 @@ export const BookingModal = memo(function BookingModal({
           <div className="pt-3 flex items-center gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleAnimatedClose}
               className="flex-1 py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer text-center active:scale-95 shadow-2xs"
             >
               Cancel

@@ -288,3 +288,19 @@
   will-change: transform, opacity;
 }
 
+@keyframes powerpointCoverDownExit {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.animate-cover-down-exit {
+  animation: powerpointCoverDownExit 0.28s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  will-change: transform, opacity;
+}
+

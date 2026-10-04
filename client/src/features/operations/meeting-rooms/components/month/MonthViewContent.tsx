@@ -14,7 +14,6 @@ interface MonthViewContentProps {
   rooms: MeetingRoom[];
   onSelectBooking: (b: Booking) => void;
   onOpenBookModal: () => void;
-  onOpenFilter?: () => void;
   onViewAll?: () => void;
 }
 
@@ -27,7 +26,6 @@ export const MonthViewContent = memo(function MonthViewContent({
   rooms,
   onSelectBooking,
   onOpenBookModal,
-  onOpenFilter,
   onViewAll,
 }: MonthViewContentProps) {
   const current = new Date(`${selectedDate}T00:00:00`);
@@ -46,7 +44,6 @@ export const MonthViewContent = memo(function MonthViewContent({
           rooms={rooms}
           onSelectBooking={onSelectBooking}
           onOpenBookModal={onOpenBookModal}
-          onOpenFilter={onOpenFilter}
           onViewAll={onViewAll}
         />
       </div>

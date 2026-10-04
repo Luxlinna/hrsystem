@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { MeetingRoomsHeader } from "./components/MeetingRoomsHeader";
 import { MeetingRoomsFilterBar } from "./components/MeetingRoomsFilterBar";
 import { TimelineViewContent } from "./components/timeline/TimelineViewContent";
@@ -9,42 +9,37 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 import { useMeetingRooms } from "./hooks/useMeetingRooms";
 import type { MeetingRoom, BookingFormData } from "./types";
 
+const VIEW_ORDER: Record<string, number> = {
+  timeline: 0,
+  month: 1,
+  cards: 2,
+};
+
 export default function MeetingRoomsPage() {
   const m = useMeetingRooms();
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [selectedRoomDetails, setSelectedRoomDetails] = useState<MeetingRoom | null>(null);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
-  const [capacityFilter, setCapacityFilter] = useState("all");
-  const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [successBooking, setSuccessBooking] = useState<{ room: MeetingRoom; form: BookingFormData } | null>(null);
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
+  const prevViewRef = useRef(m.viewMode);
+
+  useEffect(() => {
+    const prevIdx = VIEW_ORDER[prevViewRef.current] ?? 0;
+    const curIdx = VIEW_ORDER[m.viewMode] ?? 0;
+    if (curIdx < prevIdx) {
+      setSlideDirection("prev");
+    } else if (curIdx > prevIdx) {
+      setSlideDirection("next");
+    }
+    prevViewRef.current = m.viewMode;
+  }, [m.viewMode]);
 
   const resetFilters = useCallback(() => {
     m.setBranchFilter("all");
     m.setFilterFloor("all");
     m.setFilterRoomId("all");
     m.setSearchQuery("");
-    setSelectedRoomTypes([]);
-    setCapacityFilter("all");
-    setAvailabilityFilter("all");
   }, [m]);
-
-  const displayRooms = useMemo(() => {
-    let list = m.filteredRooms;
-    if (selectedRoomTypes.length > 0) {
-      list = list.filter((r) => selectedRoomTypes.includes(r.name));
-    }
-    if (capacityFilter === "1-6") list = list.filter((r) => (r.capacity || 0) <= 6);
-    else if (capacityFilter === "7-12") list = list.filter((r) => (r.capacity || 0) >= 7 && (r.capacity || 0) <= 12);
-    else if (capacityFilter === "13+") list = list.filter((r) => (r.capacity || 0) >= 13);
-
-    if (availabilityFilter === "available") {
-      list = list.filter((r) => !m.activeDateBookings.some((b) => b.room_id === r.id));
-    } else if (availabilityFilter === "booked") {
-      list = list.filter((r) => m.activeDateBookings.some((b) => b.room_id === r.id));
-    }
-    return list;
-  }, [m.filteredRooms, selectedRoomTypes, capacityFilter, availabilityFilter, m.activeDateBookings]);
 
   if (m.loading && m.rooms.length === 0) {
     return (
@@ -128,10 +123,13 @@ export default function MeetingRoomsPage() {
           canApprove={m.canApprove}
         />
       ) : (
-        <>
+        <div
+          key={m.viewMode}
+          className={slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next"}
+        >
           {(m.viewMode === "timeline" || m.viewMode === "cards") && (
             <TimelineViewContent
-              rooms={displayRooms}
+              rooms={m.filteredRooms}
               bookings={m.activeDateBookings}
               selectedDate={m.selectedDate}
               onSelectDate={m.setSelectedDate}
@@ -143,7 +141,6 @@ export default function MeetingRoomsPage() {
               onCreateRoom={() => setCreateRoomOpen(true)}
               canManageRooms={m.canApprove}
               totalRoomsCount={m.rooms.length}
-              onOpenFilter={() => setFilterModalOpen(true)}
               onSelectRoomDetails={setSelectedRoomDetails}
               mobileViewStyle={m.viewMode === "timeline" ? "timeline" : "cards"}
             />
@@ -159,11 +156,10 @@ export default function MeetingRoomsPage() {
               rooms={m.rooms}
               onSelectBooking={m.setSelectedBooking}
               onOpenBookModal={() => m.openBookModal(undefined, m.selectedDate)}
-              onOpenFilter={() => setFilterModalOpen(true)}
               onViewAll={() => m.setViewMode("timeline")}
             />
           )}
-        </>
+        </div>
       )}
 
       <MeetingRoomsModalsContainer
@@ -175,15 +171,6 @@ export default function MeetingRoomsPage() {
         setSelectedRoomDetails={setSelectedRoomDetails}
         successBooking={successBooking}
         setSuccessBooking={setSuccessBooking}
-        filterModalOpen={filterModalOpen}
-        setFilterModalOpen={setFilterModalOpen}
-        selectedRoomTypes={selectedRoomTypes}
-        setSelectedRoomTypes={setSelectedRoomTypes}
-        capacityFilter={capacityFilter}
-        setCapacityFilter={setCapacityFilter}
-        availabilityFilter={availabilityFilter}
-        setAvailabilityFilter={setAvailabilityFilter}
-        onResetFilters={resetFilters}
         bookings={m.bookings}
       />
     </div>

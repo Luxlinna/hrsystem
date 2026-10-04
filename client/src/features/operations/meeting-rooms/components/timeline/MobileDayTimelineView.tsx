@@ -11,7 +11,6 @@ interface MobileDayTimelineViewProps {
   onSelectDate: (d: string) => void;
   onOpenBookModal: (room: MeetingRoom, startTime?: string) => void;
   onSelectBooking: (b: Booking) => void;
-  onOpenFilter: () => void;
 }
 
 export const MobileDayTimelineView = memo(function MobileDayTimelineView({
@@ -21,7 +20,6 @@ export const MobileDayTimelineView = memo(function MobileDayTimelineView({
   onSelectDate,
   onOpenBookModal,
   onSelectBooking,
-  onOpenFilter,
 }: MobileDayTimelineViewProps) {
   // Generate 7-day week strip centered around selectedDate
   const weekDays = useMemo(() => {
@@ -71,22 +69,13 @@ export const MobileDayTimelineView = memo(function MobileDayTimelineView({
           <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
             {currentMonthTitle}
           </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => shiftWeek(7)}
-              className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer active:scale-95"
-            >
-              <i className="ri-arrow-right-s-line text-lg" />
-            </button>
-            <button
-              type="button"
-              onClick={onOpenFilter}
-              className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 flex items-center justify-center text-slate-600 dark:text-slate-300 border border-slate-200/60 cursor-pointer"
-            >
-              <i className="ri-equalizer-line text-sm" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => shiftWeek(7)}
+            className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer active:scale-95"
+          >
+            <i className="ri-arrow-right-s-line text-lg" />
+          </button>
         </div>
 
         {/* 7 Days Row */}
