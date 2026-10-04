@@ -41,21 +41,21 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-xl text-sm sm:text-xs text-left font-medium flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${
+        className={`w-full px-2 py-1 h-8 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-xl text-xs text-left font-medium flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${
           isOpen
             ? "border-[#253C7D] ring-2 ring-[#253C7D]/20 bg-white dark:bg-slate-800"
             : "border-slate-200 dark:border-slate-700"
         }`}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-xs shrink-0">
-            <RoomGeometricIcon className="w-4 h-4 text-[#253C7D] dark:text-sky-400" />
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-5 h-5 rounded-md bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-xs shrink-0">
+            <RoomGeometricIcon className="w-3 h-3 text-[#253C7D] dark:text-sky-400" />
           </div>
           <div className="min-w-0 flex items-center gap-1.5 truncate">
             <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
               {selectedRoom.name}
             </p>
-            <span className="text-[10px] text-slate-400 font-normal">
+            <span className="text-[9px] text-slate-400 font-normal">
               (Floor {selectedFloor} &middot; {selectedRoom.capacity || "—"} ppl)
             </span>
           </div>

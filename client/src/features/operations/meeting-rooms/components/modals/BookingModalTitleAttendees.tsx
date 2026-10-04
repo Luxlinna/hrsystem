@@ -29,7 +29,7 @@ export const BookingModalTitleAttendees = memo(function BookingModalTitleAttende
             value={bookingForm.title}
             onChange={(e) => setBookingForm((prev) => ({ ...prev, title: e.target.value }))}
             placeholder="Enter meeting title..."
-            className="w-full pl-9 pr-3 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs transition-all"
+            className="w-full pl-9 pr-3 py-2 h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs transition-all"
           />
         </div>
       </div>
@@ -54,7 +54,7 @@ export const BookingModalTitleAttendees = memo(function BookingModalTitleAttende
                 attendees_count: Math.max(1, Number(e.target.value) || 1),
               }))
             }
-            className="w-full pl-7 pr-6 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center transition-all"
+            className="w-full pl-7 pr-6 py-2 h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center transition-all"
           />
           <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
             <i className="ri-arrow-down-s-line text-xs" />

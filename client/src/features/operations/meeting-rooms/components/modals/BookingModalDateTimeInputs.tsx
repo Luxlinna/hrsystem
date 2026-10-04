@@ -26,7 +26,7 @@ export const BookingModalDateTimeInputs = memo(function BookingModalDateTimeInpu
             required
             value={bookingForm.date}
             onChange={(e) => setBookingForm((prev) => ({ ...prev, date: e.target.value }))}
-            className="w-full pl-9 pr-3 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs transition-all"
+            className="w-full pl-9 pr-3 py-2 h-8 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs transition-all"
           />
         </div>
       </div>
@@ -46,7 +46,7 @@ export const BookingModalDateTimeInputs = memo(function BookingModalDateTimeInpu
               required
               value={bookingForm.start_time}
               onChange={(e) => setBookingForm((prev) => ({ ...prev, start_time: e.target.value }))}
-              className="w-full pl-8 pr-2 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center transition-all"
+              className="w-full pl-8 pr-2 py-2 h-8 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center transition-all"
             />
           </div>
         </div>
@@ -64,7 +64,7 @@ export const BookingModalDateTimeInputs = memo(function BookingModalDateTimeInpu
               required
               value={bookingForm.end_time}
               onChange={(e) => setBookingForm((prev) => ({ ...prev, end_time: e.target.value }))}
-              className="w-full pl-8 pr-2 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center transition-all"
+              className="w-full pl-8 pr-2 py-2 h-8 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center transition-all"
             />
           </div>
         </div>
