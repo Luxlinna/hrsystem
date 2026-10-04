@@ -71,13 +71,38 @@ export const RequisitionJobDescriptionView = memo(function RequisitionJobDescrip
         <div className="p-4 space-y-3.5 bg-white/70 border-t border-blue-100/60">
           {/* Organization & Hierarchy Meta */}
           <div className="flex items-center gap-2 flex-wrap text-[11px] pb-2 border-b border-gray-100">
-            <span className="font-semibold text-gray-500">Auto-filled Context:</span>
+            <span className="font-semibold text-gray-500">Context:</span>
+            {r.company && (
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">
+                Entity: {r.company}
+              </span>
+            )}
             <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 font-bold">
               BU: {r.business_unit || r.branches?.name || "Enterprise"}
             </span>
+            {r.site && (
+              <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                Site: {r.site}
+              </span>
+            )}
+            {r.division && (
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">
+                Division: {r.division}
+              </span>
+            )}
             <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 font-bold">
               Dept: {r.department}
             </span>
+            {r.employee_level && (
+              <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold">
+                Level: {r.employee_level}
+              </span>
+            )}
+            {r.contract_type && (
+              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 font-bold">
+                Contract: {r.contract_type}
+              </span>
+            )}
             {r.jd_reporting_line && (
               <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200 font-bold flex items-center gap-1">
                 <i className="ri-git-merge-line text-purple-600" />

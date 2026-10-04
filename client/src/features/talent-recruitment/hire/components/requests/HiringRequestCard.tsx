@@ -91,15 +91,33 @@ export const HiringRequestCard = memo(function HiringRequestCard({
               </span>
             </h3>
 
-            <div className="flex items-center gap-x-4 gap-y-1 mt-1.5 flex-wrap text-xs text-gray-500 font-medium">
-              <span className="flex items-center gap-1">
+            <div className="flex items-center gap-x-4 gap-y-1.5 mt-2 flex-wrap text-xs text-gray-500 font-medium">
+              <span className="flex items-center gap-1 text-slate-800 font-semibold">
                 <i className="ri-building-line text-[#253C7D]" />
-                {r.company ? `${r.company} · ` : ""}{r.branches?.name || r.business_unit || "HQ"}
+                {r.company ? `${r.company} · ` : ""}{r.branches?.name || r.business_unit || "Headquarters"}
               </span>
-              <span className="flex items-center gap-1">
+              {r.site && (
+                <span className="flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 text-[11px] font-semibold">
+                  <i className="ri-map-pin-2-line text-emerald-600" />
+                  Site: {r.site}
+                </span>
+              )}
+              <span className="flex items-center gap-1 text-slate-700">
                 <i className="ri-folder-user-line text-gray-400" />
                 {r.department}{r.division ? ` · ${r.division}` : ""}
               </span>
+              {r.employee_level && (
+                <span className="flex items-center gap-1 text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 text-[11px] font-bold">
+                  <i className="ri-shield-star-line text-indigo-600" />
+                  Level: {r.employee_level}
+                </span>
+              )}
+              {(r.contract_type || r.employee_type || r.employment_type) && (
+                <span className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 text-[11px] font-medium">
+                  <i className="ri-file-paper-2-line text-blue-600" />
+                  {r.contract_type || r.employee_type || r.employment_type}
+                </span>
+              )}
               {r.hiring_manager_name && (
                 <span className="flex items-center gap-1">
                   <i className="ri-user-settings-line text-gray-400" />

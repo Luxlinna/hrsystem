@@ -3,6 +3,7 @@ import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
 import { useHrRecruiters } from "../../hooks/useHrRecruiters";
+import { useOrgMasterCategories } from "../../hooks/useOrgMasterCategories";
 
 interface Props {
   form: NewHiringRequestFormState;
@@ -23,6 +24,7 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
 }: Props) {
   // Strictly fetch enterprise HR Division & Recruiter employees
   const { recruiters: hrRecruiters } = useHrRecruiters(branches);
+  const { employeeTypes, employeeLevels, contractTypes } = useOrgMasterCategories();
 
   // Auto-default to the primary HR Division recruiter if not yet set
   useEffect(() => {
@@ -58,59 +60,131 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
   };
 
   return (
-    <div className="space-y-4">
-      {/* Employment Type & Salary */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-4">
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Employment Type</label>
-          <select
-            value={form.employment_type}
-            onChange={(e) => setForm({ ...form, employment_type: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium"
-          >
-            <option value="full-time">Full-Time</option>
-            <option value="part-time">Part-Time</option>
-            <option value="contract">Contract</option>
-            <option value="internship">Internship</option>
-          </select>
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-4">
+      <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+        <i className="ri-user-settings-line text-blue-600" />
+        <span>Role Terms, Contract & Compensation</span>
+      </div>
+
+      {/* 1. Employee Type, Employee Level & Contract Type */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Employee Type</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
+              <i className="ri-team-line" />
+            </div>
+            <select
+              value={form.employee_type || form.employment_type || employeeTypes[0] || "FULL-TIME"}
+              onChange={(e) => setForm({ ...form, employee_type: e.target.value, employment_type: e.target.value })}
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+            >
+              {employeeTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+              <i className="ri-arrow-down-s-line" />
+            </div>
+          </div>
         </div>
-        <div className="sm:col-span-4">
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Expected Salary Min ($)</label>
-          <input
-            type="number"
-            placeholder="e.g. 500"
-            value={form.salary_min}
-            onChange={(e) => setForm({ ...form, salary_min: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs"
-          />
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Employee Level</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
+              <i className="ri-shield-star-line" />
+            </div>
+            <select
+              value={form.employee_level || employeeLevels[0] || "Senior"}
+              onChange={(e) => setForm({ ...form, employee_level: e.target.value })}
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+            >
+              {employeeLevels.map((lvl) => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+              <i className="ri-arrow-down-s-line" />
+            </div>
+          </div>
         </div>
-        <div className="sm:col-span-4">
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Expected Salary Max ($)</label>
-          <input
-            type="number"
-            placeholder="e.g. 1000"
-            value={form.salary_max}
-            onChange={(e) => setForm({ ...form, salary_max: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs"
-          />
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Contract Type</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
+              <i className="ri-file-paper-2-line" />
+            </div>
+            <select
+              value={form.contract_type || contractTypes[0] || "1-YEAR FDC"}
+              onChange={(e) => setForm({ ...form, contract_type: e.target.value })}
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+            >
+              {contractTypes.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+              <i className="ri-arrow-down-s-line" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Target Joining Date, Hiring Manager & Assigned Recruiter */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* 2. Expected Salary & Target Joining Date */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Target Joining Date</label>
-          <input
-            type="date"
-            value={form.target_joining_date}
-            onChange={(e) => setForm({ ...form, target_joining_date: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium"
-          />
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Expected Salary Min ($)</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs font-bold">
+              $
+            </div>
+            <input
+              type="number"
+              placeholder="e.g. 500"
+              value={form.salary_min || ""}
+              onChange={(e) => setForm({ ...form, salary_min: e.target.value })}
+              className="w-full pl-8 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+            />
+          </div>
         </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Expected Salary Max ($)</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs font-bold">
+              $
+            </div>
+            <input
+              type="number"
+              placeholder="e.g. 1000"
+              value={form.salary_max || ""}
+              onChange={(e) => setForm({ ...form, salary_max: e.target.value })}
+              className="w-full pl-8 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Target Joining Date</label>
+          <div className="relative">
+            <input
+              type="date"
+              value={form.target_joining_date || ""}
+              onChange={(e) => setForm({ ...form, target_joining_date: e.target.value })}
+              className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Hiring Manager & Assigned Recruiter */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-semibold text-gray-700">Hiring Manager</label>
-            <span className="text-[10px] text-gray-500 font-medium">Managers in {assignedBuName}</span>
+            <label className="block text-xs font-semibold text-slate-700">Hiring Manager</label>
+            <span className="text-[10px] text-slate-400 font-medium">Managers in {assignedBuName}</span>
           </div>
           <EmployeeSearchSelect
             employees={employees}
@@ -119,9 +193,10 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
             placeholder={assignedBuName ? `Search manager in ${assignedBuName}...` : "Search hiring manager..."}
           />
         </div>
+
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-semibold text-gray-700">
+            <label className="block text-xs font-semibold text-slate-700">
               Assigned Recruiter <span className="text-purple-600 font-bold">*</span>
             </label>
             <span className="text-[10px] text-purple-600 font-medium">HR Division</span>

@@ -188,6 +188,37 @@ export const DEFAULT_DEPARTMENTS = [
   "Other",
 ];
 
+export const HIRING_EMPLOYEE_TYPES = [
+  "FULL-TIME",
+  "PART-TIME",
+  "CONTRACT",
+  "INTERNSHIP",
+  "HOD",
+  "PROBATION",
+];
+
+export const HIRING_EMPLOYEE_LEVELS = [
+  "Intern",
+  "Junior",
+  "Mid-level",
+  "Senior",
+  "Lead",
+  "Manager",
+  "Director",
+  "Executive",
+];
+
+export const HIRING_CONTRACT_TYPES = [
+  "Under probation",
+  "1-YEAR FDC",
+  "2-YEAR 3-MONTH FDC",
+  "2-YEAR FDC",
+  "3-MONTH FDC",
+  "3-YEAR FDC",
+  "5 YEARS FDC",
+  "PERMANENT (UDC)",
+];
+
 export const INITIAL_JOB_FORM: NewJobFormState = {
   title: "",
   department: "",
@@ -202,10 +233,12 @@ export const INITIAL_JOB_FORM: NewJobFormState = {
 
 export const INITIAL_HIRING_REQUEST_FORM: NewHiringRequestFormState = {
   title: "",
+  position: "",
   department: "",
   division: "",
   company: "UNI",
   business_unit: "",
+  site: "",
   branch_id: "",
   position_type: "new",
   replacement_for_id: "",
@@ -213,10 +246,21 @@ export const INITIAL_HIRING_REQUEST_FORM: NewHiringRequestFormState = {
   location: "",
   target_joining_date: "",
   job_description: "",
+  jd_summary: "",
+  jd_responsibilities: "",
+  jd_requirements: "",
+  jd_qualifications: "",
+  jd_reporting_line: "",
+  years_of_experience: "2 - 5 years",
+  experience_description: "",
+  team_supervision: "",
   hiring_manager_id: "",
   hiring_manager_name: "",
   headcount: 1,
-  employment_type: "full-time",
+  employment_type: "FULL-TIME",
+  employee_type: "FULL-TIME",
+  employee_level: "Senior",
+  contract_type: "1-YEAR FDC",
   salary_min: "",
   salary_max: "",
   justification: "",

@@ -1,7 +1,9 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
 import { CreateHiringRequestFields } from "./CreateHiringRequestFields";
+import { useHiringRequestAutoSave } from "../../hooks/useHiringRequestAutoSave";
+import { toast } from "@/components/Toast";
 
 interface CreateHiringRequestModalProps {
   isOpen: boolean;
@@ -36,31 +38,299 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
   userBranchName,
   targetBranch,
 }: CreateHiringRequestModalProps) {
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
+
+  const {
+    autoSaveEnabled,
+    setAutoSaveEnabled,
+    autoSaveStatus,
+    lastSavedAt,
+    availableDraft,
+    restoreDraft,
+    clearDraft,
+    markDirty,
+  } = useHiringRequestAutoSave(isOpen, form, setForm);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveStep(1);
+    }
+  }, [isOpen]);
+
+  // Mark dirty whenever form state updates so auto-save writes to storage
+  useEffect(() => {
+    if (isOpen) {
+      markDirty();
+    }
+  }, [form, isOpen, markDirty]);
+
   if (!isOpen) return null;
 
+  const isStep1Complete = Boolean(
+    (form.title || form.position)?.trim() &&
+    form.department?.trim() &&
+    form.justification?.trim()
+  );
+
+  const isStep2Complete = Boolean(
+    (form.employee_type || form.employment_type) &&
+    form.employee_level &&
+    form.contract_type
+  );
+
+  const isStep3Complete = Boolean(
+    form.jd_summary?.trim() || form.job_description?.trim()
+  );
+
+  const handleNextFromStep1 = () => {
+    if (!form.title.trim() && !form.position?.trim()) {
+      toast.error("Please provide a Position / Job Title.");
+      return;
+    }
+    if (!form.department.trim()) {
+      toast.error("Please select a Department.");
+      return;
+    }
+    if (!form.justification.trim()) {
+      toast.error("Please enter the Reason for Hiring / Business Need.");
+      return;
+    }
+    setActiveStep(2);
+  };
+
+  const handleNextFromStep2 = () => {
+    setActiveStep(3);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim() && !form.position?.trim()) {
+      setActiveStep(1);
+      toast.error("Please provide a Position Title in Part 1.");
+      return;
+    }
+    if (!form.department.trim()) {
+      setActiveStep(1);
+      toast.error("Please select a Department in Part 1.");
+      return;
+    }
+    if (!form.justification.trim()) {
+      setActiveStep(1);
+      toast.error("Please provide the Business Need in Part 1.");
+      return;
+    }
+    if (!form.jd_summary?.trim() && !form.job_description?.trim()) {
+      setActiveStep(3);
+      toast.error("Please enter the Role Purpose & Mission in Part 3 (Job Description).");
+      return;
+    }
+    clearDraft();
+    onSubmit(e);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-50/70 via-white to-transparent">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 mb-1">
-              <i className="ri-file-list-3-line" /> Requisition Record
-            </div>
-            <h2 className="text-xl font-bold text-gray-900">New Hiring Requisition</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Submit a complete 17-field enterprise hiring requisition for executive review and live posting
-            </p>
-          </div>
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-3xl w-full max-w-6xl xl:max-w-7xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[94vh]">
+        {/* Top Breadcrumb & Close Bar */}
+        <div className="flex items-center justify-between px-6 pt-3.5 pb-0.5 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
           >
-            <i className="ri-close-line text-xl" />
+            <i className="ri-arrow-left-line text-xs" />
+            <span>Hiring Requisition</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+          >
+            <i className="ri-close-line text-lg" />
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="p-6 space-y-5 max-h-[78vh] overflow-y-auto">
+        {/* Modal Title Banner with Auto-Save Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pb-2.5 shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center text-lg shrink-0 shadow-2xs">
+              <i className="ri-file-text-fill" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 leading-snug">New Hiring Requisition</h2>
+                
+                {/* Auto-Save Indicators */}
+                {autoSaveStatus === "saving" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-700 animate-pulse">
+                    <i className="ri-loader-4-line animate-spin text-xs" />
+                    <span>Saving draft...</span>
+                  </span>
+                )}
+
+                {autoSaveStatus !== "saving" && lastSavedAt && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-700"
+                    title={`Last auto-saved at ${lastSavedAt.toLocaleTimeString()}`}
+                  >
+                    <i className="ri-check-line text-xs font-bold" />
+                    <span>Draft saved at {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+                  </span>
+                )}
+
+                {lastSavedAt && (
+                  <button
+                    type="button"
+                    onClick={clearDraft}
+                    className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors underline cursor-pointer"
+                    title="Discard saved draft and start fresh"
+                  >
+                    Clear draft
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Submit a complete 17-field enterprise hiring requisition for executive review and live posting.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <label
+              className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg"
+              title={autoSaveEnabled ? "Auto-save is enabled" : "Auto-save is disabled"}
+            >
+              <input
+                type="checkbox"
+                checked={autoSaveEnabled}
+                onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="font-medium">Auto-save</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Existing Draft Recovery Banner */}
+        {availableDraft && (
+          <div className="mx-6 mb-2 p-3 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-900 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <i className="ri-history-line text-amber-600 text-base shrink-0" />
+              <span>
+                <strong>Unsaved Draft Detected:</strong> You have an unfinished requisition draft from an earlier session (<strong>{availableDraft.title || availableDraft.position || "Untitled Position"}</strong> &bull; <strong>{availableDraft.department || "General"}</strong>).
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={restoreDraft}
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors shadow-2xs cursor-pointer text-xs"
+              >
+                Restore Draft
+              </button>
+              <button
+                type="button"
+                onClick={clearDraft}
+                className="px-3 py-1.5 rounded-xl border border-amber-300 bg-white hover:bg-amber-100/50 text-amber-800 font-semibold transition-colors cursor-pointer text-xs"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3-Step Horizontal Stepper Header */}
+        <div className="px-6 sm:px-10 py-3 border-y border-slate-200/80 bg-slate-50/50 shrink-0">
+          <div className="flex items-center justify-between max-w-4xl mx-auto gap-3 sm:gap-6">
+            {/* Step 1 */}
+            <button
+              type="button"
+              onClick={() => setActiveStep(1)}
+              className="flex items-center gap-2.5 group cursor-pointer relative pb-1 shrink-0"
+            >
+              <span
+                className={`w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all ${
+                  activeStep === 1
+                    ? "bg-[#2563EB] text-white shadow-sm ring-2 ring-blue-100"
+                    : "border border-slate-300 text-slate-500 bg-white group-hover:border-slate-400 group-hover:text-slate-700"
+                }`}
+              >
+                1
+              </span>
+              <span
+                className={`text-xs sm:text-[14px] font-semibold transition-colors ${
+                  activeStep === 1 ? "text-[#2563EB] font-bold" : "text-slate-600 group-hover:text-slate-900"
+                }`}
+              >
+                Placement & Position
+              </span>
+              {activeStep === 1 && (
+                <span className="absolute -bottom-3 left-0 right-0 h-[2.5px] bg-[#2563EB] rounded-full" />
+              )}
+            </button>
+
+            <div className="flex-1 h-[2px] bg-slate-200 min-w-[40px] sm:min-w-[80px]" />
+
+            {/* Step 2 */}
+            <button
+              type="button"
+              onClick={() => setActiveStep(2)}
+              className="flex items-center gap-2.5 group cursor-pointer relative pb-1 shrink-0"
+            >
+              <span
+                className={`w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all ${
+                  activeStep === 2
+                    ? "bg-[#2563EB] text-white shadow-sm ring-2 ring-blue-100"
+                    : "border border-slate-300 text-slate-500 bg-white group-hover:border-slate-400 group-hover:text-slate-700"
+                }`}
+              >
+                2
+              </span>
+              <span
+                className={`text-xs sm:text-[14px] font-semibold transition-colors ${
+                  activeStep === 2 ? "text-[#2563EB] font-bold" : "text-slate-600 group-hover:text-slate-900"
+                }`}
+              >
+                Terms & Contract
+              </span>
+              {activeStep === 2 && (
+                <span className="absolute -bottom-3 left-0 right-0 h-[2.5px] bg-[#2563EB] rounded-full" />
+              )}
+            </button>
+
+            <div className="flex-1 h-[2px] bg-slate-200 min-w-[40px] sm:min-w-[80px]" />
+
+            {/* Step 3 */}
+            <button
+              type="button"
+              onClick={() => setActiveStep(3)}
+              className="flex items-center gap-2.5 group cursor-pointer relative pb-1 shrink-0"
+            >
+              <span
+                className={`w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all ${
+                  activeStep === 3
+                    ? "bg-[#2563EB] text-white shadow-sm ring-2 ring-blue-100"
+                    : "border border-slate-300 text-slate-500 bg-white group-hover:border-slate-400 group-hover:text-slate-700"
+                }`}
+              >
+                3
+              </span>
+              <span
+                className={`text-xs sm:text-[14px] font-semibold transition-colors ${
+                  activeStep === 3 ? "text-[#2563EB] font-bold" : "text-slate-600 group-hover:text-slate-900"
+                }`}
+              >
+                Job Description
+              </span>
+              {activeStep === 3 && (
+                <span className="absolute -bottom-3 left-0 right-0 h-[2.5px] bg-[#2563EB] rounded-full" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Form Body */}
+        <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-4 sm:px-6 sm:py-3.5 space-y-3">
           <CreateHiringRequestFields
             form={form}
             setForm={setForm}
@@ -72,34 +342,102 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
             userBranchId={userBranchId}
             userBranchName={userBranchName}
             targetBranch={targetBranch}
+            activeStep={activeStep}
+            setActiveStep={setActiveStep}
           />
-
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-2.5 rounded-xl bg-[#1E293B] hover:bg-[#0F172A] text-white text-xs font-extrabold shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <i className="ri-loader-4-line animate-spin" /> Submitting...
-                </>
-              ) : (
-                <>
-                  <i className="ri-send-plane-fill" /> Submit Requisition
-                </>
-              )}
-            </button>
-          </div>
         </form>
+
+        {/* Footer Actions */}
+        <div className="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between gap-3 shrink-0">
+          <div>
+            {activeStep === 1 ? (
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={submitting}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            ) : activeStep === 2 ? (
+              <button
+                type="button"
+                onClick={() => setActiveStep(1)}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <i className="ri-arrow-left-line" /> Back to Placement
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveStep(2)}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <i className="ri-arrow-left-line" /> Back to Terms & Contract
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {activeStep === 1 ? (
+              <button
+                type="button"
+                onClick={handleNextFromStep1}
+                className="px-6 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer flex items-center gap-2"
+              >
+                <span>Continue to Terms & Contract</span>
+                <i className="ri-arrow-right-line" />
+              </button>
+            ) : activeStep === 2 ? (
+              <button
+                type="button"
+                onClick={handleNextFromStep2}
+                className="px-6 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer flex items-center gap-2"
+              >
+                <span>Continue to Job Description</span>
+                <i className="ri-arrow-right-line" />
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem("hr_hiring_request_draft", JSON.stringify(form));
+                    toast.success("Draft saved successfully!");
+                  }}
+                  disabled={submitting}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <i className="ri-save-line text-slate-500" /> Save Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={submitting}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFormSubmit}
+                  disabled={submitting}
+                  className="px-6 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <i className="ri-loader-4-line animate-spin" /> Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <i className="ri-send-plane-fill" /> Submit Requisition
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

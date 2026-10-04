@@ -3,9 +3,11 @@ import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
 import { DEFAULT_DEPARTMENTS } from "../../constants";
+import { BU_DEFAULT_POSITIONS } from "@/features/workforce/employees/constants";
 import { CreateHiringRequestOrgFields } from "./CreateHiringRequestOrgFields";
 import { CreateHiringRequestRoleFields } from "./CreateHiringRequestRoleFields";
 import { JobDescriptionFormFields } from "./JobDescriptionFormFields";
+import { useOrgMasterCategories } from "../../hooks/useOrgMasterCategories";
 
 interface CreateHiringRequestFieldsProps {
   form: NewHiringRequestFormState;
@@ -18,6 +20,8 @@ interface CreateHiringRequestFieldsProps {
   userBranchId?: string | null;
   userBranchName?: string | null;
   targetBranch?: string | null;
+  activeStep?: 1 | 2 | 3;
+  setActiveStep?: (step: 1 | 2 | 3) => void;
 }
 
 export const CreateHiringRequestFields = memo(function CreateHiringRequestFields({
@@ -30,8 +34,10 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
   userBranchId,
   userBranchName,
   targetBranch,
+  activeStep = 1,
 }: CreateHiringRequestFieldsProps) {
   const isReplacement = form.position_type === "replacement";
+  const orgCategories = useOrgMasterCategories();
 
   const standardDepartments = useMemo(() => {
     const list = departments && departments.length > 0 ? departments : DEFAULT_DEPARTMENTS;
@@ -93,35 +99,75 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
     }));
   };
 
+  // Step 3: Job Description & Specifications
+  if (activeStep === 3) {
+    return (
+      <div className="space-y-4 animate-in fade-in duration-200">
+        <JobDescriptionFormFields form={form} setForm={setForm} />
+      </div>
+    );
+  }
+
+  // Step 2: Role Terms, Contract & Compensation
+  if (activeStep === 2) {
+    return (
+      <div className="space-y-4 animate-in fade-in duration-200">
+        <CreateHiringRequestRoleFields
+          form={form}
+          setForm={setForm}
+          branches={branches}
+          employees={buManagers}
+          isSuperAdmin={isSuperAdmin}
+          assignedBuName={assignedBuName}
+        />
+      </div>
+    );
+  }
+
+  // Step 1: Placement & Position Details
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 animate-in fade-in duration-200">
       {/* 1. Header Metadata & Position Type */}
-      <div className="p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="w-7 h-7 rounded-xl bg-[#253C7D] text-white flex items-center justify-center text-xs font-bold shadow-xs">#</span>
+      <div className="p-3.5 sm:p-4 bg-blue-50/50 rounded-2xl border border-blue-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-100/80 text-blue-600 flex items-center justify-center text-lg shrink-0">
+            <i className="ri-file-text-line" />
+          </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-900">Requisition ID</p>
-            <p className="text-xs text-blue-700 font-mono font-semibold">Auto-generated upon submission (REQ-2026-XXXX)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Requisition ID</p>
+            <p className="text-xs text-slate-900 font-bold">
+              Auto-generated upon submission <span className="font-mono text-slate-600 font-semibold">(REQ-2026-XXXX)</span>
+            </p>
           </div>
         </div>
-        <div className="inline-flex p-1 bg-white rounded-xl border border-blue-200 shadow-2xs">
+
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setForm((p) => ({ ...p, position_type: "new", replacement_for_id: "", replacement_for_name: "" }))}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${!isReplacement ? "bg-[#253C7D] text-white" : "text-gray-600 hover:text-gray-900"}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              !isReplacement
+                ? "bg-white border-2 border-blue-600 text-blue-600 shadow-2xs"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
           >
-            ✨ New Headcount
+            <i className="ri-add-circle-fill text-blue-600 text-sm" />
+            <span>New Headcount</span>
           </button>
           <button
             type="button"
             onClick={() => setForm((p) => ({ ...p, position_type: "replacement" }))}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${isReplacement ? "bg-[#253C7D] text-white" : "text-gray-600 hover:text-gray-900"}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              isReplacement
+                ? "bg-white border-2 border-blue-600 text-blue-600 shadow-2xs"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
           >
-            🔄 Replacement
+            <i className="ri-arrow-left-right-line text-slate-500 text-sm" />
+            <span>Replacement</span>
           </button>
         </div>
       </div>
-
 
       {isReplacement && (
         <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2">
@@ -136,42 +182,86 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
       )}
 
       {/* 2. Position Title, Headcount & Priority */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-6">
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Position Title *</label>
-          <input
-            type="text"
-            required
-            placeholder="e.g. Senior Operations Officer"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium"
-          />
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3 shadow-2xs">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+          <i className="ri-building-line text-blue-600" />
+          <span>Position / Job Title</span>
         </div>
-        <div className="sm:col-span-3">
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Headcount *</label>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            required
-            value={form.headcount}
-            onChange={(e) => setForm({ ...form, headcount: Math.max(1, parseInt(e.target.value) || 1) })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium"
-          />
-        </div>
-        <div className="sm:col-span-3">
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Priority</label>
-          <select
-            value={form.urgency}
-            onChange={(e) => setForm({ ...form, urgency: e.target.value as any })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium cursor-pointer"
-          >
-            <option value="low">🟢 Low</option>
-            <option value="medium">🟡 Medium</option>
-            <option value="high">🟠 High</option>
-            <option value="urgent">🔴 Urgent</option>
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
+          <div className="sm:col-span-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
+                <i className="ri-briefcase-line" />
+              </div>
+              <select
+                required
+                value={form.title || form.position || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm({ ...form, title: val, position: val });
+                }}
+                className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+              >
+                <option value="" disabled>Select Position from Org...</option>
+                {orgCategories.positions.length > 0 && (
+                  <optgroup label="Org Master Positions">
+                    {orgCategories.positions.map((pos) => (
+                      <option key={pos.id} value={pos.name}>
+                        {pos.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Standard Positions">
+                  {BU_DEFAULT_POSITIONS.filter(
+                    (p) => !orgCategories.positions.some((pos) => pos.name.toLowerCase() === p.toLowerCase())
+                  ).map((pos) => (
+                    <option key={pos} value={pos}>
+                      {pos}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i className="ri-arrow-down-s-line" />
+              </div>
+            </div>
+          </div>
+          <div className="sm:col-span-3">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Headcount *</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i className="ri-user-line" />
+              </div>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                required
+                value={form.headcount}
+                onChange={(e) => setForm({ ...form, headcount: Math.max(1, parseInt(e.target.value) || 1) })}
+                className="w-full pl-8 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+          </div>
+          <div className="sm:col-span-3">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Priority</label>
+            <div className="relative">
+              <select
+                value={form.urgency}
+                onChange={(e) => setForm({ ...form, urgency: e.target.value as any })}
+                className="w-full pl-3.5 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+              >
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🟠 High</option>
+                <option value="urgent">🔴 Urgent</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i className="ri-arrow-down-s-line" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -187,29 +277,26 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
         buSites={buSites}
       />
 
-      <CreateHiringRequestRoleFields
-        form={form}
-        setForm={setForm}
-        branches={branches}
-        employees={buManagers}
-        isSuperAdmin={isSuperAdmin}
-        assignedBuName={assignedBuName}
-      />
-
-      {/* 5. Justification & Description */}
-      <div className="space-y-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Reason for Hiring / Business Need *</label>
+      {/* 4. Reason for Hiring / Business Need */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-2 shadow-2xs">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+          <i className="ri-file-text-line text-blue-600" />
+          <span>Reason for Hiring / Business Need *</span>
+        </div>
+        <div className="relative">
           <textarea
             rows={3}
             required
-            placeholder="Explain business need..."
-            value={form.justification}
+            maxLength={500}
+            placeholder="e.g. To support business expansion, replace existing role, etc."
+            value={form.justification || ""}
             onChange={(e) => setForm({ ...form, justification: e.target.value })}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-medium leading-relaxed resize-y min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
+            className="w-full px-4 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none min-h-[90px] font-medium leading-relaxed pb-6"
           />
+          <div className="absolute bottom-2.5 right-3 text-[10px] text-slate-400 font-mono">
+            {(form.justification || "").length}/500
+          </div>
         </div>
-        <JobDescriptionFormFields form={form} setForm={setForm} />
       </div>
     </div>
   );
