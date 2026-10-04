@@ -15,7 +15,6 @@
   "include": [
     "server.ts",
     "app.ts",
-    "prisma.config.ts",
     "config/**/*",
     "controllers/**/*",
     "middleware/**/*",

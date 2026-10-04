@@ -17,7 +17,7 @@
     "dev:server": "npm --prefix server run dev",
     "dev:backend": "npm --prefix server run dev",
     "dev:all": "npm run dev",
-    "build": "npm --prefix client run build",
+    "build": "npm --prefix client run build && npm --prefix server run build",
     "build:client": "npm --prefix client run build",
     "build:frontend": "npm --prefix client run build",
     "build:server": "npm --prefix server run build",
