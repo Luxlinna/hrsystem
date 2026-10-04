@@ -109,11 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendOTP = useCallback(async (id: string) => { await sendOTPService(id); }, []);
 
   /**
-   * Backend-First Login Flow with rate limiting & server validation
+   * Backend-First Login Flow with rate limiting & Supabase resilience fallback
    */
   const login = async (identifier: string, password: string): Promise<{ otpRequired: boolean }> => {
     const isPhone = isPhoneIdentifier((identifier || "").trim());
     const resolvedEmail = resolveAuthEmail(identifier);
+
+    let accessToken = "";
+    let refreshToken = "";
 
     try {
       // 1. Call Express Backend first (checks brute-force rate limiter & credentials)
@@ -121,31 +124,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: resolvedEmail,
         password,
       });
+      accessToken = res.accessToken;
+      refreshToken = res.refreshToken;
+    } catch (apiErr: any) {
+      if (apiErr?.status === 401 || apiErr?.message?.includes('Invalid') || apiErr?.message?.includes('password')) {
+        const errMsg = apiErr?.message || 'Invalid login credentials';
+        throw new Error(isPhone ? 'Invalid phone number or password' : errMsg);
+      }
+      // Direct Supabase fallback for resilience
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: resolvedEmail,
+        password,
+      });
+      if (error || !data.session) {
+        throw new Error(isPhone ? 'Invalid phone number or password' : error?.message || 'Invalid email or password');
+      }
+      accessToken = data.session.access_token;
+      refreshToken = data.session.refresh_token;
+    }
 
-      if (checkDeviceRemembered(resolvedEmail) || checkDeviceRemembered(identifier)) {
-        // Device is trusted: set Supabase session in browser immediately
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: res.accessToken,
-          refresh_token: res.refreshToken,
-        });
+    if (checkDeviceRemembered(resolvedEmail) || checkDeviceRemembered(identifier)) {
+      // Device is trusted: set Supabase session in browser immediately
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
 
-        if (sessionError) {
-          throw new Error(sessionError.message);
-        }
-
-        recordUserActivity();
-        setDeviceRemembered(resolvedEmail);
-        setDeviceRemembered(identifier);
-        return { otpRequired: false };
+      if (sessionError) {
+        throw new Error(sessionError.message);
       }
 
-      // Untrusted device: Send 2FA/OTP code
-      await sendOTP(resolvedEmail);
-      return { otpRequired: true };
-    } catch (err: any) {
-      const errMsg = err?.message || 'Invalid login credentials';
-      throw new Error(isPhone && (errMsg.includes('Invalid login credentials') || errMsg.includes('400')) ? 'Invalid phone number or password' : errMsg);
+      recordUserActivity();
+      setDeviceRemembered(resolvedEmail);
+      setDeviceRemembered(identifier);
+      return { otpRequired: false };
     }
+
+    // Untrusted device: Send 2FA/OTP code
+    await sendOTP(resolvedEmail);
+    return { otpRequired: true };
   };
 
   /**

@@ -6,9 +6,23 @@ export const env = {
   PORT: Number(process.env.PORT) || 4000,
   DATABASE_URL: process.env.DATABASE_URL || '',
   DIRECT_URL: process.env.DIRECT_URL || '',
-  SUPABASE_URL: process.env.SUPABASE_URL || 'https://jnrozihprpjvnofjlbtd.supabase.co',
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '',
-  SUPABASE_ANON_KEY: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY || '',
+  SUPABASE_URL:
+    process.env.SUPABASE_URL ||
+    process.env.VITE_PUBLIC_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    'https://jnrozihprpjvnofjlbtd.supabase.co',
+  SUPABASE_SERVICE_ROLE_KEY:
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    '',
+  SUPABASE_ANON_KEY:
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_KEY ||
+    '',
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '',
   FRONTEND_URL: process.env.FRONTEND_URL || process.env.VITE_APP_URL || process.env.CLIENT_URL || process.env.APP_URL || '',

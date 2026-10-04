@@ -25,7 +25,12 @@ export class AuthService {
       throw new UnauthorizedError(error?.message || 'Invalid email or password');
     }
 
-    const employee = await this.repo.findEmployeeByEmail(dto.email);
+    let employee = null;
+    try {
+      employee = await this.repo.findEmployeeByEmail(dto.email);
+    } catch (dbErr: any) {
+      logger.warn('[Auth] Employee database lookup failed during login:', dbErr?.message || dbErr);
+    }
 
     return {
       accessToken: data.session.access_token,
