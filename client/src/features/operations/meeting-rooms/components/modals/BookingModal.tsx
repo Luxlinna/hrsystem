@@ -69,12 +69,12 @@ export const BookingModal = memo(function BookingModal({
 
       {/* Bottom Sheet Modal on Mobile / Centered Card on Tablet & Desktop */}
       <div
-        className={`relative w-full max-w-full sm:max-w-xl md:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-[28px] sm:rounded-3xl p-4 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 overflow-y-auto overflow-x-hidden space-y-2 pb-6 sm:pb-6 overscroll-contain touch-pan-y ${
+        className={`relative w-full max-w-full sm:max-w-lg md:max-w-xl max-h-[90dvh] sm:max-h-[88vh] bg-white dark:bg-slate-900 rounded-t-[24px] sm:rounded-3xl p-4 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 overflow-y-auto overflow-x-hidden space-y-2.5 pb-6 sm:pb-6 overscroll-contain touch-pan-y ${
           isClosing ? "animate-cover-down-exit" : "animate-cover-up"
         }`}
       >
         {/* Mobile Pull Handle */}
-        <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto -mt-1 mb-1 block sm:hidden" />
+        <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto -mt-1 mb-1.5 block sm:hidden" />
 
         {/* Header */}
         <BookingModalHeader
@@ -88,7 +88,7 @@ export const BookingModal = memo(function BookingModal({
             e.preventDefault();
             onSubmit();
           }}
-          className="space-y-2 text-xs"
+          className="space-y-2.5 text-xs"
         >
           {/* Meeting Title & Attendees */}
           <BookingModalTitleAttendees
@@ -117,18 +117,18 @@ export const BookingModal = memo(function BookingModal({
           />
 
           {/* Action Buttons */}
-          <div className="pt-2 flex items-center gap-2">
+          <div className="pt-2 flex items-center gap-2.5">
             <button
               type="button"
               onClick={handleAnimatedClose}
-              className="flex-1 py-2 px-4 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer text-center active:scale-95 shadow-2xs"
+              className="flex-1 py-2 px-4 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer text-center active:scale-95 shadow-2xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-2 px-4 text-xs font-bold uppercase tracking-wider text-white bg-[#253C7D] hover:bg-[#1E3064] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer text-center disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+              className="flex-1 py-2 px-4 text-xs font-bold uppercase tracking-wider text-white bg-[#253C7D] hover:bg-[#1E3064] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer text-center disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
             >
               <i className="ri-calendar-check-line text-sm" />
               <span>

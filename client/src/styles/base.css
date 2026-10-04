@@ -186,13 +186,18 @@
     touch-action: manipulation;
   }
 
-  /* Prevent iOS Safari auto-zoom on input focus by enforcing 16px font-size on mobile */
-  @media screen and (max-width: 768px) {
-    input,
-    select,
-    textarea {
-      font-size: 16px !important;
-    }
+  /* Refined WebKit date/time picker indicator styling */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.65;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
   }
 
   /* Modern, subtle scrollbar across the whole application */

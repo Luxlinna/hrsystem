@@ -13,10 +13,10 @@ export const BookingModalTitleAttendees = memo(function BookingModalTitleAttende
   setBookingForm,
 }: BookingModalTitleAttendeesProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3">
+    <div className="flex items-end gap-2.5">
       {/* Meeting Title */}
-      <div className="sm:col-span-8 space-y-1">
-        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+      <div className="flex-1 min-w-0 space-y-1">
+        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
           Meeting Title <span className="text-rose-500">*</span>
         </label>
         <div className="relative">
@@ -29,18 +29,18 @@ export const BookingModalTitleAttendees = memo(function BookingModalTitleAttende
             value={bookingForm.title}
             onChange={(e) => setBookingForm((prev) => ({ ...prev, title: e.target.value }))}
             placeholder="Enter meeting title..."
-            className="w-full pl-9 pr-3 py-2 h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs transition-all"
+            className="w-full pl-8 pr-3 py-1.5 h-8.5 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs transition-all"
           />
         </div>
       </div>
 
       {/* Attendees */}
-      <div className="sm:col-span-4 space-y-1">
-        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+      <div className="w-22 sm:w-26 shrink-0 space-y-1">
+        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
           Attendees
         </label>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
             <i className="ri-user-line text-xs" />
           </div>
           <input
@@ -54,9 +54,9 @@ export const BookingModalTitleAttendees = memo(function BookingModalTitleAttende
                 attendees_count: Math.max(1, Number(e.target.value) || 1),
               }))
             }
-            className="w-full pl-7 pr-6 py-2 h-9 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center transition-all"
+            className="w-full pl-6 pr-5 py-1.5 h-8.5 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center transition-all"
           />
-          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
             <i className="ri-arrow-down-s-line text-xs" />
           </div>
         </div>

@@ -33,7 +33,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
 
   return (
     <div className="relative space-y-1" ref={dropdownRef}>
-      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
         Meeting Room <span className="text-rose-500">*</span>
       </label>
 
@@ -41,7 +41,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-2 py-1 h-8 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-xl text-xs text-left font-medium flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${
+        className={`w-full px-2.5 py-1 h-8.5 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-xl text-xs text-left font-medium flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${
           isOpen
             ? "border-[#253C7D] ring-2 ring-[#253C7D]/20 bg-white dark:bg-slate-800"
             : "border-slate-200 dark:border-slate-700"
@@ -55,7 +55,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
             <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
               {selectedRoom.name}
             </p>
-            <span className="text-[9px] text-slate-400 font-normal">
+            <span className="text-[10px] text-slate-400 font-normal">
               (Floor {selectedFloor} &middot; {selectedRoom.capacity || "—"} ppl)
             </span>
           </div>
@@ -64,7 +64,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
         <div className="flex items-center gap-1.5 shrink-0">
           <FloorBadge floor={selectedFloor} size="sm" isVIP={isSelectedVIP} />
           <i
-            className={`ri-arrow-down-s-line text-slate-400 text-sm transition-transform duration-200 ${
+            className={`ri-arrow-down-s-line text-slate-400 text-xs transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
           />

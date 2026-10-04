@@ -23,7 +23,7 @@ export const BookingModalExtrasCard = memo(function BookingModalExtrasCard({
   bookingForm,
   setBookingForm,
 }: BookingModalExtrasCardProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const toggleReq = (label: string) => {
     setBookingForm((prev) => ({
@@ -52,23 +52,23 @@ export const BookingModalExtrasCard = memo(function BookingModalExtrasCard({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-2 py-2 rounded-xl bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 h-8.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
       >
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-md bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-xs shrink-0">
+          <div className="w-4.5 h-4.5 rounded bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-[11px] shrink-0">
             <i className="ri-settings-4-fill" />
           </div>
           <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
             Equipment &amp; Refreshments (Optional)
           </span>
           {totalSelected > 0 && (
-            <span className="px-1 py-0.5 rounded-full text-[9px] font-bold bg-[#253C7D] dark:bg-sky-500 text-white">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#253C7D] dark:bg-sky-500 text-white">
               {totalSelected}
             </span>
           )}
         </div>
         <i
-          className={`ri-arrow-down-s-line text-slate-400 text-sm transition-transform duration-200 ${
+          className={`ri-arrow-down-s-line text-slate-400 text-xs transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -76,11 +76,11 @@ export const BookingModalExtrasCard = memo(function BookingModalExtrasCard({
 
       {/* Accordion Content */}
       {isOpen && (
-        <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-150">
+        <div className="p-2.5 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60 grid grid-cols-1 sm:grid-cols-2 gap-2.5 animate-in fade-in duration-150">
           {/* Column 1: Equipment */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <div className="w-4 h-4 rounded-md bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-[10px]">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+              <div className="w-4 h-4 rounded bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-[10px]">
                 <i className="ri-tv-line" />
               </div>
               <span>Equipment</span>
@@ -92,7 +92,7 @@ export const BookingModalExtrasCard = memo(function BookingModalExtrasCard({
                   <label
                     key={item.id}
                     onClick={() => toggleReq(item.id)}
-                    className="flex items-center gap-2 text-[11px] text-slate-700 dark:text-slate-300 font-medium cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none"
+                    className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none"
                   >
                     <input
                       type="checkbox"
@@ -108,9 +108,9 @@ export const BookingModalExtrasCard = memo(function BookingModalExtrasCard({
           </div>
 
           {/* Column 2: Refreshments */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <div className="w-4 h-4 rounded-md bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-[10px]">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+              <div className="w-4 h-4 rounded bg-[#253C7D]/10 dark:bg-sky-500/20 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-[10px]">
                 <i className="ri-cup-line" />
               </div>
               <span>Refreshments</span>
@@ -122,13 +122,13 @@ export const BookingModalExtrasCard = memo(function BookingModalExtrasCard({
                   <label
                     key={item.id}
                     onClick={() => toggleRef(item.id)}
-                    className="flex items-center gap-2 text-[11px] text-slate-700 dark:text-slate-300 font-medium cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none"
+                    className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none"
                   >
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => {}}
-                      className="w-3 h-3 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                     />
                     <span>{item.label}</span>
                   </label>
