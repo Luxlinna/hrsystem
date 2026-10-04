@@ -7,7 +7,7 @@ export interface IUnitOfWork {
 
 export class UnitOfWork implements IUnitOfWork {
   async execute<R>(work: (tx: TransactionClient) => Promise<R>): Promise<R> {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: TransactionClient) => {
       return await work(tx);
     }, {
       maxWait: 5000,
