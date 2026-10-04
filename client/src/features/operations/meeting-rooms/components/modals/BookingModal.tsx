@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { MeetingRoom, Booking, BookingFormData } from "../../types";
 import { WorkspaceSelectDropdown } from "./WorkspaceSelectDropdown";
@@ -34,6 +34,19 @@ export const BookingModal = memo(function BookingModal({
 }: BookingModalProps) {
   const [isClosing, setIsClosing] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouchAction;
+    };
+  }, [isOpen]);
+
   const handleAnimatedClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
@@ -45,7 +58,7 @@ export const BookingModal = memo(function BookingModal({
   if (!isOpen || !modalRoom) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden w-full max-w-full touch-none">
       {/* Clean semi-transparent backdrop */}
       <div
         className={`fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity duration-300 ${
@@ -56,7 +69,7 @@ export const BookingModal = memo(function BookingModal({
 
       {/* Bottom Sheet Modal on Mobile / Centered Card on Tablet & Desktop */}
       <div
-        className={`relative w-full sm:max-w-xl md:max-w-2xl max-h-[92vh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-[36px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 overflow-y-auto space-y-4 pb-8 sm:pb-6 ${
+        className={`relative w-full max-w-full sm:max-w-xl md:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-[36px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 overflow-y-auto overflow-x-hidden space-y-4 pb-8 sm:pb-6 overscroll-contain touch-pan-y ${
           isClosing ? "animate-cover-down-exit" : "animate-cover-up"
         }`}
       >
