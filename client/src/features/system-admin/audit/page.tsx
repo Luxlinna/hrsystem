@@ -28,25 +28,27 @@ export default function AuditLogPage() {
       {/* ── MOBILE: Coming Soon placeholder (mobile responsive not done yet) ── */}
       <div className="sm:hidden p-4 space-y-4">
         {/* Mobile header */}
-        <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+        <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-2.5">
+          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">
               <span>Administration</span>
               <span className="text-slate-300 dark:text-slate-600">/</span>
               <span className="text-[#253C7D] dark:text-sky-400 font-extrabold">Audit Log</span>
             </div>
+            {/* Under Development badge */}
+            <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 shadow-2xs whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Under Development
+            </span>
+          </div>
+          <div>
             <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Activity Audit Log
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
               Real-time tracking of all HR system changes and operational actions.
             </p>
           </div>
-          {/* Under Development badge — mobile only */}
-          <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            Under Development
-          </span>
         </div>
 
         {/* Coming Soon card */}

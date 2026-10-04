@@ -66,3 +66,17 @@ export const getFullName = (emp?: { first_name?: string; last_name?: string } | 
   if (!emp) return "Unknown Member";
   return `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
 };
+
+export const getRoomImage = (roomOrName?: MeetingRoom | string | null): string => {
+  const name = (typeof roomOrName === "object" ? roomOrName?.name : roomOrName)?.toLowerCase() || "";
+  if (name.includes("vip") || name.includes("board")) {
+    return "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=300&auto=format&fit=crop&q=80";
+  }
+  if (name.includes("train") || name.includes("large") || name.includes("hall")) {
+    return "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=300&auto=format&fit=crop&q=80";
+  }
+  if (name.includes("small") || name.includes("focus") || name.includes("pod")) {
+    return "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80";
+  }
+  return "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=300&auto=format&fit=crop&q=80";
+};

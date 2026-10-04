@@ -1,153 +1,183 @@
 import { memo } from "react";
 import type { MeetingRoom, Booking } from "../../types";
 import { FloorBadge } from "../FloorBadge";
-import { fmtTime, getRoomFloor } from "../../roomUtils";
+import { fmtTime, getRoomFloor, getRoomImage } from "../../roomUtils";
 
 interface MobileRoomScheduleListProps {
   rooms: MeetingRoom[];
   bookings: Booking[];
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
   onOpenBookModal: (room: MeetingRoom, startTime?: string) => void;
   onSelectBooking: (b: Booking) => void;
+  onOpenFilter?: () => void;
+  onSelectRoomDetails?: (room: MeetingRoom) => void;
 }
 
 export const MobileRoomScheduleList = memo(function MobileRoomScheduleList({
   rooms,
   bookings,
+  searchQuery = "",
+  setSearchQuery,
   onOpenBookModal,
   onSelectBooking,
+  onOpenFilter,
+  onSelectRoomDetails,
 }: MobileRoomScheduleListProps) {
   return (
-    <div className="space-y-3.5 block sm:hidden pb-10">
-      {rooms.map((room) => {
-        const roomBookings = bookings.filter((b) => b.room_id === room.id);
-        const roomFloor = getRoomFloor(room);
-        const isVIP = roomFloor === 5;
-        const hasBookings = roomBookings.length > 0;
+    <div className="space-y-4 block sm:hidden pb-16">
+      {/* Search & Filter Bar */}
+      {setSearchQuery && (
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search room name, location, or capacity..."
+              className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] shadow-2xs transition-all"
+            />
+          </div>
 
-        return (
-          <div
-            key={room.id}
-            className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs space-y-3.5 transition-all hover:border-slate-300 dark:hover:border-slate-700"
-          >
-            {/* Top Room Header Row */}
-            <div className="flex items-start justify-between gap-2.5">
-              <div className="min-w-0 space-y-1.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                    {room.name}
-                  </h4>
-                  <FloorBadge floor={roomFloor} size="sm" isVIP={isVIP} />
+          {onOpenFilter && (
+            <button
+              type="button"
+              onClick={onOpenFilter}
+              className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer active:scale-95 transition-all shrink-0"
+              title="Filter Rooms"
+            >
+              <i className="ri-equalizer-line text-sm" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Room Cards List */}
+      <div className="space-y-3.5">
+        {rooms.map((room) => {
+          const roomBookings = bookings.filter((b) => b.room_id === room.id);
+          const roomFloor = getRoomFloor(room);
+          const isVIP = roomFloor === 5 || room.name.toLowerCase().includes("vip");
+          const hasBookings = roomBookings.length > 0;
+          const roomImgUrl = getRoomImage(room);
+
+          return (
+            <div
+              key={room.id}
+              className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs space-y-3.5 transition-all"
+            >
+              {/* Top Room Header Row */}
+              <div className="flex items-center justify-between gap-3">
+                <div
+                  onClick={() => onSelectRoomDetails && onSelectRoomDetails(room)}
+                  className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                >
+                  {/* Room Thumbnail */}
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shrink-0 shadow-2xs">
+                    <img
+                      src={roomImgUrl}
+                      alt={room.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* Room Meta */}
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                        {room.name}
+                      </h4>
+                      {isVIP ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                          <i className="ri-vip-crown-line text-[11px]" />
+                          Floor 5
+                        </span>
+                      ) : (
+                        <FloorBadge floor={roomFloor} size="sm" isVIP={false} />
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700/60">
+                        <i className="ri-user-3-line text-slate-400 text-xs" />
+                        Max {room.capacity || "—"} ppl
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <i className="ri-map-pin-2-line text-emerald-500" />
+                        Floor {roomFloor}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium flex-wrap">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                    <i className="ri-user-3-line text-slate-400 text-xs" />
-                    Max {room.capacity || "—"} ppl
+                {/* Quick Book Button */}
+                <button
+                  type="button"
+                  onClick={() => onOpenBookModal(room)}
+                  className="inline-flex items-center justify-center gap-1 px-4 py-2 bg-[#253C7D] hover:bg-[#1E3064] dark:bg-sky-600 dark:hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+                >
+                  <i className="ri-add-line text-xs font-bold" />
+                  <span>Book</span>
+                </button>
+              </div>
+
+              {/* Schedule Section */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">
+                    TODAY'S SCHEDULE ({roomBookings.length})
                   </span>
-                  {room.branch_name && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-sky-950/60 text-[11px] font-bold text-[#253C7D] dark:text-sky-300 border border-blue-200/60 dark:border-sky-800/60">
-                      <i className="ri-building-line text-xs" />
-                      {room.branch_name}
+                  {!hasBookings ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Available All Day
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      {roomBookings.length} {roomBookings.length === 1 ? "Booking" : "Bookings"}
                     </span>
                   )}
                 </div>
-              </div>
 
-              {/* Quick Book Button */}
-              <button
-                type="button"
-                onClick={() => onOpenBookModal(room)}
-                className="inline-flex items-center gap-1 px-3.5 py-2 bg-[#253C7D] hover:bg-[#1E3064] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                <i className="ri-add-line text-xs font-bold" />
-                <span>Book</span>
-              </button>
-            </div>
-
-            {/* Schedule Section */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  TODAY'S SCHEDULE ({roomBookings.length})
-                </span>
-                {!hasBookings ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Available All Day
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    {roomBookings.length} {roomBookings.length === 1 ? "Reservation" : "Reservations"}
-                  </span>
-                )}
-              </div>
-
-              {hasBookings ? (
-                <div className="space-y-2">
-                  {roomBookings.map((b) => {
-                    const isApproved = b.status === "approved";
-                    const isPending = b.status === "pending";
-
-                    return (
+                {hasBookings ? (
+                  <div className="space-y-1.5">
+                    {roomBookings.map((b) => (
                       <div
                         key={b.id}
                         onClick={() => onSelectBooking(b)}
-                        className={`p-3 rounded-2xl border transition-all cursor-pointer active:scale-98 shadow-2xs flex items-center justify-between gap-2.5 ${
-                          isApproved
-                            ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100/70"
-                            : isPending
-                            ? "bg-amber-50/90 dark:bg-amber-950/30 border-amber-200/90 dark:border-amber-800/60 hover:bg-amber-100/70"
-                            : "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"
-                        }`}
+                        className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2.5 cursor-pointer hover:border-[#253C7D] transition-colors shadow-2xs"
                       >
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate">
-                              {b.title}
-                            </span>
-                            <span
-                              className={`text-[9.5px] font-extrabold uppercase tracking-wide px-1.5 py-0.2 rounded-md ${
-                                isApproved
-                                  ? "bg-emerald-600 text-white"
-                                  : isPending
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-slate-500 text-white"
-                              }`}
-                            >
-                              {b.status}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium truncate flex items-center gap-1">
-                            <i className="ri-user-line text-xs text-slate-400" />
-                            Booked by {b.employees?.first_name || "Staff"} {b.employees?.last_name || ""}
-                          </p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">{b.title}</p>
+                          <p className="text-[10px] text-slate-400">{b.employees?.first_name || "Staff"} {b.employees?.last_name || ""}</p>
                         </div>
-
-                        <div className="shrink-0 text-right">
-                          <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 block">
-                            {fmtTime(b.start_time)} – {fmtTime(b.end_time)}
-                          </span>
-                        </div>
+                        <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 shrink-0">
+                          {fmtTime(b.start_time)} – {fmtTime(b.end_time)}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div
-                  onClick={() => onOpenBookModal(room)}
-                  className="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 cursor-pointer hover:border-[#253C7D] dark:hover:border-sky-400 transition-colors"
-                >
-                  <span className="font-medium">No reservations for this date</span>
-                  <span className="text-[#253C7D] dark:text-sky-400 font-bold inline-flex items-center gap-1 text-[11px]">
-                    Reserve now <i className="ri-arrow-right-s-line" />
-                  </span>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => onOpenBookModal(room)}
+                    className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 cursor-pointer hover:border-[#253C7D] transition-colors shadow-2xs"
+                  >
+                    <span className="font-medium text-slate-500 dark:text-slate-400 text-xs">
+                      No reservations for this date
+                    </span>
+                    <span className="text-[#253C7D] dark:text-sky-400 font-bold inline-flex items-center gap-1 text-xs">
+                      Reserve now <i className="ri-arrow-right-s-line" />
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 });

@@ -3,27 +3,42 @@ import type { MeetingRoom, Booking } from "../../types";
 import { TimelineHeader } from "./TimelineHeader";
 import { TimelineRoomRow } from "./TimelineRoomRow";
 import { MobileRoomScheduleList } from "./MobileRoomScheduleList";
+import { MobileDayTimelineView } from "./MobileDayTimelineView";
 
 interface TimelineViewContentProps {
   rooms: MeetingRoom[];
   bookings: Booking[];
+  selectedDate?: string;
+  onSelectDate?: (d: string) => void;
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
   onOpenBookModal: (room?: MeetingRoom, startTime?: string) => void;
   onSelectBooking: (b: Booking) => void;
   onResetFilters?: () => void;
   onCreateRoom?: () => void;
   canManageRooms?: boolean;
   totalRoomsCount?: number;
+  onOpenFilter?: () => void;
+  onSelectRoomDetails?: (room: MeetingRoom) => void;
+  mobileViewStyle?: "timeline" | "cards";
 }
 
 export const TimelineViewContent = memo(function TimelineViewContent({
   rooms,
   bookings,
+  selectedDate,
+  onSelectDate,
+  searchQuery,
+  setSearchQuery,
   onOpenBookModal,
   onSelectBooking,
   onResetFilters,
   onCreateRoom,
   canManageRooms,
   totalRoomsCount = 0,
+  onOpenFilter,
+  onSelectRoomDetails,
+  mobileViewStyle = "cards",
 }: TimelineViewContentProps) {
   if (rooms.length === 0) {
     const isFilteredOut = totalRoomsCount > 0;
@@ -65,13 +80,31 @@ export const TimelineViewContent = memo(function TimelineViewContent({
 
   return (
     <div>
-      {/* Mobile-Friendly Schedule List */}
-      <MobileRoomScheduleList
-        rooms={rooms}
-        bookings={bookings}
-        onOpenBookModal={(r, start) => onOpenBookModal(r, start)}
-        onSelectBooking={onSelectBooking}
-      />
+      {/* Mobile-Friendly Schedule (Timeline Week Slots or Room Cards List) */}
+      <div className="block sm:hidden">
+        {mobileViewStyle === "timeline" && selectedDate && onSelectDate ? (
+          <MobileDayTimelineView
+            rooms={rooms}
+            bookings={bookings}
+            selectedDate={selectedDate}
+            onSelectDate={onSelectDate}
+            onOpenBookModal={(r, start) => onOpenBookModal(r, start)}
+            onSelectBooking={onSelectBooking}
+            onOpenFilter={onOpenFilter || (() => {})}
+          />
+        ) : (
+          <MobileRoomScheduleList
+            rooms={rooms}
+            bookings={bookings}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onOpenBookModal={(r, start) => onOpenBookModal(r, start)}
+            onSelectBooking={onSelectBooking}
+            onOpenFilter={onOpenFilter}
+            onSelectRoomDetails={onSelectRoomDetails}
+          />
+        )}
+      </div>
 
       {/* Desktop Wide Timeline Grid */}
       <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">

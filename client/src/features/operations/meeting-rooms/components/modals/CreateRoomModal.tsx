@@ -99,7 +99,7 @@ export const CreateRoomModal = memo(function CreateRoomModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs" onClick={handleClose} />
       <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto space-y-4 text-xs">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">

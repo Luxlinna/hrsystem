@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
+import { RoomGeometricIcon } from "@/components/icons/RoomGeometricIcon";
 
 export default function BottomNav() {
   const location = useLocation();
@@ -47,9 +48,9 @@ export default function BottomNav() {
     {
       id: "meeting-rooms",
       path: "/meeting-rooms",
-      label: "Meeting Rooms",
-      icon: "ri-external-link-line",
-      activeIcon: "ri-external-link-line",
+      label: "Rooms",
+      icon: "ri-community-line",
+      activeIcon: "ri-community-fill",
       visible: can("meeting-rooms"),
       isActive: location.pathname.startsWith("/meeting-rooms"),
     },
@@ -79,7 +80,11 @@ export default function BottomNav() {
                 : "text-sky-100/75 hover:text-white p-2.5 sm:p-3 rounded-full hover:bg-white/10"
             }`}
           >
-            <i className={`${item.isActive ? item.activeIcon : item.icon} text-[22px] sm:text-[24px] leading-none transition-transform duration-200`} />
+            {item.id === "meeting-rooms" ? (
+              <RoomGeometricIcon className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px]" />
+            ) : (
+              <i className={`${item.isActive ? item.activeIcon : item.icon} text-[22px] sm:text-[24px] leading-none transition-transform duration-200`} />
+            )}
           </Link>
         ))}
 

@@ -20,14 +20,12 @@ export default function Branches() {
     useCurrentLocation, handleGeocodeAddress, handleDeleteBranch, canCreateBranch,
   } = useBranches();
 
-  const initialTab = useMemo<BranchTabType>(() => {
+  const [activeTab, setActiveTabState] = useState<BranchTabType>(() => {
     const urlTab = searchParams.get("tab") as BranchTabType | null;
     if (urlTab) return urlTab;
     const storedTab = localStorage.getItem(TAB_STORAGE_KEY) as BranchTabType | null;
     return storedTab || "profile";
-  }, []);
-
-  const [activeTab, setActiveTabState] = useState<BranchTabType>(initialTab);
+  });
 
   const handleTabChange = useCallback((tab: BranchTabType) => {
     setActiveTabState(tab);
@@ -45,7 +43,7 @@ export default function Branches() {
       setActiveTabState(urlTab);
       localStorage.setItem(TAB_STORAGE_KEY, urlTab);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   const currentBranch = useMemo(() => {
     if (selectedBranch) return selectedBranch;

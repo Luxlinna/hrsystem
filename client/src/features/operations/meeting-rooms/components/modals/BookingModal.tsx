@@ -1,12 +1,11 @@
-import { memo, useState, useCallback } from "react";
+import { memo } from "react";
+import { createPortal } from "react-dom";
 import type { MeetingRoom, Booking, BookingFormData } from "../../types";
-import { FloorBadge } from "../FloorBadge";
-import { getRoomFloor } from "../../roomUtils";
-import { QUICK_TITLES } from "../../constants";
 import { WorkspaceSelectDropdown } from "./WorkspaceSelectDropdown";
-import { RequirementsSelectDropdown } from "./RequirementsSelectDropdown";
-import { RefreshmentsSelectDropdown } from "./RefreshmentsSelectDropdown";
 import { BookingModalDateTimeInputs } from "./BookingModalDateTimeInputs";
+import { BookingModalHeader } from "./BookingModalHeader";
+import { BookingModalTitleAttendees } from "./BookingModalTitleAttendees";
+import { BookingModalExtrasCard } from "./BookingModalExtrasCard";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -33,83 +32,42 @@ export const BookingModal = memo(function BookingModal({
   saving,
   onSubmit,
 }: BookingModalProps) {
-  const [showExtras, setShowExtras] = useState(false);
-
-  const toggleReq = useCallback((label: string) => {
-    setBookingForm((prev) => {
-      const exists = prev.selected_requirements.includes(label);
-      return {
-        ...prev,
-        selected_requirements: exists
-          ? prev.selected_requirements.filter((r) => r !== label)
-          : [...prev.selected_requirements, label],
-      };
-    });
-  }, [setBookingForm]);
-
-  const setReqs = useCallback((reqs: string[]) => {
-    setBookingForm((prev) => ({ ...prev, selected_requirements: reqs }));
-  }, [setBookingForm]);
-
-  const toggleRef = useCallback((label: string) => {
-    setBookingForm((prev) => {
-      const exists = prev.selected_refreshments.includes(label);
-      return {
-        ...prev,
-        selected_refreshments: exists
-          ? prev.selected_refreshments.filter((r) => r !== label)
-          : [...prev.selected_refreshments, label],
-      };
-    });
-  }, [setBookingForm]);
-
-  const setRefs = useCallback((refs: string[]) => {
-    setBookingForm((prev) => ({ ...prev, selected_refreshments: refs }));
-  }, [setBookingForm]);
-
   if (!isOpen || !modalRoom) return null;
 
-  const roomFloor = getRoomFloor(modalRoom);
-  const isVIP = roomFloor === 5;
-  const hasExtrasSelected =
-    bookingForm.selected_requirements.length > 0 ||
-    bookingForm.selected_refreshments.length > 0 ||
-    bookingForm.custom_requirements ||
-    bookingForm.custom_refreshments;
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      {/* Clean semi-transparent backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
-      <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs" onClick={onClose} />
-      <div className="relative w-full max-w-sm sm:max-w-md bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 shadow-2xl border border-slate-200/80 dark:border-slate-800 animate-in zoom-in-95 duration-150 max-h-[88vh] overflow-y-auto space-y-2">
+      {/* Bottom Sheet Modal on Mobile / Centered Card on Tablet & Desktop */}
+      <div className="relative w-full sm:max-w-xl md:max-w-2xl max-h-[92vh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-[36px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 animate-cover-up overflow-y-auto space-y-4 pb-8 sm:pb-6">
+        {/* Mobile Pull Handle */}
+        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto -mt-1 mb-1 block sm:hidden" />
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
-                {editingBooking ? "Edit Reservation" : "Book Meeting Room"}
-              </h3>
-              <FloorBadge floor={roomFloor} size="sm" isVIP={isVIP} />
-            </div>
-            <p className="text-[9.5px] text-slate-500 dark:text-slate-400">
-              {modalRoom.name} &middot; Floor {roomFloor} &middot; Max {modalRoom.capacity || "—"} ppl
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-5 h-5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-          >
-            <i className="ri-close-line text-sm" />
-          </button>
-        </div>
+        <BookingModalHeader
+          onClose={onClose}
+          modalRoom={modalRoom}
+          isEditing={Boolean(editingBooking)}
+        />
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
           }}
-          className="space-y-2 text-xs"
+          className="space-y-3.5 text-xs"
         >
+          {/* Meeting Title & Attendees */}
+          <BookingModalTitleAttendees
+            modalRoom={modalRoom}
+            bookingForm={bookingForm}
+            setBookingForm={setBookingForm}
+          />
+
           {/* Room Selector */}
           <WorkspaceSelectDropdown
             rooms={rooms}
@@ -117,114 +75,45 @@ export const BookingModal = memo(function BookingModal({
             onSelectRoom={setModalRoom}
           />
 
-          {/* Meeting Title & Attendees in 1 ultra-slim row */}
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="col-span-2">
-              <label className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">
-                Meeting Title <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={bookingForm.title}
-                onChange={(e) => setBookingForm({ ...bookingForm, title: e.target.value })}
-                placeholder="e.g. Team Sync"
-                className="w-full px-2 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs"
-              />
-            </div>
-
-            <div>
-              <label className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">
-                Attendees
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={modalRoom.capacity || 100}
-                value={bookingForm.attendees_count}
-                onChange={(e) => setBookingForm({ ...bookingForm, attendees_count: Number(e.target.value) || 1 })}
-                className="w-full px-1.5 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center"
-              />
-            </div>
-          </div>
-
-          {/* Quick Titles */}
-          <div className="flex flex-wrap gap-1">
-            {QUICK_TITLES.slice(0, 4).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setBookingForm({ ...bookingForm, title: t })}
-                className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[8.5px] font-semibold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Date & Time */}
+          {/* Date, Start Time & End Time */}
           <BookingModalDateTimeInputs
             bookingForm={bookingForm}
             setBookingForm={setBookingForm}
           />
 
-          {/* Collapsible Additional Options */}
-          <div className="pt-0.5">
-            <button
-              type="button"
-              onClick={() => setShowExtras(!showExtras)}
-              className="w-full flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-1.5">
-                <i className="ri-magic-line text-[#253C7D] dark:text-sky-400 text-xs" />
-                <span>Equipment & Refreshments (Optional)</span>
-                {hasExtrasSelected && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                )}
-              </div>
-              <i className={`ri-arrow-down-s-line text-xs transition-transform duration-200 ${showExtras ? "rotate-180" : ""}`} />
-            </button>
-
-            {showExtras && (
-              <div className="mt-1.5 space-y-2 p-2 bg-slate-50/60 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700 animate-in fade-in duration-150">
-                <RequirementsSelectDropdown
-                  selectedReqs={bookingForm.selected_requirements}
-                  onToggleReq={toggleReq}
-                  onSetReqs={setReqs}
-                  customReq={bookingForm.custom_requirements}
-                  setCustomReq={(val) => setBookingForm({ ...bookingForm, custom_requirements: val })}
-                />
-                <RefreshmentsSelectDropdown
-                  selectedRef={bookingForm.selected_refreshments}
-                  onToggleRef={toggleRef}
-                  onSetRefs={setRefs}
-                  customRef={bookingForm.custom_refreshments}
-                  setCustomRef={(val) => setBookingForm({ ...bookingForm, custom_refreshments: val })}
-                />
-              </div>
-            )}
-          </div>
+          {/* Equipment & Refreshments Checklist Card */}
+          <BookingModalExtrasCard
+            bookingForm={bookingForm}
+            setBookingForm={setBookingForm}
+          />
 
           {/* Action Buttons */}
-          <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-1.5">
+          <div className="pt-3 flex items-center gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+              className="flex-1 py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer text-center active:scale-95 shadow-2xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-1 px-3.5 py-1 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1E3064] dark:bg-blue-600 dark:hover:bg-blue-500 rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+              className="flex-1 py-3 px-4 text-xs font-bold uppercase tracking-wider text-white bg-[#253C7D] hover:bg-[#1E3064] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer text-center disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
             >
-              <i className="ri-calendar-check-line text-xs" />
-              <span>{saving ? "Saving..." : editingBooking ? "Update" : "Confirm"}</span>
+              <i className="ri-calendar-check-line text-sm" />
+              <span>
+                {saving
+                  ? "Saving..."
+                  : editingBooking
+                  ? "Update Meeting"
+                  : "Schedule Meeting"}
+              </span>
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });
