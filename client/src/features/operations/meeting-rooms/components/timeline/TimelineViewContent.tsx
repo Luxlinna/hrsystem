@@ -117,6 +117,7 @@ export const TimelineViewContent = memo(function TimelineViewContent({
                   bookings={roomBookings}
                   onOpenBookModal={(r, start) => onOpenBookModal(r, start)}
                   onSelectBooking={onSelectBooking}
+                  onSelectRoomDetails={onSelectRoomDetails}
                 />
               );
             })}

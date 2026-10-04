@@ -15,12 +15,12 @@ export const ColorPickerRadioGroup = memo(function ColorPickerRadioGroup({
   setCustomColor,
 }: ColorPickerRadioGroupProps) {
   return (
-    <div>
-      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-        Room Accent Theme
+    <div className="flex items-center justify-between gap-3 py-1">
+      <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 shrink-0">
+        Accent Theme
       </label>
-      <div className="flex items-center gap-2 flex-wrap">
-        {COLOR_PRESETS.map((c) => (
+      <div className="flex items-center gap-2 flex-wrap justify-end">
+        {COLOR_PRESETS.slice(0, 8).map((c) => (
           <button
             key={c}
             type="button"
@@ -28,12 +28,14 @@ export const ColorPickerRadioGroup = memo(function ColorPickerRadioGroup({
               setColor(c);
               setCustomColor("");
             }}
-            className={`w-7 h-7 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
-              color === c && !customColor ? "ring-2 ring-offset-2 ring-gray-900 scale-110 shadow-xs" : "hover:scale-105"
+            className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full transition-all flex items-center justify-center cursor-pointer ${
+              color === c && !customColor
+                ? "ring-2 ring-offset-2 ring-[#253C7D] dark:ring-sky-400 dark:ring-offset-slate-900 scale-110 shadow-xs"
+                : "hover:scale-110 opacity-80 hover:opacity-100"
             }`}
             style={{ backgroundColor: c }}
           >
-            {color === c && !customColor && <i className="ri-check-line text-white text-xs font-bold" />}
+            {color === c && !customColor && <i className="ri-check-line text-white text-xs font-bold drop-shadow-xs" />}
           </button>
         ))}
 
@@ -42,7 +44,7 @@ export const ColorPickerRadioGroup = memo(function ColorPickerRadioGroup({
           value={customColor}
           onChange={(e) => setCustomColor(e.target.value)}
           placeholder="#HEX"
-          className="w-20 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+          className="w-20 px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
         />
       </div>
     </div>

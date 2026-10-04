@@ -6,34 +6,34 @@ import { COLOR_PRESETS, AMENITY_ITEMS } from "../../constants";
 import { ColorPickerRadioGroup } from "./ColorPickerRadioGroup";
 import { AmenitiesSelectDropdown } from "./AmenitiesSelectDropdown";
 import { RoomImageUploadSection } from "./RoomImageUploadSection";
+import type { MeetingRoom } from "../../types";
 
 interface Props {
   isOpen: boolean;
+  room: MeetingRoom | null;
   onClose: () => void;
-  onCreated: () => void;
-  showToast: (type: string, message: string) => void;
-  branchId?: string | null;
-  branchName?: string;
+  onUpdated: () => void;
+  showToast: (type: "success" | "error" | "info", message: string) => void;
   branches?: { id: string; name: string; is_site?: boolean }[];
   isSuperAdmin?: boolean;
 }
 
 const FLOOR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-export const CreateRoomModal = memo(function CreateRoomModal({
-  isOpen, onClose, onCreated, showToast, branchId, branchName, branches = [], isSuperAdmin = true,
+export const EditRoomModal = memo(function EditRoomModal({
+  isOpen, room, onClose, onUpdated, showToast, branches = [], isSuperAdmin = true,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [buList, setBuList] = useState<{ id: string; name: string }[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>(() => branchId || "all");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(10);
   const [floor, setFloor] = useState<number>(3);
   const [isOtherFloor, setIsOtherFloor] = useState(false);
   const [color, setColor] = useState(COLOR_PRESETS[0]);
   const [customColor, setCustomColor] = useState("");
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>(["4K Display TV", "High-speed Wi-Fi", "AC Climate"]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -54,20 +54,26 @@ export const CreateRoomModal = memo(function CreateRoomModal({
       });
   }, [isOpen, branches]);
 
+  useEffect(() => {
+    if (room && isOpen) {
+      setName(room.name || "");
+      setCapacity(room.capacity || 10);
+      setFloor(room.floor || 3);
+      setIsOtherFloor(!FLOOR_OPTIONS.includes(room.floor || 3));
+      setSelectedBranchId(room.branch_id || "all");
+      setColor(COLOR_PRESETS.includes(room.color) ? room.color : COLOR_PRESETS[0]);
+      setCustomColor(COLOR_PRESETS.includes(room.color) ? "" : room.color || "");
+      setSelectedAmenities(Array.isArray(room.amenities) ? room.amenities : []);
+      setImageFile(null);
+      setImagePreview(room.image_url || null);
+    }
+  }, [room, isOpen]);
+
   const handleSelectFile = (file: File | null) => {
     setImageFile(file);
-    setImagePreview(file ? URL.createObjectURL(file) : null);
+    setImagePreview(file ? URL.createObjectURL(file) : (room?.image_url || null));
   };
 
-  const reset = () => {
-    setName(""); setCapacity(10); setFloor(3); setIsOtherFloor(false);
-    setColor(COLOR_PRESETS[0]); setCustomColor("");
-    setSelectedAmenities(["4K Display TV", "High-speed Wi-Fi", "AC Climate"]);
-    setCustomAmenity(""); setImageFile(null); setImagePreview(null); setUploadProgress(0);
-    setSelectedBranchId(branchId || "all");
-  };
-
-  const handleClose = () => { reset(); onClose(); };
   const toggleAmenity = (a: string) => setSelectedAmenities((p) => p.includes(a) ? p.filter((x) => x !== a) : [...p, a]);
   const addCustomAmenity = () => {
     const trimmed = customAmenity.trim();
@@ -76,12 +82,13 @@ export const CreateRoomModal = memo(function CreateRoomModal({
   };
 
   const handleSubmit = async () => {
+    if (!room) return;
     if (!name.trim()) return showToast("error", "Room name is required.");
-    const finalBranchId = selectedBranchId === "all" ? null : (selectedBranchId || branchId || null);
+    const finalBranchId = selectedBranchId === "all" ? null : (selectedBranchId || null);
 
     setSaving(true);
     try {
-      let s3ImageUrl: string | null = null;
+      let s3ImageUrl: string | null = room.image_url || null;
       if (imageFile) {
         setUploadProgress(10);
         const uploaded = await uploadMediaToS3(imageFile, "meeting-rooms", (pct) => setUploadProgress(pct));
@@ -93,30 +100,31 @@ export const CreateRoomModal = memo(function CreateRoomModal({
         amenities: selectedAmenities, branch_id: finalBranchId, image_url: s3ImageUrl,
       };
 
-      const { error } = await supabase.from("meeting_rooms").insert(payload);
+      const { error } = await supabase.from("meeting_rooms").update(payload).eq("id", room.id);
       if (error) throw error;
       
-      showToast("success", `Room "${name.trim()}" created successfully!`);
-      reset(); onCreated(); onClose();
+      showToast("success", `Room "${name.trim()}" updated successfully!`);
+      onUpdated();
+      onClose();
     } catch (err: any) {
-      showToast("error", err?.message || "Failed to create room.");
+      showToast("error", err?.message || "Failed to update room.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !room) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 w-screen h-screen">
-      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" onClick={handleClose} />
+      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" onClick={onClose} />
       <div className="relative w-full max-w-xl sm:max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Add New Meeting Room</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Configure BU branch, room specs, floor, and AWS photo</p>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Edit Meeting Room</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Update room assets, BU location, equipment, and photo</p>
           </div>
-          <button type="button" onClick={handleClose} className="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 cursor-pointer">
+          <button type="button" onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 cursor-pointer">
             <i className="ri-close-line text-xl" />
           </button>
         </div>
@@ -135,12 +143,7 @@ export const CreateRoomModal = memo(function CreateRoomModal({
                 {buList.map((b) => (<option key={b.id} value={b.id}>🏢 {b.name}</option>))}
               </select>
             </div>
-          ) : (
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-blue-50/70 dark:bg-sky-950/30 border border-blue-100 dark:border-sky-800/40 rounded-xl text-xs sm:text-sm text-blue-950 dark:text-sky-200 font-medium">
-              <i className="ri-building-line text-[#253C7D] dark:text-sky-400 text-base" />
-              <span>Creating for: <strong className="font-bold">{branchName || "Current Business Unit"}</strong></span>
-            </div>
-          )}
+          ) : null}
 
           <div>
             <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Room Name <span className="text-rose-500">*</span></label>
@@ -190,12 +193,12 @@ export const CreateRoomModal = memo(function CreateRoomModal({
         </div>
 
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
-          <button type="button" onClick={handleClose} className="px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
           <button
             type="button" onClick={handleSubmit} disabled={saving}
             className="px-6 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#253C7D] hover:bg-[#1E3064] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-2"
           >
-            {saving ? <><i className="ri-loader-4-line animate-spin" /> Creating...</> : "Create Room"}
+            {saving ? <><i className="ri-loader-4-line animate-spin" /> Saving...</> : "Save Changes"}
           </button>
         </div>
       </div>

@@ -34,7 +34,7 @@ export function useMeetingRoomsData(selectedDate: string) {
         (!effectiveBranchId || effectiveBranchId === userBranchId)
     );
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
-  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
+  const canViewCrossBranch = Boolean(isSuperAdmin || isAdmin || isHrDivision || isAllBranches || isHrDivisionBranch);
 
   const canApprove = Boolean(
     (isAdmin ||

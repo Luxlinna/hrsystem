@@ -82,6 +82,12 @@ export const MobileRoomScheduleList = memo(function MobileRoomScheduleList({
                       ) : (
                         <FloorBadge floor={roomFloor} size="sm" isVIP={false} />
                       )}
+                      {room.branch_name && (
+                        <span className="inline-flex items-center gap-0.5 text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-sky-50 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60 truncate max-w-[120px]">
+                          <i className="ri-building-line text-[9.5px]" />
+                          {room.branch_name}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">

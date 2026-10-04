@@ -4,6 +4,7 @@ import { BookingDetailModal } from "./BookingDetailModal";
 import { ApprovalReviewModal } from "./ApprovalReviewModal";
 import { CancellationReasonModal } from "./CancellationReasonModal";
 import { CreateRoomModal } from "./CreateRoomModal";
+import { EditRoomModal } from "./EditRoomModal";
 import { RoomDetailsModal } from "./RoomDetailsModal";
 import { BookingSuccessModal } from "./BookingSuccessModal";
 import type { MeetingRoom, Booking, BookingFormData, ReasonModalState, ApprovalModalState, BookingEmployee } from "../../types";
@@ -35,6 +36,8 @@ interface ModalsContainerProps {
   showToast: (type: "success" | "error" | "info", message: string) => void;
   createRoomOpen: boolean;
   setCreateRoomOpen: (val: boolean) => void;
+  editingRoom?: MeetingRoom | null;
+  setEditingRoom?: (room: MeetingRoom | null) => void;
   targetBranch?: string | null;
   userBranchName?: string | null;
   effectiveBranchName?: string | null;
@@ -50,6 +53,14 @@ interface ModalsContainerProps {
 }
 
 export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsContainer(p: ModalsContainerProps) {
+  const isSuperScope = Boolean(
+    p.isSuperAdmin ||
+      p.canApprove ||
+      p.isHrDivisionScope ||
+      (p.branches && p.branches.length > 1) ||
+      (p.visibleBranches && p.visibleBranches.length > 1)
+  );
+
   return (
     <>
       <BookingModal
@@ -68,6 +79,11 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
       <RoomDetailsModal
         room={p.selectedRoomDetails || null}
         bookings={p.bookings || []}
+        canManageRooms={p.canApprove}
+        onEditRoom={(r) => {
+          p.setSelectedRoomDetails && p.setSelectedRoomDetails(null);
+          p.setEditingRoom && p.setEditingRoom(r);
+        }}
         onClose={() => p.setSelectedRoomDetails && p.setSelectedRoomDetails(null)}
         onBookRoom={(r) => {
           p.setSelectedRoomDetails && p.setSelectedRoomDetails(null);
@@ -134,8 +150,18 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
         showToast={(type, msg) => p.showToast(type as any, msg)}
         branchId={p.targetBranch}
         branchName={p.effectiveBranchName || p.userBranchName || undefined}
-        branches={p.isHrDivisionScope ? (p.branches || p.visibleBranches) : (p.branches || p.visibleBranches)?.filter((b: any) => b.id === p.targetBranch)}
-        isSuperAdmin={Boolean(p.isHrDivisionScope)}
+        branches={p.branches || p.visibleBranches || []}
+        isSuperAdmin={isSuperScope}
+      />
+
+      <EditRoomModal
+        isOpen={Boolean(p.editingRoom)}
+        room={p.editingRoom || null}
+        onClose={() => p.setEditingRoom && p.setEditingRoom(null)}
+        onUpdated={() => p.loadRooms()}
+        showToast={(type, msg) => p.showToast(type as any, msg)}
+        branches={p.branches || p.visibleBranches || []}
+        isSuperAdmin={isSuperScope}
       />
     </>
   );

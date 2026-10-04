@@ -9,6 +9,7 @@ export interface MeetingRoom {
   deleted_at?: string | null;
   amenities?: string[];
   branches?: { id: string; name: string } | null;
+  image_url?: string | null;
 }
 
 export interface BookingEmployee {

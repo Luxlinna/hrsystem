@@ -4,6 +4,7 @@ import { MeetingRoomsFilterBar } from "./components/MeetingRoomsFilterBar";
 import { TimelineViewContent } from "./components/timeline/TimelineViewContent";
 import { MonthViewContent } from "./components/month/MonthViewContent";
 import { PendingBookingsQueue } from "./components/PendingBookingsQueue";
+import { RoomsCardsViewContent } from "./components/cards/RoomsCardsViewContent";
 import { MeetingRoomsModalsContainer } from "./components/modals/MeetingRoomsModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useMeetingRooms } from "./hooks/useMeetingRooms";
@@ -18,6 +19,7 @@ const VIEW_ORDER: Record<string, number> = {
 export default function MeetingRoomsPage() {
   const m = useMeetingRooms();
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<MeetingRoom | null>(null);
   const [selectedRoomDetails, setSelectedRoomDetails] = useState<MeetingRoom | null>(null);
   const [successBooking, setSuccessBooking] = useState<{ room: MeetingRoom; form: BookingFormData } | null>(null);
   const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
@@ -95,7 +97,7 @@ export default function MeetingRoomsPage() {
           onJumpToToday={m.jumpToToday}
           branchFilter={m.branchFilter}
           setBranchFilter={m.setBranchFilter}
-          availableBranches={m.isHrDivisionScope ? m.branches : undefined}
+          availableBranches={m.isHrDivisionScope || m.isSuperAdmin || m.isAdmin || (m.branches && m.branches.length > 1) ? m.branches : undefined}
           filterFloor={m.filterFloor}
           setFilterFloor={m.setFilterFloor}
           filterRoomId={m.filterRoomId}
@@ -127,7 +129,7 @@ export default function MeetingRoomsPage() {
           key={m.viewMode}
           className={`w-full max-w-full overflow-x-hidden ${slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next"}`}
         >
-          {(m.viewMode === "timeline" || m.viewMode === "cards") && (
+          {m.viewMode === "timeline" && (
             <TimelineViewContent
               rooms={m.filteredRooms}
               bookings={m.activeDateBookings}
@@ -142,7 +144,25 @@ export default function MeetingRoomsPage() {
               canManageRooms={m.canApprove}
               totalRoomsCount={m.rooms.length}
               onSelectRoomDetails={setSelectedRoomDetails}
-              mobileViewStyle={m.viewMode === "timeline" ? "timeline" : "cards"}
+              mobileViewStyle="timeline"
+            />
+          )}
+
+          {m.viewMode === "cards" && (
+            <RoomsCardsViewContent
+              rooms={m.filteredRooms}
+              bookings={m.activeDateBookings}
+              searchQuery={m.searchQuery}
+              setSearchQuery={m.setSearchQuery}
+              onOpenBookModal={(room) => m.openBookModal(room, m.selectedDate)}
+              onSelectBooking={m.setSelectedBooking}
+              canManageRooms={m.canApprove}
+              onDeleteRoom={m.deleteRoom}
+              onEditRoom={setEditingRoom}
+              onSelectRoomDetails={setSelectedRoomDetails}
+              onCreateRoom={() => setCreateRoomOpen(true)}
+              onResetFilters={resetFilters}
+              totalRoomsCount={m.rooms.length}
             />
           )}
 
@@ -167,6 +187,8 @@ export default function MeetingRoomsPage() {
         handleBook={handleBookWithSuccess}
         createRoomOpen={createRoomOpen}
         setCreateRoomOpen={setCreateRoomOpen}
+        editingRoom={editingRoom}
+        setEditingRoom={setEditingRoom}
         selectedRoomDetails={selectedRoomDetails}
         setSelectedRoomDetails={setSelectedRoomDetails}
         successBooking={successBooking}

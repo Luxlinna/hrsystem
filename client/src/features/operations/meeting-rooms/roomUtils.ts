@@ -68,6 +68,9 @@ export const getFullName = (emp?: { first_name?: string; last_name?: string } | 
 };
 
 export const getRoomImage = (roomOrName?: MeetingRoom | string | null): string => {
+  if (roomOrName && typeof roomOrName === "object" && roomOrName.image_url) {
+    return roomOrName.image_url;
+  }
   const name = (typeof roomOrName === "object" ? roomOrName?.name : roomOrName)?.toLowerCase() || "";
   if (name.includes("vip") || name.includes("board")) {
     return "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=300&auto=format&fit=crop&q=80";

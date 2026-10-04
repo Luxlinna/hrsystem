@@ -24,7 +24,7 @@ export function useRoomsManagement({
 
     const { data, error } = await supabase
       .from("meeting_rooms")
-      .select("id, name, capacity, color, floor, branch_id, deleted_at, amenities, branches(id, name)")
+      .select("id, name, capacity, color, floor, branch_id, deleted_at, amenities, image_url, branches(id, name)")
       .is("deleted_at", null)
       .order("capacity");
 
@@ -33,8 +33,13 @@ export function useRoomsManagement({
       return;
     }
 
+    const [branchRes] = await Promise.all([
+      supabase.from("branches").select("id, name").is("deleted_at", null),
+    ]);
+    const branchMap = new Map((branchRes.data || []).map((b: any) => [b.id, b.name]));
+
     // Rooms belonging to this branch or shared company rooms (branch_id null),
-    // or all rooms when in cross-branch HR Division scope
+    // or all rooms when in cross-branch / Admin scope
     const roomsToEnrich = (data || []).filter((r: any) => {
       if (canViewCrossBranch || !targetBranch) {
         return true;
@@ -52,7 +57,7 @@ export function useRoomsManagement({
         ...r,
         floor,
         amenities,
-        branch_name: r.branches?.name || undefined,
+        branch_name: r.branches?.name || (r.branch_id ? branchMap.get(r.branch_id) : undefined),
       };
     });
 
@@ -79,13 +84,42 @@ export function useRoomsManagement({
     [loadRooms]
   );
 
+  const updateRoom = useCallback(
+    async (roomId: string, updates: Record<string, any>) => {
+      try {
+        const { error } = await supabase
+          .from("meeting_rooms")
+          .update(updates)
+          .eq("id", roomId);
+
+        if (error) throw error;
+        await loadRooms();
+        return true;
+      } catch (err: any) {
+        console.error("Failed to update room:", err);
+        return false;
+      }
+    },
+    [loadRooms]
+  );
+
   useEffect(() => {
     loadRooms();
+    const channel = supabase
+      .channel("meeting_rooms_realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_rooms" }, () => {
+        loadRooms();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [loadRooms]);
 
   return {
     rooms,
     loadRooms,
     deleteRoom,
+    updateRoom,
   };
 }
