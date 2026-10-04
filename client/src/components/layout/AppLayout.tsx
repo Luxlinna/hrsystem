@@ -92,12 +92,12 @@ function LayoutContent() {
       >
         <TopBar />
         <main
-          className="flex-1 min-w-0 w-full max-w-full pb-20 lg:pb-0"
+          className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden pb-20 lg:pb-0"
           style={{ paddingBottom: isMobile ? "calc(4.5rem + env(safe-area-inset-bottom, 0px))" : undefined }}
         >
           <div
             key={location.pathname + location.search}
-            className={isMobile ? (slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next") : undefined}
+            className={`w-full max-w-full overflow-x-hidden ${isMobile ? (slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next") : ""}`}
           >
             <Outlet />
           </div>

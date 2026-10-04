@@ -236,12 +236,10 @@
   0% {
     transform: translateX(100%);
     opacity: 0.3;
-    box-shadow: -20px 0 30px -5px rgba(0, 0, 0, 0.15);
   }
   100% {
     transform: translateX(0);
     opacity: 1;
-    box-shadow: none;
   }
 }
 
@@ -249,12 +247,10 @@
   0% {
     transform: translateX(-100%);
     opacity: 0.3;
-    box-shadow: 20px 0 30px -5px rgba(0, 0, 0, 0.15);
   }
   100% {
     transform: translateX(0);
     opacity: 1;
-    box-shadow: none;
   }
 }
 

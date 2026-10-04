@@ -67,7 +67,7 @@ export default function MeetingRoomsPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+    <div className="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
       {m.toast && (
         <div className={`fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto sm:max-w-sm z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${
           m.toast.type === "success" ? "bg-emerald-950/90 border-emerald-700/50 text-emerald-100" : m.toast.type === "error" ? "bg-rose-950/90 border-rose-700/50 text-rose-100" : "bg-slate-900/90 border-slate-700/50 text-white"
@@ -125,7 +125,7 @@ export default function MeetingRoomsPage() {
       ) : (
         <div
           key={m.viewMode}
-          className={slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next"}
+          className={`w-full max-w-full overflow-x-hidden ${slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next"}`}
         >
           {(m.viewMode === "timeline" || m.viewMode === "cards") && (
             <TimelineViewContent
