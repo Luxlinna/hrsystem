@@ -3,8 +3,8 @@ import fs from 'fs';
 
 const env = fs.readFileSync('.env', 'utf8');
 const getEnv = (k) => {
-  const m = env.match(new RegExp('^' + k + '=(.*)$', 'm'));
-  return m ? m[1].trim().replace(/^['"]|['"]$/g, '') : null;
+  const line = env.split('\n').find((l) => l.startsWith(`${k}=`));
+  return line ? line.slice(k.length + 1).trim().replace(/^['"]|['"]$/g, '') : null;
 };
 const supabase = createClient(getEnv('SUPABASE_URL'), getEnv('SUPABASE_SERVICE_ROLE_KEY'));
 

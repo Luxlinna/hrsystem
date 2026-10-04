@@ -48,7 +48,7 @@ export async function checkRateLimit(
     });
 
     if (error) {
-      console.warn(`[rate-limiter] RPC error for key "${key}":`, error.message);
+      console.warn("[rate-limiter] RPC error for key:", key, error.message);
       // Fail open on database error so legitimate users aren't locked out if DB transient error occurs
       return { allowed: true, currentCount: 1, retryAfterSeconds: 0 };
     }
@@ -60,7 +60,7 @@ export async function checkRateLimit(
       retryAfterSeconds: row?.retry_after_seconds ?? 0,
     };
   } catch (err: any) {
-    console.warn(`[rate-limiter] Exception for key "${key}":`, err?.message || err);
+    console.warn("[rate-limiter] Exception for key:", key, err?.message || err);
     return { allowed: true, currentCount: 1, retryAfterSeconds: 0 };
   }
 }
