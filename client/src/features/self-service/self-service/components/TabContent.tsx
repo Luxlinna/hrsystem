@@ -1,6 +1,5 @@
 import type { Employee } from "../types";
 import PayslipTab from "./PayslipTab";
-import LeaveTab from "./LeaveTab";
 import BenefitsTab from "./BenefitsTab";
 import CheckInTab from "./CheckInTab";
 import AttendanceTab from "./AttendanceTab";
@@ -20,9 +19,6 @@ export function TabContent({ activeTab, employee, employeeName, quickCheckIn, qu
     <>
       {activeTab === "payslips" && (
         <PayslipTab employeeId={employee.id} employeeName={employeeName} />
-      )}
-      {activeTab === "leave" && (
-        <LeaveTab employeeId={employee.id} employee={employee} />
       )}
       {activeTab === "attendance" && (
         <AttendanceTab employeeId={employee.id} employee={employee} />

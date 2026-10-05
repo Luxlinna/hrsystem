@@ -53,6 +53,10 @@ export function useHireCandidateActions({
 
   const handleSaveCandidate = useCallback(
     async (candidateForm: any, editingCandidate: Candidate | null, filesToUpload?: File[] | File | null) => {
+      if (!editingCandidate && !isAdminOrRecruiter) {
+        toast("Access Restricted", "Only HR personnel and Recruiters can register candidates.", "error");
+        return false;
+      }
       setUploadingResume(true);
       try {
         const ok = await executeSaveCandidate({ candidateForm, editingCandidate, filesToUpload, jobs });
@@ -65,7 +69,7 @@ export function useHireCandidateActions({
         setUploadingResume(false);
       }
     },
-    [loadData, setUploadingResume, jobs]
+    [loadData, setUploadingResume, jobs, isAdminOrRecruiter]
   );
 
   const handleSaveInterview = useCallback(

@@ -6,6 +6,7 @@ export interface AppRole {
   color: string;
   is_admin: boolean;
   branch_id?: string | null;
+  branch_ids?: string[] | null;
   work_location_id?: string | null;
   branch_name?: string | null;
   site_name?: string | null;
@@ -33,6 +34,7 @@ export interface AppRole {
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;
   candidate_approval_chairwoman_sign?: boolean;
+  candidates_manage?: boolean;
   hiring_requests_chairman_approve?: boolean;
   hiring_requests_branch_approve?: boolean;
   created_at: string;
@@ -45,7 +47,7 @@ export interface UserAssignment {
   display_name: string | null;
   role_id: number | null;
   created_at: string;
-  app_roles?: { id: number; name: string; color: string; is_admin?: boolean; branch_id?: string | null; work_location_id?: string | null } | null;
+  app_roles?: { id: number; name: string; color: string; is_admin?: boolean; branch_id?: string | null; branch_ids?: string[] | null; work_location_id?: string | null } | null;
   branch_id?: string | null;
   branch_name?: string | null;
   default_work_location_id?: string | null;
@@ -101,6 +103,7 @@ export interface RoleFormState {
   color: string;
   is_admin: boolean;
   branch_id?: string | null;
+  branch_ids?: string[] | null;
   work_location_id?: string | null;
   allowed_modules: string[];
   employees_manage: boolean;
@@ -126,6 +129,7 @@ export interface RoleFormState {
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;
   candidate_approval_chairwoman_sign?: boolean;
+  candidates_manage?: boolean;
   hiring_requests_chairman_approve?: boolean;
   hiring_requests_branch_approve?: boolean;
 }

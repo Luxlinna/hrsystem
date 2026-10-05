@@ -171,6 +171,7 @@ export const ACTION_OVERRIDES = [
   { group: "action" as const, key: "candidate_approval_hr_sign", label: "Candidate Approval Step 2: Can sign as HR Manager at HR Division (or delegate)", hint: SCOPE_HINTS.candidate_approval_hr_sign },
   { group: "action" as const, key: "candidate_approval_director_sign", label: "Candidate Approval Step 3: Can sign as HR Admin Director (or delegate)", hint: SCOPE_HINTS.candidate_approval_director_sign },
   { group: "action" as const, key: "candidate_approval_chairwoman_sign", label: "Candidate Approval Step 4: Final sign-off as Chairwoman", hint: SCOPE_HINTS.candidate_approval_chairwoman_sign },
+  { group: "action" as const, key: "candidates_manage", label: "Can register & add candidates to Talent Pipeline (HR / Recruiter)", hint: SCOPE_HINTS.candidates_manage },
   { group: "action" as const, key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: SCOPE_HINTS.employees_manage },
   { group: "action" as const, key: "exit_manage_settings", label: "Can manage Exit Settings (Exit Types & Reason Types)", hint: SCOPE_HINTS.exit_manage_settings },
   { group: "action" as const, key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: SCOPE_HINTS.attendance_notify },
@@ -245,6 +246,7 @@ export const CATEGORY_PRESETS: Record<string, CategoryPreset> = {
       performance_view_all_employees: true,
       disciplinary_view_all_employees: true,
       task_view_all_employees: true,
+      candidates_manage: false,
       payroll_view_all_employees: false,
     },
   },
@@ -347,6 +349,71 @@ export function getRoleCategoryKey(role: { name?: string; is_admin?: boolean; ca
     return "employee";
   }
   return "admin";
+}
+
+export function getShortBuName(name?: string | null): string {
+  if (!name) return "";
+  const trimmed = name.trim();
+  const normalized = trimmed.toUpperCase();
+
+  if (normalized.includes("HR ADMIN") || normalized.includes("HUMAN RESOURCE")) {
+    return "HR Admin";
+  }
+  if (normalized === "HEADQUARTERS" || normalized.includes("HEADQUARTER") || normalized === "HQ") {
+    return "HQ";
+  }
+
+  let shortName = trimmed
+    .replace(/UNIQUE\s+NOBLE/gi, "UN")
+    .replace(/HOLDINGS?/gi, "Holdings")
+    .replace(/INVESTMENTS?/gi, "Invest")
+    .replace(/TRADING/gi, "Trading")
+    .replace(/DEVELOPMENTS?/gi, "Dev")
+    .replace(/MANAGEMENT/gi, "Mgmt")
+    .replace(/ENTERPRISES?/gi, "Ent")
+    .replace(/LOGISTICS?/gi, "Logistics")
+    .replace(/INTERNATIONAL/gi, "Intl")
+    .replace(/CORPORATION/gi, "Corp")
+    .replace(/SERVICES?/gi, "Services")
+    .replace(/DIVISIONS?/gi, "Div")
+    .replace(/DEPARTMENTS?/gi, "Dept")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return shortName || trimmed;
+}
+
+export function getRoleParentCategoryName(role: { name?: string; is_admin?: boolean; category?: string | null; id?: number }): string {
+  const catKey = role.category || getRoleCategoryKey(role);
+  const catObj = ROLE_CATEGORIES.find((c) => c.key === catKey);
+  return catObj ? catObj.name : "Custom";
+}
+
+export function getRoleScopeLabel(role: { branch_name?: string | null; branch_ids?: string[] | null; branch_id?: string | null; site_name?: string | null }): string {
+  if (role.site_name) {
+    return `Site: ${getShortBuName(role.site_name)}`;
+  }
+  const bIds = role.branch_ids || (role.branch_id ? role.branch_id.split(",").map((s) => s.trim()).filter(Boolean) : []);
+  if (bIds.length === 0) {
+    return "Global (All BUs)";
+  }
+  if (role.branch_name) {
+    const parts = role.branch_name.split(",").map((s) => getShortBuName(s.trim())).filter(Boolean);
+    return parts.join(", ");
+  }
+  return `${bIds.length} BUs`;
+}
+
+export function formatRoleOptionLabel(role: { name?: string; is_admin?: boolean; category?: string | null; id?: number; branch_name?: string | null; branch_ids?: string[] | null; branch_id?: string | null; site_name?: string | null }): string {
+  const roleName = role.name || "Role";
+  const catName = getRoleParentCategoryName(role);
+  const scopeLabel = getRoleScopeLabel(role);
+  const isDirectArchetype = roleName.trim().toLowerCase() === catName.toLowerCase();
+
+  if (isDirectArchetype) {
+    return `${roleName} • ${scopeLabel}`;
+  }
+  return `${roleName} [Parent: ${catName}] • ${scopeLabel}`;
 }
 
 export const BLANK_ROLE: RoleFormState = {

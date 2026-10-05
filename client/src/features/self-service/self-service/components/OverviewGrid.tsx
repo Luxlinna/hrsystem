@@ -62,14 +62,9 @@ export function OverviewGrid({
       </button>
 
       {/* 2. Leave Balance / Pending */}
-      <button
-        type="button"
-        onClick={() => onTabChange("leave")}
-        className={`text-left bg-white dark:bg-slate-900 border rounded-xl p-3 sm:p-3.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 relative group ${
-          activeTab === "leave"
-            ? "border-[#253C7D] dark:border-[#29ABE2] ring-1 ring-[#253C7D]/25 bg-[#253C7D]/5 dark:bg-[#29ABE2]/10"
-            : "border-slate-200/80 dark:border-slate-800"
-        }`}
+      <Link
+        to="/leave"
+        className="text-left bg-white dark:bg-slate-900 border rounded-xl p-3 sm:p-3.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 relative group block border-slate-200/80 dark:border-slate-800"
       >
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -83,7 +78,7 @@ export function OverviewGrid({
         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
           {pendingLeaveCount > 0 ? "Under review" : "Request leave balance"}
         </p>
-      </button>
+      </Link>
 
       {/* 3. Latest Payslip */}
       <button

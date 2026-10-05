@@ -21,7 +21,6 @@ export default function Leave() {
   const [viewMode, setViewMode] = useState<"hub" | "settings" | "create_type">("hub");
   const [formMode, setFormMode] = useState<"self" | "for_employee">("self");
   const [showHolidaysModal, setShowHolidaysModal] = useState(false);
-  const [showApproverFlowModal, setShowApproverFlowModal] = useState(false);
 
   const handleOpenApprovalModal = useCallback((req: any, action: "approved" | "rejected") => {
     l.setSelectedRequest(req);
@@ -218,7 +217,6 @@ export default function Leave() {
           onOpenLeaveDeductions={() => {
             l.setActiveTab("balances");
           }}
-          onOpenApproverFlow={() => setShowApproverFlowModal(true)}
           onRequestLeave={() => {
             setFormMode("self");
             l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
@@ -327,9 +325,6 @@ export default function Leave() {
           {...l}
           onOpenApprovalModal={handleOpenApprovalModal}
           onOpenCancelModal={handleOpenCancelModal}
-          showApproverFlowModal={showApproverFlowModal}
-          setShowApproverFlowModal={setShowApproverFlowModal}
-          onApproverFlowSuccess={(msg) => l.setToast({ type: "success", message: msg })}
         />
 
         <HolidaysModal

@@ -8,6 +8,7 @@ interface HireHeaderProps {
   candidatesCount: number;
   activeTab: HireTab;
   canManage: boolean;
+  canManageCandidates?: boolean;
   onOpenCreateJob: () => void;
   onOpenCreateCandidate: () => void;
   onOpenImportCandidates?: () => void;
@@ -25,6 +26,7 @@ export const HireHeader = memo(function HireHeader({
   activeJobsCount,
   activeTab,
   canManage,
+  canManageCandidates,
   onOpenCreateJob,
   onOpenCreateCandidate,
   onOpenImportCandidates,
@@ -71,7 +73,7 @@ export const HireHeader = memo(function HireHeader({
           requests={requests}
         />
 
-        {activeTab === "candidates" && (
+        {activeTab === "candidates" && Boolean(canManageCandidates) && (
           <button
             type="button"
             onClick={onOpenCreateCandidate}

@@ -81,7 +81,7 @@ export function useSelfServiceData() {
       const today = todayYMD();
       const [attRes, leaveRes, payRes, notifRes, outsideRes] = await Promise.all([
         supabase.from("attendance_records").select("*").is("deleted_at", null).eq("employee_id", selectedEmployee.id).eq("date", today).maybeSingle(),
-        supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("employee_id", selectedEmployee.id).eq("status", "pending"),
+        supabase.from("leave_requests").select("id", { count: "exact", head: true }).or(`employee_id.eq.${selectedEmployee.id}`).eq("status", "pending"),
         supabase.from("payroll_records").select("*").eq("employee_id", selectedEmployee.id).order("month", { ascending: false }).limit(1).maybeSingle(),
         can("notifications")
           ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).or(`branch_id.is.null,branch_id.eq.${selectedEmployee.branch_id}`).eq("is_read", false)

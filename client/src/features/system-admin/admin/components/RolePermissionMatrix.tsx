@@ -534,38 +534,56 @@ export const RolePermissionMatrix = memo(function RolePermissionMatrix({
                                   <span className="text-[10px] uppercase font-bold text-gray-400 px-2 block mb-1">
                                     Custom Positions ({customPositions.length}):
                                   </span>
-                                  {customPositions.map((pos) => (
-                                    <div
-                                      key={pos.id}
-                                      className="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 text-[11px]"
-                                    >
-                                      <span className="truncate max-w-[120px]">{pos.name}</span>
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActiveMenuKey(null);
-                                            onOpenEditRole(pos);
-                                          }}
-                                          className="text-gray-400 hover:text-gray-700"
-                                          title="Edit"
-                                        >
-                                          <i className="ri-edit-line text-[10px]" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActiveMenuKey(null);
-                                            if (confirm(`Delete "${pos.name}"?`)) onDeleteRole(pos.id);
-                                          }}
-                                          className="text-gray-400 hover:text-red-600"
-                                          title="Delete"
-                                        >
-                                          <i className="ri-delete-bin-line text-[10px]" />
-                                        </button>
+                                  {customPositions.map((pos) => {
+                                    const bIds = pos.branch_ids || (pos.branch_id ? [pos.branch_id] : []);
+                                    const scopeText = pos.site_name
+                                      ? `Site: ${pos.site_name}`
+                                      : pos.branch_name
+                                      ? pos.branch_name
+                                      : bIds.length === 0
+                                      ? "Global (All BUs)"
+                                      : `${bIds.length} BUs`;
+
+                                    return (
+                                      <div
+                                        key={pos.id}
+                                        className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 text-[11px]"
+                                      >
+                                        <div className="flex flex-col min-w-0 pr-1">
+                                          <span className="truncate max-w-[130px] font-semibold text-gray-800 dark:text-slate-200">
+                                            {pos.name}
+                                          </span>
+                                          <span className="text-[9px] text-gray-400 dark:text-slate-400 truncate max-w-[130px]">
+                                            {scopeText}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuKey(null);
+                                              onOpenEditRole(pos);
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-[#253C7D] dark:hover:text-sky-400 cursor-pointer"
+                                            title="Edit"
+                                          >
+                                            <i className="ri-edit-line text-[11px]" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuKey(null);
+                                              if (confirm(`Delete "${pos.name}"?`)) onDeleteRole(pos.id);
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"
+                                            title="Delete"
+                                          >
+                                            <i className="ri-delete-bin-line text-[11px]" />
+                                          </button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               )}
 

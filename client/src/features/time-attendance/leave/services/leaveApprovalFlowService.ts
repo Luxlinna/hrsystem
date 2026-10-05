@@ -39,8 +39,16 @@ export const DEFAULT_APPROVAL_FLOW: ApproverStepConfig[] = [
   },
 ];
 
-export function getStoredApproverFlow(): ApproverStepConfig[] {
+export function getStoredApproverFlow(branchId?: string | null): ApproverStepConfig[] {
   try {
+    if (branchId) {
+      const buKey = `${STORAGE_KEY}_${branchId}`;
+      const buRaw = localStorage.getItem(buKey);
+      if (buRaw) {
+        const parsed = JSON.parse(buRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_APPROVAL_FLOW;
     const parsed = JSON.parse(raw);
@@ -53,10 +61,16 @@ export function getStoredApproverFlow(): ApproverStepConfig[] {
   return DEFAULT_APPROVAL_FLOW;
 }
 
-export function saveApproverFlow(steps: ApproverStepConfig[]): boolean {
+export function saveApproverFlow(
+  steps: ApproverStepConfig[],
+  branchId?: string | null
+): boolean {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(steps));
-    window.dispatchEvent(new Event("leave_approver_flow_updated"));
+    const key = branchId ? `${STORAGE_KEY}_${branchId}` : STORAGE_KEY;
+    localStorage.setItem(key, JSON.stringify(steps));
+    window.dispatchEvent(
+      new CustomEvent("leave_approver_flow_updated", { detail: { branchId } })
+    );
     return true;
   } catch {
     return false;

@@ -114,15 +114,25 @@ export function useAddUserFormData({
   const targetSiteId = selectedEmpObj?.default_work_location_id || (filterBranch && filterBranch.startsWith("site:") ? filterBranch.substring(5) : null);
 
   const { formBuRoles, formSiteRoles, formGlobalRoles } = useMemo(() => {
-    const buRoles = (roles || []).filter(
-      (r) => targetBranchId && r.branch_id === targetBranchId && !r.work_location_id
-    );
-    const siteRoles = (roles || []).filter(
-      (r) => targetSiteId && r.work_location_id === targetSiteId
-    );
-    const globalRoles = (roles || []).filter(
-      (r) => !r.branch_id && !r.work_location_id
-    );
+    const buRoles = (roles || []).filter((r) => {
+      if (r.work_location_id) return false;
+      const bIds = r.branch_ids || (r.branch_id ? r.branch_id.split(",").map((s) => s.trim()).filter(Boolean) : []);
+      if (bIds.length === 0) return false;
+      if (!targetBranchId) return true;
+      return bIds.includes(targetBranchId);
+    });
+
+    const siteRoles = (roles || []).filter((r) => {
+      if (!r.work_location_id) return false;
+      if (!targetSiteId) return true;
+      return r.work_location_id === targetSiteId;
+    });
+
+    const globalRoles = (roles || []).filter((r) => {
+      const bIds = r.branch_ids || (r.branch_id ? r.branch_id.split(",").map((s) => s.trim()).filter(Boolean) : []);
+      return bIds.length === 0 && !r.work_location_id;
+    });
+
     return { formBuRoles: buRoles, formSiteRoles: siteRoles, formGlobalRoles: globalRoles };
   }, [roles, targetBranchId, targetSiteId]);
 

@@ -1,5 +1,6 @@
 import type { AppRole, DirectoryEmployee, NewUserState } from "../types";
 import { EmployeeAutofillSelect } from "./EmployeeAutofillSelect";
+import { formatRoleOptionLabel } from "../constants";
 
 interface AddUserInputFieldsProps {
   accountType: "email" | "phone";
@@ -76,7 +77,7 @@ export function AddUserInputFields({
             Assign Role Position
           </label>
           {selectedEmpObj?.branch_name && (
-            <span className="text-[10px] text-[#253C7D] dark:text-sky-400 font-medium">
+            <span className="text-[10px] text-[#253C7D] dark:text-sky-400 font-medium truncate max-w-[150px]">
               Filtered: {selectedEmpObj.branch_name}
             </span>
           )}
@@ -88,22 +89,28 @@ export function AddUserInputFields({
         >
           <option value="">No role (no access until assigned)</option>
           {formBuRoles.length > 0 && (
-            <optgroup label={`${selectedEmpObj?.branch_name || "BU"} Roles`}>
+            <optgroup label={`${selectedEmpObj?.branch_name || "Business Unit"} Roles`}>
               {formBuRoles.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <option key={r.id} value={r.id}>
+                  {formatRoleOptionLabel(r)}
+                </option>
               ))}
             </optgroup>
           )}
           {formSiteRoles.length > 0 && (
             <optgroup label={`${selectedEmpObj?.site_name || "Site"} Roles`}>
               {formSiteRoles.map((r) => (
-                <option key={r.id} value={r.id}>↳ {r.name} (Site)</option>
+                <option key={r.id} value={r.id}>
+                  ↳ {formatRoleOptionLabel(r)}
+                </option>
               ))}
             </optgroup>
           )}
           <optgroup label="Global Roles">
             {formGlobalRoles.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
+              <option key={r.id} value={r.id}>
+                {formatRoleOptionLabel(r)}
+              </option>
             ))}
           </optgroup>
         </select>

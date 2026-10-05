@@ -43,10 +43,11 @@ export const HiringRequestCard = memo(function HiringRequestCard({
 }: HiringRequestCardProps) {
   const [searchParams] = useSearchParams();
   const isHighlighted = searchParams.get("highlight") === r.id;
-  const isOwner =
+  const isOwner = Boolean(
     (myEmployeeId && r.requested_by_id === myEmployeeId) ||
     (actorEmail && r.requested_by_email?.toLowerCase() === actorEmail.toLowerCase()) ||
-    (actorName && r.requested_by_name?.toLowerCase() === actorName.toLowerCase());
+    (actorName && r.requested_by_name?.toLowerCase() === actorName.toLowerCase())
+  );
 
   const canDeleteThisRequest = isOwner || isSuperAdmin || isAdmin;
   const isStage1Branch = !r.status || r.status === "pending" || r.status === "pending_branch_review";

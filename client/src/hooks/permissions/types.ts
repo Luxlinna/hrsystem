@@ -32,6 +32,7 @@ export interface UserRole {
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;
   candidate_approval_chairwoman_sign?: boolean;
+  candidates_manage?: boolean;
 }
 
 export type RoleCategoryKey = "super_admin" | "admin" | "chairperson" | "line_manager" | "employee";

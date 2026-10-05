@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import type { AppRole, UserAssignment } from "../types";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 import { UserRowActions } from "./UserRowActions";
+import { formatRoleOptionLabel } from "../constants";
 
 interface UserRowItemProps {
   user: UserAssignment;
@@ -42,8 +43,10 @@ export const UserRowItem = memo(function UserRowItem({
 
     const relevant = assignableRoles.filter((r) => {
       if (user.role_id && r.id === user.role_id) return true;
-      if (!r.branch_id && !r.work_location_id) return true;
-      if (userBranch && r.branch_id === userBranch) {
+      const bIds = r.branch_ids || (r.branch_id ? r.branch_id.split(",").map((s) => s.trim()).filter(Boolean) : []);
+      const isGlobal = bIds.length === 0 && !r.work_location_id;
+      if (isGlobal) return true;
+      if (userBranch && bIds.includes(userBranch)) {
         if (r.work_location_id) {
           return Boolean(userSite && r.work_location_id === userSite);
         }
@@ -54,9 +57,15 @@ export const UserRowItem = memo(function UserRowItem({
     });
 
     return {
-      buRoles: relevant.filter((r) => Boolean(r.branch_id && !r.work_location_id)),
+      buRoles: relevant.filter((r) => {
+        const bIds = r.branch_ids || (r.branch_id ? r.branch_id.split(",").map((s) => s.trim()).filter(Boolean) : []);
+        return bIds.length > 0 && !r.work_location_id;
+      }),
       siteRoles: relevant.filter((r) => Boolean(r.work_location_id)),
-      globalRoles: relevant.filter((r) => !r.branch_id && !r.work_location_id),
+      globalRoles: relevant.filter((r) => {
+        const bIds = r.branch_ids || (r.branch_id ? r.branch_id.split(",").map((s) => s.trim()).filter(Boolean) : []);
+        return bIds.length === 0 && !r.work_location_id;
+      }),
     };
   }, [user.branch_id, user.default_work_location_id, user.role_id, assignableRoles, isSuperAdmin]);
 
@@ -133,27 +142,27 @@ export const UserRowItem = memo(function UserRowItem({
           <select
             value={user.role_id || ""}
             onChange={(e) => onUpdateUserRole(user, e.target.value ? parseInt(e.target.value) : null)}
-            className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30 dark:focus:ring-sky-500/30 cursor-pointer shadow-2xs h-[34px] max-w-[210px]"
+            className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30 dark:focus:ring-sky-500/30 cursor-pointer shadow-2xs h-[34px] max-w-[240px]"
           >
             <option value="">No Role (No Access)</option>
             {buRoles.length > 0 && (
-              <optgroup label={`${user.branch_name || "BU"} Roles`}>
+              <optgroup label={`${user.branch_name || "Business Unit"} Roles`}>
                 {buRoles.map((role) => (
-                  <option key={role.id} value={role.id}>{role.name}</option>
+                  <option key={role.id} value={role.id}>{formatRoleOptionLabel(role)}</option>
                 ))}
               </optgroup>
             )}
             {siteRoles.length > 0 && (
               <optgroup label={`${user.site_name || "Site"} Roles`}>
                 {siteRoles.map((role) => (
-                  <option key={role.id} value={role.id}>↳ {role.name} (Site)</option>
+                  <option key={role.id} value={role.id}>↳ {formatRoleOptionLabel(role)}</option>
                 ))}
               </optgroup>
             )}
             {globalRoles.length > 0 && (
               <optgroup label="Global Roles">
                 {globalRoles.map((role) => (
-                  <option key={role.id} value={role.id}>{role.name}</option>
+                  <option key={role.id} value={role.id}>{formatRoleOptionLabel(role)}</option>
                 ))}
               </optgroup>
             )}

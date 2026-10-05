@@ -75,13 +75,13 @@ export function useHire() {
 
   const isAdminOrRecruiter = Boolean(
     isSuperAdmin ||
-    isAdmin ||
     role?.is_admin ||
+    role?.candidates_manage ||
     isHrDivision ||
     isHrDivisionBranch ||
     role?.hiring_requests_hr_admin_approve ||
     role?.hiring_requests_hr_review ||
-    /(recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer|admin)\b/i.test(role?.name || "") ||
+    /(recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer)\b/i.test(role?.name || "") ||
     /(recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer)\b/i.test(myJobRole || "")
   );
 
@@ -95,7 +95,7 @@ export function useHire() {
 
   const modals = useHireModals({
     branches: data.branches, jobs: data.jobs, candidates: data.candidates,
-    selectedBranchId, effectiveBranchId, userBranchId, targetBranch,
+    selectedBranchId, effectiveBranchId, userBranchId, targetBranch, isAdminOrRecruiter,
   });
 
   const actions = useHireActions({

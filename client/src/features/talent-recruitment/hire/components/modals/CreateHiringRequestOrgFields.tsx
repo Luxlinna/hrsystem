@@ -17,13 +17,7 @@ interface Props {
 }
 
 export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrgFields({
-  form,
-  setForm,
-  isSuperAdmin,
-  assignedBuName,
-  assignedBuId,
-  parentBranches,
-  buSites,
+  form, setForm, isSuperAdmin, assignedBuName, assignedBuId, parentBranches, buSites,
 }: Props) {
   const activeBuId = form.branch_id || assignedBuId;
   const { businessUnits, divisions: catDivisions, departments, workLocations, companies } = useOrgMasterCategories(activeBuId);
@@ -34,41 +28,29 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
     return list.filter((d) => (d.status || "active") === "active");
   }, [liveDivisions, catDivisions]);
 
-  // Combine parent branches with Org master business units so Super Admin sees every BU in the database
   const allParentBUs = useMemo(() => {
-    if (businessUnits.length > 0) {
-      return businessUnits;
-    }
-    return parentBranches.map((b) => ({
-      id: b.id,
-      name: b.name,
-      company_name: b.name,
-      status: "active",
-    }));
+    if (businessUnits.length > 0) return businessUnits;
+    return parentBranches.map((b) => ({ id: b.id, name: b.name, company_name: b.name, status: "active" }));
   }, [businessUnits, parentBranches]);
 
   const activeBuName = allParentBUs.find((b) => b.id === activeBuId)?.name || form.business_unit || assignedBuName;
 
-  // Available sites for this BU (from work_locations and sub-branches)
   const availableSites = useMemo(() => {
     const list = [
       { id: activeBuId, name: `${activeBuName} (Main Office)` },
-      ...workLocations
-        .filter((w) => !w.branch_id || w.branch_id === activeBuId)
-        .map((w) => ({ id: w.id, name: w.name })),
+      ...workLocations.filter((w) => !w.branch_id || w.branch_id === activeBuId).map((w) => ({ id: w.id, name: w.name })),
       ...buSites.map((b) => ({ id: b.id, name: b.name })),
     ];
-    return list.filter((site, index, self) => index === self.findIndex((s) => s.name === site.name));
+    return list.filter((site, idx, arr) => idx === arr.findIndex((s) => s.name === site.name));
   }, [activeBuId, activeBuName, workLocations, buSites]);
 
   useEffect(() => {
-    if (!form.company && companies.length > 0) {
-      setForm((prev) => ({ ...prev, company: companies[0] }));
-    }
-    if (!form.site && availableSites.length > 0) {
-      setForm((prev) => ({ ...prev, site: availableSites[0].name }));
-    }
-  }, [form.company, form.site, companies, availableSites, setForm]);
+    setForm((prev) => ({
+      ...prev,
+      company: !prev.company && companies.length > 0 ? companies[0] : prev.company,
+      site: !prev.site && availableSites.length > 0 ? availableSites[0].name : prev.site,
+    }));
+  }, [companies, availableSites, setForm]);
 
   return (
     <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs space-y-2.5">
@@ -77,15 +59,10 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
           <i className="ri-git-merge-line text-blue-600 text-sm" />
           <span>Organizational Placement & Structure</span>
         </div>
-        {!isSuperAdmin ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-semibold border border-blue-100">
-            <i className="ri-shield-check-line text-blue-600 text-xs" /> Scoped to Your BU
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-semibold border border-purple-100">
-            <i className="ri-shield-star-line text-purple-600 text-xs" /> Super Admin Access
-          </span>
-        )}
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${!isSuperAdmin ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-purple-50 text-purple-700 border-purple-100"}`}>
+          <i className={!isSuperAdmin ? "ri-shield-check-line text-blue-600 text-xs" : "ri-shield-star-line text-purple-600 text-xs"} />
+          <span>{!isSuperAdmin ? "Scoped to Your BU" : "Super Admin Access"}</span>
+        </span>
       </div>
 
       {/* 1. Business Unit & Company */}
@@ -94,12 +71,8 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
           <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Business Unit (BU) <span className="text-rose-500 font-bold">*</span></label>
           {!isSuperAdmin ? (
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                <i className="ri-building-line" />
-              </div>
-              <div className="w-full pl-8 pr-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center shadow-2xs">
-                {assignedBuName}
-              </div>
+              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs"><i className="ri-building-line" /></div>
+              <div className="w-full pl-8 pr-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center shadow-2xs">{assignedBuName}</div>
             </div>
           ) : (
             <ModernSearchSelect
@@ -157,19 +130,10 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
           <ModernSearchSelect
             options={[
               { id: "none", name: "None / General (Not assigned)" },
-              ...allDivisions.map((div) => ({
-                id: div.id,
-                name: div.name,
-                code: div.code || undefined,
-              })),
+              ...allDivisions.map((div) => ({ id: div.id, name: div.name, code: div.code || undefined })),
             ]}
             value={form.division || "None / General (Not assigned)"}
-            onChange={(divName) =>
-              setForm((prev) => ({
-                ...prev,
-                division: divName === "None / General (Not assigned)" ? "" : divName,
-              }))
-            }
+            onChange={(divName) => setForm((prev) => ({ ...prev, division: divName === "None / General (Not assigned)" ? "" : divName }))}
             icon="ri-node-tree"
             placeholder="Select Division..."
             headerTitle="Organization Divisions"
@@ -201,7 +165,7 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
               type="text"
               placeholder="e.g. Floor 3, Building A, Remote..."
               value={form.location || ""}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
               className="w-full pl-8 pr-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 shadow-2xs"
             />
           </div>

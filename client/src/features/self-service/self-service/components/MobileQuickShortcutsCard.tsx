@@ -16,7 +16,7 @@ export const MobileQuickShortcutsCard = memo(function MobileQuickShortcutsCard({
   canEmployees,
 }: MobileQuickShortcutsCardProps) {
   const quickShortcuts = [
-    { id: "leave", label: "Ask Leave", icon: "ri-calendar-event-line", action: () => onNavigateTab("leave"), hasDot: false },
+    { id: "leave", label: "Ask Leave", icon: "ri-calendar-event-line", action: () => onNavigatePath("/leave"), hasDot: false },
     { id: "attendance", label: "Attendance", icon: "ri-fingerprint-line", action: () => onNavigateTab("attendance"), hasDot: false },
     { id: "announcements", label: "Announcement", icon: "ri-megaphone-line", action: () => onNavigatePath("/announcements"), hasDot: false },
     { id: "meeting-rooms", label: "Booking Room", icon: "ri-door-open-line", action: () => onNavigatePath("/meeting-rooms"), hasDot: false },

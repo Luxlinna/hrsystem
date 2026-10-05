@@ -85,7 +85,6 @@ export async function submitHiringRequest(params: SubmitHiringRequestParams) {
 
   const payload = {
     title: (requestForm.title || requestForm.position || "").trim(),
-    position: (requestForm.position || requestForm.title || "").trim(),
     department: requestForm.department.trim(),
     division: requestForm.division?.trim() || null,
     company: requestForm.company?.trim() || "UNI",
@@ -116,7 +115,6 @@ export async function submitHiringRequest(params: SubmitHiringRequestParams) {
     requested_by_email: actorEmail || null,
     headcount: Number(requestForm.headcount) || 1,
     employment_type: requestForm.employment_type || requestForm.employee_type || "FULL-TIME",
-    employee_type: requestForm.employee_type || requestForm.employment_type || "FULL-TIME",
     employee_level: requestForm.employee_level?.trim() || null,
     contract_type: requestForm.contract_type?.trim() || null,
     salary_min: Number(requestForm.salary_min) || null,
@@ -142,8 +140,8 @@ export async function submitHiringRequest(params: SubmitHiringRequestParams) {
       .select("*, branches(name)")
       .single();
 
-    // Fallback: If DB hasn't migrated some optional columns yet, omit them and retry
-    if (error && error.message && /column.*does not exist/i.test(error.message)) {
+    // Fallback: If DB schema cache or optional column is missing, sanitize and retry
+    if (error && error.message && (/column.*does not exist/i.test(error.message) || /could not find the '.*' column/i.test(error.message) || /schema cache/i.test(error.message))) {
       const sanitizedPayload = { ...insertPayload };
       delete (sanitizedPayload as any).site;
       delete (sanitizedPayload as any).employee_level;

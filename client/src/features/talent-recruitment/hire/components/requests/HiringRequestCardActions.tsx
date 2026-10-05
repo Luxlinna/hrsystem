@@ -41,7 +41,7 @@ export const HiringRequestCardActions = memo(function HiringRequestCardActions({
             onClick={() => onOpenDecision(r, "approved")}
             className="flex-1 lg:w-40 py-1.5 px-2.5 rounded-lg bg-[#253C7D] hover:bg-[#1B2B5A] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
           >
-            <i className="ri-send-plane-fill text-xs" /> Endorse Requisition
+            <i className="ri-checkbox-circle-line text-xs" /> Approve Requisition
           </button>
           <button
             onClick={() => onOpenDecision(r, "rejected")}

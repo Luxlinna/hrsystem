@@ -3,7 +3,6 @@ import { LeaveRequestModal } from "./LeaveRequestModal";
 import { LeaveApprovalModal } from "./LeaveApprovalModal";
 import { LeaveCancelModal } from "./LeaveCancelModal";
 import { LeaveInspectModal } from "./LeaveInspectModal";
-import { LeaveApproverFlowModal } from "../settings/LeaveApproverFlowModal";
 import type { Employee, LeaveRequest, LeaveFormData } from "../../types";
 
 interface LeaveModalsContainerProps {
@@ -47,10 +46,6 @@ interface LeaveModalsContainerProps {
   hasBuAdminEndorseAccess?: boolean;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
-
-  showApproverFlowModal?: boolean;
-  setShowApproverFlowModal?: (val: boolean) => void;
-  onApproverFlowSuccess?: (msg: string) => void;
 }
 
 export const LeaveModalsContainer = memo(function LeaveModalsContainer({
@@ -91,9 +86,6 @@ export const LeaveModalsContainer = memo(function LeaveModalsContainer({
   hasBuAdminEndorseAccess,
   onOpenApprovalModal,
   onOpenCancelModal,
-  showApproverFlowModal = false,
-  setShowApproverFlowModal,
-  onApproverFlowSuccess,
 }: LeaveModalsContainerProps) {
   return (
     <>
@@ -146,19 +138,7 @@ export const LeaveModalsContainer = memo(function LeaveModalsContainer({
         hasBuAdminEndorseAccess={hasBuAdminEndorseAccess}
         onOpenApprovalModal={onOpenApprovalModal}
         onOpenCancelModal={onOpenCancelModal}
-        onOpenFlowSettings={
-          setShowApproverFlowModal ? () => setShowApproverFlowModal(true) : undefined
-        }
       />
-
-      {setShowApproverFlowModal && (
-        <LeaveApproverFlowModal
-          isOpen={showApproverFlowModal}
-          onClose={() => setShowApproverFlowModal(false)}
-          employees={employees}
-          onSuccess={onApproverFlowSuccess}
-        />
-      )}
     </>
   );
 });

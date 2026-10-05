@@ -64,5 +64,6 @@ export function toUserRole(data: any): UserRole | null {
     candidate_approval_hr_sign: !!(r.candidate_approval_hr_sign ?? localScopes.candidate_approval_hr_sign),
     candidate_approval_director_sign: !!(r.candidate_approval_director_sign ?? localScopes.candidate_approval_director_sign),
     candidate_approval_chairwoman_sign: !!(r.candidate_approval_chairwoman_sign ?? localScopes.candidate_approval_chairwoman_sign),
+    candidates_manage: !!(r.candidates_manage ?? localScopes.candidates_manage),
   };
 }

@@ -51,7 +51,7 @@ export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOp
   const rawBu = r.branches?.name || r.business_unit || "OPS Solutions Co ., Ltd";
   const isOps = rawBu.toLowerCase().includes("ops");
   const buName = opts?.businessUnit || (branding.isHrDivision ? branding.companyName : (isOps ? "OPS Solutions Co ., Ltd" : rawBu));
-  const buLogo = branding.logo;
+  const buLogo = opts?.buLogo || branding.logo;
 
   const division = opts?.division || r.department || (r.division ? `${r.department} / ${r.division}` : "IT and Development");
   const jobTitle = opts?.jobTitle || r.title || "Mobile Developer";

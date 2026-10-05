@@ -11,7 +11,6 @@ interface LeaveHeaderProps {
   onCreateNewLeave?: () => void;
   onOpenLeaveSettings?: () => void;
   onOpenLeaveDeductions?: () => void;
-  onOpenApproverFlow?: () => void;
   canManageSettings?: boolean;
   onToast?: (toast: { type: "success" | "info" | "error"; message: string }) => void;
   onOpenHolidaysModal?: () => void;
@@ -27,7 +26,6 @@ export const LeaveHeader = memo(function LeaveHeader({
   onCreateNewLeave,
   onOpenLeaveSettings,
   onOpenLeaveDeductions,
-  onOpenApproverFlow,
   canManageSettings = true,
   onToast,
   onOpenHolidaysModal,
@@ -163,22 +161,6 @@ export const LeaveHeader = memo(function LeaveHeader({
               >
                 <i className="ri-file-list-3-line text-slate-500 text-sm" />
                 <span>Leave Deductions</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                  if (onOpenApproverFlow) {
-                    onOpenApproverFlow();
-                  } else if (onToast) {
-                    onToast({ type: "info", message: "Opening Approver Flow Setting" });
-                  }
-                }}
-                className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-semibold text-[#253C7D] border-t border-slate-100"
-              >
-                <i className="ri-node-tree text-[#253C7D] text-sm" />
-                <span>Approver Flow Settings</span>
               </button>
             </div>
           )}

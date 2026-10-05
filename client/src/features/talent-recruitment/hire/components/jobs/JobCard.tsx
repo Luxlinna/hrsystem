@@ -8,7 +8,7 @@ interface JobCardProps {
   onClose: (id: string) => void;
   onReopen: (id: string) => void;
   onDelete: (id: string, title: string) => void;
-  onAddCandidate: (jobId: string) => void;
+  onAddCandidate?: (jobId: string) => void;
 }
 
 export const JobCard = memo(function JobCard({
@@ -86,13 +86,17 @@ export const JobCard = memo(function JobCard({
       </div>
 
       <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-        <button
-          onClick={() => onAddCandidate(job.id)}
-          className="text-xs font-bold text-[#253C7D] hover:bg-[#253C7D]/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
-        >
-          <i className="ri-user-add-line" />
-          + Candidate
-        </button>
+        {onAddCandidate ? (
+          <button
+            onClick={() => onAddCandidate(job.id)}
+            className="text-xs font-bold text-[#253C7D] hover:bg-[#253C7D]/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+          >
+            <i className="ri-user-add-line" />
+            + Candidate
+          </button>
+        ) : (
+          <div />
+        )}
 
         <div className="flex items-center gap-1">
           <button

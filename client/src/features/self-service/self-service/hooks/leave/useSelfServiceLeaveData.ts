@@ -1,6 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Employee, LeaveRequest, LeaveTypePolicy } from "@/features/time-attendance/leave/types";
+import type { Employee, LeaveRequest } from "@/features/time-attendance/leave/types";
+import { normalizeLeaveRequest } from "@/features/time-attendance/leave/hooks/useLeaveData";
+import { useSelfServiceLeaveMetadata } from "./useSelfServiceLeaveMetadata";
+
+interface CachedLeaveData {
+  employeeId: string;
+  requests: LeaveRequest[];
+  timestamp: number;
+}
+
+let cachedLeaveData: CachedLeaveData | null = null;
+
+export function invalidateSelfServiceLeaveCache() {
+  cachedLeaveData = null;
+}
 
 interface UseSelfServiceLeaveDataProps {
   employeeId: string;
@@ -13,118 +27,80 @@ export function useSelfServiceLeaveData({
   initialEmployee,
   onStatusToast,
 }: UseSelfServiceLeaveDataProps) {
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [entitlement, setEntitlement] = useState(18);
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(
-    initialEmployee || null
+  const isCacheHit = Boolean(cachedLeaveData && cachedLeaveData.employeeId === employeeId);
+  const [requests, setRequests] = useState<LeaveRequest[]>(() =>
+    isCacheHit && cachedLeaveData ? cachedLeaveData.requests : []
   );
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
-  const [myApproverName, setMyApproverName] = useState<string>("");
-  const [hrApprovers, setHrApprovers] = useState<Employee[]>([]);
-  const [leaveTypePolicies, setLeaveTypePolicies] = useState<LeaveTypePolicy[]>([]);
+  const [loading, setLoading] = useState<boolean>(() => !isCacheHit);
+
+  const meta = useSelfServiceLeaveMetadata({
+    employeeId,
+    initialEmployee,
+  });
 
   const fetchLeave = useCallback(async () => {
     if (!employeeId) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from("leave_requests")
-      .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at")
-      .eq("employee_id", employeeId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-    setRequests((data as LeaveRequest[]) || []);
-    setLoading(false);
-  }, [employeeId]);
+    if (!cachedLeaveData || cachedLeaveData.employeeId !== employeeId) {
+      setLoading(true);
+    }
+    try {
+      let empIds = [employeeId];
+      const matchEmail = meta.currentEmployee?.email || initialEmployee?.email;
+      const matchPhone = meta.currentEmployee?.phone || initialEmployee?.phone;
+      const matchFirst = meta.currentEmployee?.first_name || initialEmployee?.first_name;
+      const matchLast = meta.currentEmployee?.last_name || initialEmployee?.last_name;
+
+      const filters: string[] = [];
+      if (matchEmail) filters.push(`email.ilike.${matchEmail.trim().toLowerCase()}`);
+      if (matchPhone) filters.push(`phone.eq.${matchPhone.trim()}`);
+      if (matchFirst && matchLast) {
+        filters.push(`and(first_name.ilike.${matchFirst.trim()},last_name.ilike.${matchLast.trim()})`);
+      }
+
+      if (filters.length > 0) {
+        const { data: siblings } = await supabase
+          .from("employees")
+          .select("id")
+          .or(filters.join(","))
+          .is("deleted_at", null);
+        if (siblings && siblings.length > 0) {
+          empIds = Array.from(new Set([...empIds, ...siblings.map((s) => s.id)]));
+        }
+      }
+
+      let query = supabase
+        .from("leave_requests")
+        .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      if (empIds.length === 1) {
+        query = query.eq("employee_id", empIds[0]);
+      } else {
+        query = query.in("employee_id", empIds);
+      }
+
+      const { data } = await query;
+      const normalized = ((data as LeaveRequest[]) || []).map(normalizeLeaveRequest);
+      cachedLeaveData = { employeeId, requests: normalized, timestamp: Date.now() };
+      setRequests(normalized);
+    } catch (err) {
+      console.error("Error fetching self-service leave:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    employeeId,
+    meta.currentEmployee?.email,
+    meta.currentEmployee?.phone,
+    meta.currentEmployee?.first_name,
+    meta.currentEmployee?.last_name,
+    initialEmployee,
+  ]);
 
   useEffect(() => {
     fetchLeave();
   }, [fetchLeave]);
-
-  useEffect(() => {
-    if (!employeeId) return;
-    let isMounted = true;
-
-    async function loadMetadata() {
-      try {
-        const { data: empData } = await supabase
-          .from("employees")
-          .select(
-            "id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id"
-          )
-          .eq("id", employeeId)
-          .maybeSingle();
-
-        if (!isMounted) return;
-        const activeEmp = (empData || initialEmployee || null) as Employee | null;
-        if (activeEmp) {
-          setCurrentEmployee(activeEmp);
-          setEntitlement(activeEmp.annual_leave_days ?? 18);
-        }
-
-        let mgr: Employee | null = null;
-        if (activeEmp?.reports_to) {
-          const { data: mgrData } = await supabase
-            .from("employees")
-            .select(
-              "id, first_name, last_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id"
-            )
-            .eq("id", activeEmp.reports_to)
-            .maybeSingle();
-          if (mgrData && isMounted) {
-            mgr = mgrData as Employee;
-            setMyApproverName(`${mgrData.first_name} ${mgrData.last_name}`.trim());
-          }
-        }
-
-        const { data: hrStaff } = await supabase
-          .from("employees")
-          .select(
-            "id, first_name, last_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id"
-          )
-          .or("department.ilike.%hr%,role.ilike.%hr%")
-          .is("deleted_at", null)
-          .order("first_name");
-
-        if (hrStaff && isMounted) {
-          setHrApprovers(hrStaff as Employee[]);
-        }
-
-        const { data: policies } = await supabase
-          .from("leave_type_policies")
-          .select("type, default_days");
-        if (policies && isMounted) {
-          setLeaveTypePolicies(policies as LeaveTypePolicy[]);
-        }
-
-        const { data: allStaff } = await supabase
-          .from("employees")
-          .select(
-            "id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id"
-          )
-          .is("deleted_at", null)
-          .order("first_name");
-
-        if (isMounted) {
-          const combined = [
-            ...(allStaff || []),
-            ...(activeEmp ? [activeEmp] : []),
-            ...(mgr ? [mgr] : []),
-            ...((hrStaff as Employee[]) || []),
-          ];
-          const uniqueStaff = Array.from(new Map(combined.map((item) => [item.id, item])).values());
-          setAllEmployees(uniqueStaff);
-        }
-      } catch (err) {
-        console.error("Error loading leave context metadata:", err);
-      }
-    }
-
-    loadMetadata();
-    return () => {
-      isMounted = false;
-    };
-  }, [employeeId, initialEmployee]);
 
   // Real-time subscription: live updates without refresh
   useEffect(() => {
@@ -140,10 +116,12 @@ export function useSelfServiceLeaveData({
           filter: `employee_id=eq.${employeeId}`,
         },
         (payload) => {
-          const updated = payload.new as LeaveRequest;
-          setRequests((prev) =>
-            prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
-          );
+          const updated = normalizeLeaveRequest(payload.new as LeaveRequest);
+          setRequests((prev) => {
+            const next = prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r));
+            cachedLeaveData = { employeeId, requests: next, timestamp: Date.now() };
+            return next;
+          });
           if (updated.status === "approved" || updated.status === "rejected") {
             onStatusToast(
               updated.status === "approved" ? "success" : "error",
@@ -163,8 +141,12 @@ export function useSelfServiceLeaveData({
           filter: `employee_id=eq.${employeeId}`,
         },
         (payload) => {
-          const newReq = payload.new as LeaveRequest;
-          setRequests((prev) => [newReq, ...prev]);
+          const newReq = normalizeLeaveRequest(payload.new as LeaveRequest);
+          setRequests((prev) => {
+            const next = [newReq, ...prev];
+            cachedLeaveData = { employeeId, requests: next, timestamp: Date.now() };
+            return next;
+          });
         }
       )
       .subscribe();
@@ -177,12 +159,12 @@ export function useSelfServiceLeaveData({
   return {
     requests,
     loading,
-    entitlement,
-    currentEmployee,
-    allEmployees,
-    myApproverName,
-    hrApprovers,
-    leaveTypePolicies,
+    entitlement: meta.entitlement,
+    currentEmployee: meta.currentEmployee,
+    allEmployees: meta.allEmployees,
+    myApproverName: meta.myApproverName,
+    hrApprovers: meta.hrApprovers,
+    leaveTypePolicies: meta.leaveTypePolicies,
     fetchLeave,
   };
 }

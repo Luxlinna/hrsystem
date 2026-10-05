@@ -10,7 +10,6 @@ export const SELF_SERVICE_TABS = [
   { id: "attendance", label: "My Attendance", icon: "ri-calendar-check-line" },
   { id: "checkin", label: "Check In/Out", icon: "ri-fingerprint-line" },
   { id: "payslips", label: "My Payslips", icon: "ri-file-list-3-line" },
-  { id: "leave", label: "My Leave", icon: "ri-calendar-line" },
   { id: "work-outside", label: "Work Outside", icon: "ri-map-pin-line" },
   { id: "daily-report", label: "Daily Report", icon: "ri-file-chart-line" },
   { id: "benefits", label: "My Benefits", icon: "ri-shield-star-line" },

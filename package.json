@@ -46,12 +46,15 @@
     "braces": "^3.0.3",
     "micromatch": "^4.0.8",
     "protobufjs": "^7.4.0",
-    "@grpc/grpc-js": "^1.13.6",
+    "@grpc/grpc-js": "^1.14.5",
     "deepmerge-ts": "^8.0.0",
     "mysql2": "^3.24.0",
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "^1.14.5"
+    },
     "firebase": {
       "@firebase/firestore": {
-        "@grpc/grpc-js": "^1.13.6"
+        "@grpc/grpc-js": "^1.14.5"
       }
     },
     "tailwindcss": {

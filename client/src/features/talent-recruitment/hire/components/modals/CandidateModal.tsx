@@ -73,7 +73,20 @@ export const CandidateModal = memo(function CandidateModal({
     return Boolean(isHrDivisionBranch);
   }, [form.job_posting_id, jobs, branches, isHrDivisionBranch]);
 
-  // Only employees belonging to HR Division or holding HR / Recruiter roles are eligible recruiters
+  // Group vacancies by Business Unit / Organization position
+  const groupedJobs = useMemo(() => {
+    const map = new Map<string, { buName: string; list: Job[] }>();
+    (jobs || []).forEach((j) => {
+      const buName = j.branches?.name || branches.find((b) => b.id === j.branch_id)?.name || "General / Headquarters";
+      if (!map.has(buName)) {
+        map.set(buName, { buName, list: [] });
+      }
+      map.get(buName)!.list.push(j);
+    });
+    return Array.from(map.values()).sort((a, b) => a.buName.localeCompare(b.buName));
+  }, [jobs, branches]);
+
+  // Only employees belonging to HR Division AND holding an HR position are eligible recruiters
   const hrEmployees = useMemo(() => {
     const hrBranchIds = new Set(
       (branches || [])
@@ -85,23 +98,19 @@ export const CandidateModal = memo(function CandidateModal({
       // Always retain if already assigned to this candidate so existing data is never hidden
       if (form.assigned_recruiter_id && emp.id === form.assigned_recruiter_id) return true;
 
-      // 1. Employee is assigned to the "HR Division" branch
-      if (emp.branch_id && hrBranchIds.has(emp.branch_id)) return true;
+      const empBranchName = emp.branch_name || branches.find((b) => b.id === emp.branch_id)?.name || "";
+      const isHrDivision =
+        (emp.branch_id && hrBranchIds.has(emp.branch_id)) ||
+        /hr\s*division|human\s*resource/i.test(empBranchName) ||
+        /hr\s*division/i.test(emp.department || "");
 
-      // 2. Employee is in the HR department
-      const dept = (emp.department || "").trim().toLowerCase();
-      if (/^(hr|human\s*resources?|recruitment|talent|people)$/i.test(dept) || /hr\s*division/i.test(dept)) return true;
+      const isHrPosition =
+        /(^|\b)(hr|recruiter|recruitment|talent|people|talent\s*acquisition)(\b|$)/i.test(emp.role || "") ||
+        /hr\s*(officer|specialist|manager|executive|generalist|director|lead|coordinator|admin)/i.test(emp.role || "");
 
-      // 3. Employee has an HR / Recruiter / Super Admin role
-      const role = (emp.role || "").trim().toLowerCase();
-      if (/(^|\b)(hr|recruiter|recruitment|talent|human\s*resources?)(\b|$)/i.test(role) || /super\s*admin/i.test(role)) return true;
-
-      // 4. Employee name mentions HR Admin
-      const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
-      if (/hr\s*admin/i.test(fullName)) return true;
-
-      return false;
-    });
+      // Employee must belong to HR Division AND hold an HR position
+      return isHrDivision && isHrPosition;
+    }).sort((a, b) => (a.first_name || "").localeCompare(b.first_name || ""));
   }, [employees, branches, form.assigned_recruiter_id]);
 
   if (!isOpen) return null;
@@ -456,11 +465,15 @@ export const CandidateModal = memo(function CandidateModal({
                   onChange={(e) => setForm({ ...form, job_posting_id: e.target.value })}
                   className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
-                  <option value="">Select a vacancy...</option>
-                  {jobs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.title} ({j.department})
-                    </option>
+                  <option value="">Select target vacancy position...</option>
+                  {groupedJobs.map((grp) => (
+                    <optgroup key={grp.buName} label={`${grp.buName} Positions (${grp.list.length})`}>
+                      {grp.list.map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {j.title} — {j.department || "General"} {j.type ? `(${j.type})` : ""}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -483,9 +496,14 @@ export const CandidateModal = memo(function CandidateModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                  Assigned Recruiter (HR Division)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                    Assigned Recruiter (HR Division)
+                  </label>
+                  <span className="text-[10px] text-purple-600 font-semibold">
+                    HR Division Only
+                  </span>
+                </div>
                 <select
                   value={form.assigned_recruiter_id}
                   onChange={(e) => setForm({ ...form, assigned_recruiter_id: e.target.value })}
@@ -494,7 +512,7 @@ export const CandidateModal = memo(function CandidateModal({
                   <option value="">Unassigned</option>
                   {hrEmployees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} ({emp.role || emp.department || "HR"})
+                      {emp.first_name} {emp.last_name} — {emp.role || "HR Officer"} (HR Division)
                     </option>
                   ))}
                 </select>

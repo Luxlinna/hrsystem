@@ -85,9 +85,10 @@ export default function HirePage() {
         candidatesCount={h.candidates.length}
         activeTab={h.tab}
         canManage={h.canRequest}
+        canManageCandidates={h.isAdminOrRecruiter}
         onOpenCreateJob={h.openCreateJob}
         onOpenCreateCandidate={() => h.openCreateCandidate()}
-        onOpenImportCandidates={() => setShowImportModal(true)}
+        onOpenImportCandidates={h.isAdminOrRecruiter ? () => setShowImportModal(true) : undefined}
         onOpenCreateInterview={() => h.openCreateInterview()}
         onOpenCreateRequest={() => h.openCreateRequest()}
         onOpenManageJd={h.isSuperAdmin || h.isAdmin ? () => setShowJdModal(true) : undefined}

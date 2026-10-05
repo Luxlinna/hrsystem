@@ -59,6 +59,7 @@ export function useAdminRoleMutations({
       allowed_modules: [...preset.allowed_modules],
       description: preset.description,
       branch_id: initialBranch,
+      branch_ids: initialBranch ? [initialBranch] : [],
       work_location_id: initialSite,
       ...preset.scopes,
     });
@@ -68,13 +69,27 @@ export function useAdminRoleMutations({
   const openEditRole = useCallback((r: AppRole) => {
     setEditingRole(r);
     const cat = r.category || getRoleCategoryKey(r);
+    let bIds = r.branch_ids || [];
+    if (!bIds.length && r.branch_id) {
+      bIds = r.branch_id.includes(",")
+        ? r.branch_id.split(",").map((s) => s.trim()).filter(Boolean)
+        : [r.branch_id];
+    }
+    try {
+      const buMap = JSON.parse(localStorage.getItem("hrm_role_bu_map") || "{}");
+      if (buMap[r.id] && Array.isArray(buMap[r.id]) && buMap[r.id].length > 0) {
+        bIds = buMap[r.id];
+      }
+    } catch (_e) { /* ignore */ }
+
     setRoleForm({
       name: r.name,
       category: cat,
       description: r.description || "",
       color: r.color,
       is_admin: r.is_admin,
-      branch_id: r.branch_id || null,
+      branch_id: bIds.length === 1 ? bIds[0] : null,
+      branch_ids: bIds,
       work_location_id: r.work_location_id || null,
       allowed_modules: [...r.allowed_modules],
       ...Object.fromEntries(
@@ -102,6 +117,7 @@ export function useAdminRoleMutations({
       color: r.color,
       is_admin: false,
       branch_id: effectiveTarget || null,
+      branch_ids: effectiveTarget ? [effectiveTarget] : [],
       work_location_id: null,
       allowed_modules: [...r.allowed_modules],
       ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, r[o.key]])) as unknown as Omit<RoleFormState, "name" | "category" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
@@ -128,7 +144,11 @@ export function useAdminRoleMutations({
     }
 
     setSavingRole(true);
-    const effectiveBranch = isSuperAdmin ? (roleForm.branch_id || null) : (userBranchId || targetBranch || null);
+    const selectedBUs = roleForm.branch_ids || (roleForm.branch_id ? [roleForm.branch_id] : []);
+    const effectiveBranchId = !isSuperAdmin
+      ? (userBranchId || targetBranch || null)
+      : (selectedBUs.length === 1 ? selectedBUs[0] : null);
+
     const categoryKey = roleForm.category || "admin";
     const payload = {
       name: roleForm.name.trim(),
@@ -136,7 +156,7 @@ export function useAdminRoleMutations({
       description: roleForm.description.trim(),
       color: roleForm.color,
       is_admin: isSuperAdmin ? roleForm.is_admin : false,
-      branch_id: effectiveBranch,
+      branch_id: effectiveBranchId,
       work_location_id: roleForm.work_location_id || null,
       allowed_modules: (isSuperAdmin && roleForm.is_admin) ? ["*"] : roleForm.allowed_modules,
       ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, roleForm[o.key]])),
@@ -156,6 +176,7 @@ export function useAdminRoleMutations({
         delete (fallbackPayload as any).candidate_approval_hr_sign;
         delete (fallbackPayload as any).candidate_approval_director_sign;
         delete (fallbackPayload as any).candidate_approval_chairwoman_sign;
+        delete (fallbackPayload as any).candidates_manage;
         delete (fallbackPayload as any).leave_manager_endorse;
         delete (fallbackPayload as any).leave_bu_admin_endorse;
         ({ error } = await supabase.from("app_roles").update(fallbackPayload).eq("id", editingRole.id));
@@ -169,6 +190,7 @@ export function useAdminRoleMutations({
         delete (fallbackPayload as any).candidate_approval_hr_sign;
         delete (fallbackPayload as any).candidate_approval_director_sign;
         delete (fallbackPayload as any).candidate_approval_chairwoman_sign;
+        delete (fallbackPayload as any).candidates_manage;
         delete (fallbackPayload as any).leave_manager_endorse;
         delete (fallbackPayload as any).leave_bu_admin_endorse;
         insertRes = await supabase.from("app_roles").insert(fallbackPayload).select("id").maybeSingle();
@@ -185,6 +207,12 @@ export function useAdminRoleMutations({
       } catch (_e) { /* ignore */ }
 
       try {
+        const buMap = JSON.parse(localStorage.getItem("hrm_role_bu_map") || "{}");
+        buMap[savedRoleId] = selectedBUs;
+        localStorage.setItem("hrm_role_bu_map", JSON.stringify(buMap));
+      } catch (_e) { /* ignore */ }
+
+      try {
         const allLocal = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}");
         allLocal[savedRoleId] = {
           ...(allLocal[savedRoleId] || {}),
@@ -192,6 +220,7 @@ export function useAdminRoleMutations({
           candidate_approval_hr_sign: roleForm.candidate_approval_hr_sign,
           candidate_approval_director_sign: roleForm.candidate_approval_director_sign,
           candidate_approval_chairwoman_sign: roleForm.candidate_approval_chairwoman_sign,
+          candidates_manage: roleForm.candidates_manage,
           leave_manager_endorse: roleForm.leave_manager_endorse,
           leave_bu_admin_endorse: roleForm.leave_bu_admin_endorse,
         };
@@ -229,6 +258,21 @@ export function useAdminRoleMutations({
       showToast(error.message || "Failed to delete role", "err");
       return;
     }
+
+    if (id) {
+      try {
+        const catMap = JSON.parse(localStorage.getItem("hrm_role_category_map") || "{}");
+        delete catMap[id];
+        localStorage.setItem("hrm_role_category_map", JSON.stringify(catMap));
+      } catch (_e) { /* ignore */ }
+
+      try {
+        const buMap = JSON.parse(localStorage.getItem("hrm_role_bu_map") || "{}");
+        delete buMap[id];
+        localStorage.setItem("hrm_role_bu_map", JSON.stringify(buMap));
+      } catch (_e) { /* ignore */ }
+    }
+
     showToast("Role deleted");
     invalidatePermissionsCache();
     loadData();

@@ -8,6 +8,7 @@ export type BranchTabType =
   | "employee-levels"
   | "contract-types"
   | "job-statuses"
+  | "approval-flow"
   | "schedule"
   | "staff"
   | "all";
@@ -70,6 +71,13 @@ export const STRUCTURE_TABS: TabItem[] = [
     label: "Job Statuses",
     icon: "ri-user-follow-line",
     description: "Employed, Not Employed, Exited, Blacklist",
+    group: "structure",
+  },
+  {
+    id: "approval-flow",
+    label: "Approval Flow",
+    icon: "ri-flow-chart",
+    description: "Multi-tier approval workflows & rules",
     group: "structure",
   },
 ];

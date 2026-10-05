@@ -1,5 +1,6 @@
 import { memo, useEffect, useState, useCallback } from "react";
 import type { LeaveRequest } from "../../types";
+import { Link } from "react-router-dom";
 import { formatDateTime } from "../../utils/leaveDisplayUtils";
 import {
   type ApproverStepConfig,
@@ -13,13 +14,13 @@ interface LeaveDetailApproversInfoProps {
 
 export const LeaveDetailApproversInfo = memo(function LeaveDetailApproversInfo({
   request: r,
-  onOpenFlowSettings,
 }: LeaveDetailApproversInfoProps) {
   const [steps, setSteps] = useState<ApproverStepConfig[]>([]);
+  const branchId = r.employees?.branch_id;
 
   const loadFlow = useCallback(() => {
-    setSteps(getStoredApproverFlow());
-  }, []);
+    setSteps(getStoredApproverFlow(branchId));
+  }, [branchId]);
 
   useEffect(() => {
     loadFlow();
@@ -33,16 +34,13 @@ export const LeaveDetailApproversInfo = memo(function LeaveDetailApproversInfo({
         <div className="text-[#0284c7] font-semibold text-xs tracking-wider uppercase">
           APPROVERS INFO
         </div>
-        {onOpenFlowSettings && (
-          <button
-            type="button"
-            onClick={onOpenFlowSettings}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
-          >
-            <i className="ri-settings-3-line text-sm" />
-            <span>Adjust Approver Flow</span>
-          </button>
-        )}
+        <Link
+          to="/branches?tab=approval-flow"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <i className="ri-settings-3-line text-sm" />
+          <span>Adjust in Organization</span>
+        </Link>
       </div>
 
       <div className="mt-4 space-y-4">

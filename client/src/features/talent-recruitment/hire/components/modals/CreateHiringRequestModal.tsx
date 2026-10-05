@@ -48,6 +48,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
     availableDraft,
     restoreDraft,
     clearDraft,
+    saveDraftManually,
   } = useHiringRequestAutoSave(isOpen, form, setForm);
 
   useEffect(() => {
@@ -394,8 +395,12 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.setItem("hr_hiring_request_draft", JSON.stringify(form));
-                    toast.success("Draft saved successfully!");
+                    const success = saveDraftManually();
+                    if (success) {
+                      toast.success("Draft saved successfully!");
+                    } else {
+                      toast.error("Please fill in some details before saving draft.");
+                    }
                   }}
                   disabled={submitting}
                   className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-1.5"

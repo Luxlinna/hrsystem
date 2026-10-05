@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, memo } from "react";
 import type { HiringRequest } from "../../types";
 import { exportHiringRequestPdf, type RequisitionPdfOptions, type ExportPdfMode } from "../../exports/exportHiringRequestPdf";
 import { toast } from "@/components/Toast";
-import { resolveDocumentBranding, isExportAtHrDivision, getOfficialFormLogo, getOpsBuLogo } from "@/services/formLogoService";
+import { resolveDocumentBranding, isExportAtHrDivision, isHrDivisionScope, getOfficialFormLogo, getOpsBuLogo } from "@/services/formLogoService";
 
 interface ExportHiringRequestModalProps {
   isOpen: boolean;
@@ -54,36 +54,38 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
 
   useEffect(() => {
     if (request) {
-      const rawBu = request.branches?.name || request.business_unit || "OPS Solutions Co ., Ltd";
-      const isHr = isExportAtHrDivision({
-        businessUnit: rawBu,
-        department: request.department,
-        division: request.division,
-      });
+      const rawBu = request.business_unit || request.branches?.name || "OPS SOLUTIONS CO., LTD";
+      const isHrOnly = isHrDivisionScope(rawBu, request.department, request.division);
 
-      if (isHr) {
+      const buKey = rawBu.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      const cachedLogo = localStorage.getItem(`hrm_bu_logo_${buKey}`);
+
+      if (cachedLogo) {
+        setBuLogo(cachedLogo);
+        setFileName("Cached BU Logo");
+      } else if (isHrOnly) {
         setBuLogo(getOfficialFormLogo());
         setFileName("UNI Official Logo (HR Division)");
-        setBusinessUnit(request.company === "UNI" ? "Unique Noble Investment Co. Ltd." : "HR Division");
       } else {
-        const buKey = rawBu.toLowerCase().replace(/[^a-z0-9]/g, "_");
-        const cachedLogo = localStorage.getItem(`hrm_bu_logo_${buKey}`);
-
-        if (cachedLogo) {
-          setBuLogo(cachedLogo);
-          setFileName("Cached BU Logo");
-        } else {
-          setBuLogo(getOpsBuLogo(rawBu));
-          setFileName("Default BU Logo");
-        }
-        setBusinessUnit(rawBu);
+        setBuLogo(getOpsBuLogo(rawBu));
+        setFileName("Default BU Logo");
       }
-      setDivision(request.department || "IT and Development");
-      setJobTitle(request.title || "Mobile Developer");
-      setDirectReportsTo(request.jd_reporting_line || request.hiring_manager_name || "IT Project Manger");
-      setLevelGrade("G1");
+
+      setBusinessUnit(rawBu);
+      const deptStr = request.division
+        ? `${request.department} · ${request.division}`
+        : (request.department || "");
+      setDivision(deptStr);
+      setJobTitle(request.title || request.position || "");
+
+      const cleanReports = (request.jd_reporting_line || request.hiring_manager_name || "")
+        .replace(/^reports\s+to:?\s*/i, "")
+        .replace(/^:\s*/, "")
+        .trim();
+      setDirectReportsTo(cleanReports);
+      setLevelGrade(request.employee_level || "G1");
       setTypeOfPosition(
-        request.employment_type || (request.position_type === "replacement" ? "Replacement" : "Full-time")
+        request.employee_type || request.employment_type || (request.position_type === "replacement" ? "Replacement" : "Full-time")
       );
 
       const d = request.created_at ? new Date(request.created_at) : new Date();
@@ -113,12 +115,12 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
         const logoData = reader.result;
         setBuLogo(logoData);
         // Cache to localStorage for this BU so subsequent exports don't need re-upload
-        const rawBu = request.branches?.name || request.business_unit || "OPS Solutions Co ., Ltd";
+        const rawBu = request.business_unit || request.branches?.name || "OPS SOLUTIONS CO., LTD";
         const buKey = rawBu.toLowerCase().replace(/[^a-z0-9]/g, "_");
         try {
           localStorage.setItem(`hrm_bu_logo_${buKey}`, logoData);
-        } catch {
-          // Ignore localStorage quota errors
+        } catch (err) {
+          console.warn("Could not cache logo in localStorage:", err);
         }
         toast("Logo Uploaded", `BU logo "${file.name}" uploaded and cached successfully.`, "success");
       }
@@ -131,21 +133,16 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
     setFileName("");
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (request) {
-      const rawBu = request.branches?.name || request.business_unit || "OPS Solutions Co ., Ltd";
+      const rawBu = request.business_unit || request.branches?.name || "OPS SOLUTIONS CO., LTD";
       const buKey = rawBu.toLowerCase().replace(/[^a-z0-9]/g, "_");
       localStorage.removeItem(`hrm_bu_logo_${buKey}`);
     }
   };
 
   const handleExport = () => {
-    const isHr = isExportAtHrDivision({
-      businessUnit,
-      department: request.department,
-      division,
-    });
-    const finalLogo = isHr ? getOfficialFormLogo() : (buLogo || getOpsBuLogo(businessUnit));
+    const finalLogo = buLogo || getOpsBuLogo(businessUnit) || getOfficialFormLogo();
 
-    if (!finalLogo && !isHr) {
+    if (!finalLogo) {
       toast("Logo Required", "You must upload a Business Unit logo before exporting.", "warning");
       return;
     }
@@ -154,7 +151,7 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
       mode,
       formTitle: formTitle.trim() || undefined,
       buLogo: finalLogo,
-      businessUnit: isHr ? (request.company === "UNI" ? "Unique Noble Investment Co. Ltd." : businessUnit) : businessUnit,
+      businessUnit: businessUnit.trim() || request.business_unit || request.branches?.name || "OPS SOLUTIONS CO., LTD",
       division,
       jobTitle,
       directReportsTo,
@@ -165,7 +162,7 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
       workingTime,
       headOfDeptName: request.hiring_manager_name || request.branch_approved_by || undefined,
       hrAdminName: request.hr_admin_approved_by || request.hr_reviewed_by || undefined,
-      isHrDivisionContext: isHr,
+      isHrDivisionContext: false,
     };
 
     exportHiringRequestPdf(request, opts);

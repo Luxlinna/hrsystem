@@ -63,7 +63,8 @@ export const HireActiveTabContent = memo(function HireActiveTabContent({
             <JobsTabContent
               jobs={h.filteredJobs} candidates={h.candidates} viewMode={h.jobViewMode}
               onOpenCreateJob={h.openCreateJob} onEditJob={h.openEditJob} onCloseJob={h.closeJob}
-              onReopenJob={h.reopenJob} onDeleteJob={h.deleteJob} onAddCandidate={(jobId) => h.openCreateCandidate(jobId)}
+              onReopenJob={h.reopenJob} onDeleteJob={h.deleteJob}
+              onAddCandidate={h.isAdminOrRecruiter ? (jobId) => h.openCreateCandidate(jobId) : undefined}
               onClearFilters={h.resetFilters} hasFilters={h.hasFilters}
             />
           </div>
@@ -72,7 +73,7 @@ export const HireActiveTabContent = memo(function HireActiveTabContent({
         {h.tab === "candidates" && (
           <div key={`${h.filterCandidateStage}-${h.stageSlideDir || "init"}-${h.filterCandidateJob}-${h.candidateViewMode}`} className={candAnim}>
             <CandidatesTabContent
-              candidates={h.filteredCandidates} viewMode={h.candidateViewMode} canManage={h.canRequest}
+              candidates={h.filteredCandidates} viewMode={h.candidateViewMode} canManage={h.isAdminOrRecruiter}
               onOpenCreate={() => h.openCreateCandidate()} onOpenEdit={h.openEditCandidate}
               onUpdateStage={h.updateCandidateStage} onRate={h.rateCandidate} onDelete={h.deleteCandidate}
               onUploadResume={async (id: string, file: File) => {
@@ -83,7 +84,8 @@ export const HireActiveTabContent = memo(function HireActiveTabContent({
                   toast("Resume Uploaded", "Candidate resume updated successfully.", "success");
                 }
               }}
-              onMoveToOnboarding={h.openMoveToOnboarding} onOpenInterview={(c) => h.openCreateInterview(c.id)} onOpenImport={onOpenImportModal}
+              onMoveToOnboarding={h.openMoveToOnboarding} onOpenInterview={(c) => h.openCreateInterview(c.id)}
+              onOpenImport={h.isAdminOrRecruiter ? onOpenImportModal : undefined}
             />
           </div>
         )}

@@ -35,6 +35,7 @@ export interface Employee {
   annual_leave_days?: number;
   avatar_url?: string | null;
   email?: string;
+  phone?: string | null;
   branch_id?: string;
   reports_to?: string | null;
   employee_id?: string | null;

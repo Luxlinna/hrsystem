@@ -70,11 +70,27 @@ export function useLeaveData() {
         setMyApproverName("");
       }
 
+      let mySiblings: Employee[] = me ? [me] : [];
+      if (me) {
+        const filters: string[] = [];
+        if (me.email) filters.push(`email.ilike.${me.email.trim().toLowerCase()}`);
+        if (me.first_name && me.last_name) {
+          filters.push(`and(first_name.ilike.${me.first_name.trim()},last_name.ilike.${me.last_name.trim()})`);
+        }
+        if (filters.length > 0) {
+          const { data: sibs } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").or(filters.join(",")).is("deleted_at", null);
+          if (sibs && sibs.length > 0) {
+            mySiblings = sibs;
+          }
+        }
+      }
+      const myEmpIds = mySiblings.map((s) => s.id);
+
       if (canViewAll || canViewOwnBranch || isSuperAdmin) {
         let teamQuery = supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").is("deleted_at", null).order("first_name");
         if (targetBranch && !isSuperAdmin) teamQuery = teamQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
         const { data: team } = await teamQuery;
-        const allTeam = me && !team?.some((e) => e.id === me.id) ? [me, ...(team || [])] : team || [];
+        const allTeam = [...mySiblings, ...(team || []).filter((e) => !myEmpIds.includes(e.id))];
         setEmployees(allTeam);
 
         let reqQuery = supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)").is("deleted_at", null).order("created_at", { ascending: false });
@@ -92,8 +108,8 @@ export function useLeaveData() {
 
       if (!me) { setEmployees([]); setRequests([]); setLoading(false); return; }
 
-      const { data: directReports } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").eq("reports_to", me.id).is("deleted_at", null);
-      const combinedTeam = [me, ...(directReports || [])];
+      const { data: directReports } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").in("reports_to", myEmpIds).is("deleted_at", null);
+      const combinedTeam = [...mySiblings, ...(directReports || []).filter((e) => !myEmpIds.includes(e.id))];
       setEmployees(combinedTeam);
 
       const targetIds = combinedTeam.map((e) => e.id);

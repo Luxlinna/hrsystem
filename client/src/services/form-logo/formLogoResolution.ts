@@ -138,6 +138,16 @@ export function resolveDocumentBranding(params?: {
 }): FormBrandingResult {
   const atHrDivision = isExportAtHrDivision(params);
 
+  // If a custom logo was explicitly provided by user (e.g. uploaded in export modal), prioritize it!
+  if (params?.customLogo && params.customLogo.trim().length > 50) {
+    return {
+      logo: params.customLogo.trim(),
+      companyName: params?.businessUnit || (atHrDivision ? getOfficialCompanyNameEnglish() : getBuCompanyName(params?.businessUnit)),
+      companyKhmer: atHrDivision ? getOfficialCompanyNameKhmer() : "",
+      isHrDivision: atHrDivision,
+    };
+  }
+
   // STRICT REQUIREMENT: Every export file from HR Division MUST strictly use the official UNI logo (no OPS, no BU override)
   if (atHrDivision) {
     return {
@@ -145,15 +155,6 @@ export function resolveDocumentBranding(params?: {
       companyName: getOfficialCompanyNameEnglish(), // "Unique Noble Investment Co. Ltd."
       companyKhmer: getOfficialCompanyNameKhmer(), // "យូនីក ណូបិល អ៊ិនវេសម៉ិន ឯ.ក"
       isHrDivision: true,
-    };
-  }
-
-  if (params?.customLogo && params.customLogo.trim().length > 50) {
-    return {
-      logo: params.customLogo.trim(),
-      companyName: params?.businessUnit || getBuCompanyName(params?.businessUnit),
-      companyKhmer: "",
-      isHrDivision: false,
     };
   }
 

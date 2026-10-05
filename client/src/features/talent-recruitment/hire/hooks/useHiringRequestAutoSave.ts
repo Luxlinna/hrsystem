@@ -5,16 +5,26 @@ const DRAFT_STORAGE_KEY = "hr_hiring_request_draft";
 const AUTOSAVE_PREF_KEY = "hr_hiring_request_autosave";
 
 function hasMeaningfulContent(f: NewHiringRequestFormState): boolean {
+  if (!f) return false;
   return Boolean(
     f.title?.trim() ||
     f.position?.trim() ||
+    f.department?.trim() ||
+    f.division?.trim() ||
     f.justification?.trim() ||
     f.jd_summary?.trim() ||
+    f.job_description?.trim() ||
     f.jd_responsibilities?.trim() ||
     f.jd_requirements?.trim() ||
+    f.jd_qualifications?.trim() ||
+    f.jd_reporting_line?.trim() ||
     f.salary_min?.trim() ||
     f.salary_max?.trim() ||
-    f.target_joining_date?.trim()
+    f.target_joining_date?.trim() ||
+    f.employee_type?.trim() ||
+    f.employment_type?.trim() ||
+    f.employee_level?.trim() ||
+    f.contract_type?.trim()
   );
 }
 
@@ -36,8 +46,8 @@ export function useHiringRequestAutoSave(
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [availableDraft, setAvailableDraft] = useState<NewHiringRequestFormState | null>(null);
 
-  const isDirtyRef = useRef<boolean>(false);
-  const hasHydratedRef = useRef<boolean>(false);
+  const isHydratingRef = useRef<boolean>(false);
+  const lastSavedPayloadRef = useRef<string>("");
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const statusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,7 +60,7 @@ export function useHiringRequestAutoSave(
     }
   }, []);
 
-  // When modal opens, auto-hydrate existing draft directly into form state
+  // Auto-hydrate existing draft directly into form state when modal opens
   useEffect(() => {
     if (isOpen) {
       try {
@@ -58,19 +68,22 @@ export function useHiringRequestAutoSave(
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           if (hasMeaningfulContent(parsed)) {
-            // Auto-hydrate saved draft immediately into the form
+            isHydratingRef.current = true;
+            lastSavedPayloadRef.current = JSON.stringify(parsed);
             setForm((prev) => ({ ...prev, ...parsed }));
             setLastSavedAt(new Date());
             setAutoSaveStatus("saved");
-            hasHydratedRef.current = true;
+            setTimeout(() => {
+              isHydratingRef.current = false;
+            }, 300);
           }
         }
       } catch (err) {
         console.error("Failed to restore hiring request draft:", err);
       }
     } else {
-      isDirtyRef.current = false;
-      hasHydratedRef.current = false;
+      isHydratingRef.current = false;
+      lastSavedPayloadRef.current = "";
       setAvailableDraft(null);
       setAutoSaveStatus("idle");
     }
@@ -79,21 +92,29 @@ export function useHiringRequestAutoSave(
   // Track field changes and trigger auto-save when user types
   useEffect(() => {
     if (!isOpen || !autoSaveEnabled) return;
-
-    // Don't auto-save if form is completely empty
+    if (isHydratingRef.current) return;
     if (!hasMeaningfulContent(form)) return;
 
-    // Skip first mount if we just opened without user edits
-    if (!isDirtyRef.current && !hasHydratedRef.current) return;
+    const currentPayload = JSON.stringify(form);
+    if (lastSavedPayloadRef.current === currentPayload) return;
 
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setAutoSaveStatus("saving");
 
     autoSaveTimerRef.current = setTimeout(() => {
       try {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form));
-        const now = new Date();
-        setLastSavedAt(now);
+        let merged = { ...form };
+        const stored = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (stored) {
+          const prevStored = JSON.parse(stored);
+          if (prevStored && typeof prevStored === "object") {
+            merged = { ...prevStored, ...form };
+          }
+        }
+        const stringified = JSON.stringify(merged);
+        localStorage.setItem(DRAFT_STORAGE_KEY, stringified);
+        lastSavedPayloadRef.current = stringified;
+        setLastSavedAt(new Date());
         setAvailableDraft(null);
         setAutoSaveStatus("saved");
 
@@ -103,49 +124,56 @@ export function useHiringRequestAutoSave(
         console.error("Auto-save requisition draft error:", err);
         setAutoSaveStatus("error");
       }
-    }, 800);
+    }, 600);
 
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
   }, [form, autoSaveEnabled, isOpen]);
 
-  const markDirty = useCallback(() => {
-    isDirtyRef.current = true;
-  }, []);
+  const saveDraftManually = useCallback(() => {
+    if (!hasMeaningfulContent(form)) return false;
+    try {
+      let merged = { ...form };
+      const stored = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (stored) {
+        const prevStored = JSON.parse(stored);
+        if (prevStored && typeof prevStored === "object") {
+          merged = { ...prevStored, ...form };
+        }
+      }
+      const stringified = JSON.stringify(merged);
+      localStorage.setItem(DRAFT_STORAGE_KEY, stringified);
+      lastSavedPayloadRef.current = stringified;
+      setLastSavedAt(new Date());
+      setAvailableDraft(null);
+      setAutoSaveStatus("saved");
+      return true;
+    } catch {
+      setAutoSaveStatus("error");
+      return false;
+    }
+  }, [form]);
 
   const restoreDraft = useCallback(() => {
     if (!availableDraft) return;
     setForm((prev) => ({ ...prev, ...availableDraft }));
     setLastSavedAt(new Date());
     setAvailableDraft(null);
-    isDirtyRef.current = true;
   }, [availableDraft, setForm]);
 
   const clearDraft = useCallback(() => {
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
+      lastSavedPayloadRef.current = "";
       setLastSavedAt(null);
       setAvailableDraft(null);
       setAutoSaveStatus("idle");
-      isDirtyRef.current = false;
-      hasHydratedRef.current = false;
-      // Reset form to empty template
       setForm((prev) => ({
         ...prev,
-        title: "",
-        position: "",
-        department: "",
-        division: "",
-        justification: "",
-        jd_summary: "",
-        jd_responsibilities: "",
-        jd_requirements: "",
-        jd_qualifications: "",
-        jd_reporting_line: "",
-        salary_min: "",
-        salary_max: "",
-        target_joining_date: "",
+        title: "", position: "", department: "", division: "", justification: "",
+        jd_summary: "", job_description: "", jd_responsibilities: "", jd_requirements: "",
+        jd_qualifications: "", jd_reporting_line: "", salary_min: "", salary_max: "", target_joining_date: "",
       }));
     } catch (err) {
       console.error("Failed to clear requisition draft:", err);
@@ -160,6 +188,6 @@ export function useHiringRequestAutoSave(
     availableDraft,
     restoreDraft,
     clearDraft,
-    markDirty,
+    saveDraftManually,
   };
 }

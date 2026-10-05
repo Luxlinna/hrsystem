@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { toast } from "@/components/Toast";
 import type { Job, Candidate, Interview, NewJobFormState, NewCandidateFormState, NewInterviewFormState, Branch } from "../types";
 import { INITIAL_JOB_FORM, INITIAL_CANDIDATE_FORM, INITIAL_INTERVIEW_FORM } from "../constants";
 import { parseInterviewPanelFromNotes } from "../utils/interviewPanelHelper";
@@ -11,6 +12,7 @@ interface UseHireModalsProps {
   effectiveBranchId?: string;
   userBranchId?: string;
   targetBranch?: string | null;
+  isAdminOrRecruiter?: boolean;
 }
 
 export function useHireModals({
@@ -21,6 +23,7 @@ export function useHireModals({
   effectiveBranchId,
   userBranchId,
   targetBranch,
+  isAdminOrRecruiter,
 }: UseHireModalsProps) {
   const [jobModal, setJobModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -77,6 +80,10 @@ export function useHireModals({
   }, [branches]);
 
   const openCreateCandidate = useCallback((defaultJobId?: string) => {
+    if (isAdminOrRecruiter === false) {
+      toast("Access Restricted", "Only HR personnel and Recruiters can register candidates.", "error");
+      return;
+    }
     setEditingCandidate(null);
     setNewCandidate({
       ...INITIAL_CANDIDATE_FORM,
@@ -84,7 +91,7 @@ export function useHireModals({
     });
     setCandidateFiles([]);
     setCandidateModal(true);
-  }, [jobs]);
+  }, [jobs, isAdminOrRecruiter]);
 
   const openEditCandidate = useCallback((c: Candidate) => {
     setEditingCandidate(c);

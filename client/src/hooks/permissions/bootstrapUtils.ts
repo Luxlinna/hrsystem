@@ -46,5 +46,6 @@ export function bootstrapAdminRole(): UserRole {
     candidate_approval_hr_sign: true,
     candidate_approval_director_sign: true,
     candidate_approval_chairwoman_sign: true,
+    candidates_manage: true,
   };
 }

@@ -29,6 +29,7 @@ export function useCandidateDetail(id: string | undefined) {
   const myJobRole = (myEmployee?.role || "").trim().toLowerCase();
   const isAdminOrRecruiter = Boolean(
     role?.is_admin ||
+    role?.candidates_manage ||
     role?.hiring_requests_hr_admin_approve ||
     role?.hiring_requests_hr_review ||
     role?.hiring_requests_chairman_approve ||

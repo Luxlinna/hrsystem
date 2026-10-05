@@ -11,7 +11,7 @@ interface JobsTabContentProps {
   onCloseJob: (id: string) => void;
   onReopenJob: (id: string) => void;
   onDeleteJob: (id: string, title: string) => void;
-  onAddCandidate: (jobId: string) => void;
+  onAddCandidate?: (jobId: string) => void;
   onClearFilters?: () => void;
   hasFilters?: boolean;
 }
@@ -119,12 +119,14 @@ export const JobsTabContent = memo(function JobsTabContent({
 
                     <td className="px-5 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => onAddCandidate(j.id)}
-                          className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-[#253C7D]/10 hover:bg-[#253C7D]/20 rounded-lg transition-colors cursor-pointer"
-                        >
-                          + Candidate
-                        </button>
+                        {onAddCandidate && (
+                          <button
+                            onClick={() => onAddCandidate(j.id)}
+                            className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-[#253C7D]/10 hover:bg-[#253C7D]/20 rounded-lg transition-colors cursor-pointer"
+                          >
+                            + Candidate
+                          </button>
+                        )}
                         <button
                           onClick={() => onEditJob(j)}
                           className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"

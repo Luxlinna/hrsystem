@@ -1,17 +1,15 @@
-import { memo, useEffect } from "react";
+import { memo } from "react";
 import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
-import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
-import { useHrRecruiters } from "../../hooks/useHrRecruiters";
 import { useOrgMasterCategories } from "../../hooks/useOrgMasterCategories";
 import { ModernSearchSelect } from "./ModernSearchSelect";
+import { CreateHiringAuthorityFields } from "./CreateHiringAuthorityFields";
 
 interface Props {
   form: NewHiringRequestFormState;
   setForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>;
   branches: Branch[];
   employees?: SearchableEmployee[];
-  isSuperAdmin?: boolean;
   assignedBuName: string;
 }
 
@@ -22,42 +20,7 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
   employees = [],
   assignedBuName,
 }: Props) {
-  // Strictly fetch enterprise HR Division & Recruiter employees
-  const { recruiters: hrRecruiters } = useHrRecruiters(branches);
   const { employeeTypes, employeeLevels, contractTypes } = useOrgMasterCategories();
-
-  // Auto-default to the primary HR Division recruiter if not yet set
-  useEffect(() => {
-    if (!form.assigned_recruiter_id && hrRecruiters.length > 0) {
-      const defaultRecruiter = hrRecruiters[0];
-      setForm((prev) => {
-        if (prev.assigned_recruiter_id) return prev;
-        return {
-          ...prev,
-          assigned_recruiter_id: defaultRecruiter.id,
-          assigned_recruiter_name: `${defaultRecruiter.first_name} ${defaultRecruiter.last_name}`.trim(),
-        };
-      });
-    }
-  }, [form.assigned_recruiter_id, hrRecruiters, setForm]);
-
-  const handleSelectHiringManager = (empId: string) => {
-    const target = employees.find((e) => e.id === empId);
-    setForm((prev) => ({
-      ...prev,
-      hiring_manager_id: target ? target.id : "",
-      hiring_manager_name: target ? `${target.first_name} ${target.last_name}` : "",
-    }));
-  };
-
-  const handleSelectRecruiter = (empId: string) => {
-    const target = hrRecruiters.find((e) => e.id === empId);
-    setForm((prev) => ({
-      ...prev,
-      assigned_recruiter_id: target ? target.id : "",
-      assigned_recruiter_name: target ? `${target.first_name} ${target.last_name}`.trim() : "",
-    }));
-  };
 
   return (
     <div className="space-y-2.5 animate-in fade-in duration-200">
@@ -65,11 +28,13 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
       <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs space-y-2.5">
         <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-900">
           <i className="ri-shield-user-line text-blue-600 text-sm" />
-          <span>Employment & Contract Terms</span>
+          <span>Employment &amp; Contract Terms</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Employee Type <span className="text-rose-500 font-bold">*</span></label>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+              Employee Type <span className="text-rose-500 font-bold">*</span>
+            </label>
             <ModernSearchSelect
               options={employeeTypes}
               value={form.employee_type || form.employment_type || employeeTypes[0] || "FULL-TIME"}
@@ -81,7 +46,9 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Employee Level <span className="text-rose-500 font-bold">*</span></label>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+              Employee Level <span className="text-rose-500 font-bold">*</span>
+            </label>
             <ModernSearchSelect
               options={employeeLevels}
               value={form.employee_level || employeeLevels[0] || "Senior"}
@@ -93,7 +60,9 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Contract Type <span className="text-rose-500 font-bold">*</span></label>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
+              Contract Type <span className="text-rose-500 font-bold">*</span>
+            </label>
             <ModernSearchSelect
               options={contractTypes}
               value={form.contract_type || contractTypes[0] || "1-YEAR FDC"}
@@ -110,7 +79,7 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
       <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs space-y-2.5">
         <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-900">
           <i className="ri-money-dollar-circle-line text-blue-600 text-sm" />
-          <span>Compensation & Target Timeline</span>
+          <span>Compensation &amp; Target Timeline</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
@@ -123,7 +92,7 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
                 type="number"
                 placeholder="e.g. 500"
                 value={form.salary_min || ""}
-                onChange={(e) => setForm({ ...form, salary_min: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, salary_min: e.target.value }))}
                 className="w-full pl-7 pr-2.5 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
               />
             </div>
@@ -139,7 +108,7 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
                 type="number"
                 placeholder="e.g. 1000"
                 value={form.salary_max || ""}
-                onChange={(e) => setForm({ ...form, salary_max: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, salary_max: e.target.value }))}
                 className="w-full pl-7 pr-2.5 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
               />
             </div>
@@ -151,7 +120,7 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
               <input
                 type="date"
                 value={form.target_joining_date || ""}
-                onChange={(e) => setForm({ ...form, target_joining_date: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, target_joining_date: e.target.value }))}
                 className="w-full px-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
@@ -159,39 +128,33 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
         </div>
       </div>
 
-      {/* 3. Hiring Manager & Assigned Recruiter */}
-      <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs space-y-2.5">
-        <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-900">
-          <i className="ri-user-settings-line text-blue-600 text-sm" />
-          <span>Hiring Authority & Recruiter Assignment</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <label className="block text-[11px] font-semibold text-slate-700">Hiring Manager</label>
-              <span className="text-[10px] text-slate-400 font-medium">Managers in {assignedBuName}</span>
-            </div>
-            <EmployeeSearchSelect
-              employees={employees}
-              value={form.hiring_manager_id}
-              onChange={handleSelectHiringManager}
-              placeholder={assignedBuName ? `Search manager in ${assignedBuName}...` : "Search hiring manager..."}
-            />
-          </div>
+      {/* 3. Direct Reports To & Hiring Authority & Recruiter Assignment */}
+      <CreateHiringAuthorityFields
+        form={form}
+        setForm={setForm}
+        branches={branches}
+        employees={employees}
+        assignedBuName={assignedBuName}
+      />
 
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <label className="block text-[11px] font-semibold text-slate-700">
-                Assigned Recruiter <span className="text-rose-500 font-bold">*</span>
-              </label>
-              <span className="text-[10px] text-purple-600 font-medium">HR Division</span>
-            </div>
-            <EmployeeSearchSelect
-              employees={hrRecruiters}
-              value={form.assigned_recruiter_id || ""}
-              onChange={handleSelectRecruiter}
-              placeholder="Select HR recruiter..."
-            />
+      {/* 4. Reason for Hiring / Business Need */}
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-3.5 space-y-1.5 shadow-2xs">
+        <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-900">
+          <i className="ri-file-text-line text-blue-600 text-sm" />
+          <span>Reason for Hiring / Business Need <span className="text-rose-500 font-bold">*</span></span>
+        </div>
+        <div className="relative">
+          <textarea
+            rows={2}
+            required
+            maxLength={500}
+            placeholder="e.g. To support business expansion, replace existing role, etc."
+            value={form.justification || ""}
+            onChange={(e) => setForm((prev) => ({ ...prev, justification: e.target.value }))}
+            className="w-full px-3 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none min-h-[64px] font-medium leading-relaxed pb-5"
+          />
+          <div className="absolute bottom-1.5 right-2.5 text-[10px] text-slate-400 font-mono">
+            {(form.justification || "").length}/500
           </div>
         </div>
       </div>

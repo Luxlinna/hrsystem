@@ -6,7 +6,7 @@ import { listAuthAccounts } from "../api";
 import { sortBranchesList, buildEnrichedAssignments, buildEnrichedEmployees } from "./adminDataHelpers";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone, normalizePhone } from "@/lib/phoneUtils";
 import type { AppRole, DirectoryEmployee, PasswordResetRequest, UserAssignment } from "../types";
-import { getRoleCategoryKey } from "../constants";
+import { getRoleCategoryKey, getShortBuName } from "../constants";
 
 export function useAdminData() {
   const { user } = useAuth();
@@ -67,17 +67,45 @@ export function useAdminData() {
     setBranches(combinedBranches);
 
     let catMap: Record<number, string> = {};
+    let buMap: Record<number, string[]> = {};
     try {
       catMap = JSON.parse(localStorage.getItem("hrm_role_category_map") || "{}");
+      buMap = JSON.parse(localStorage.getItem("hrm_role_bu_map") || "{}");
     } catch (_e) { /* ignore */ }
 
     const rawRoles = (rolesRes.data || []) as any[];
     const enrichedRoles: AppRole[] = rawRoles.map((r) => {
-      const bName = r.branch_id ? branchesList.find((b) => b.id === r.branch_id)?.name : null;
+      let bIds: string[] = [];
+      if (buMap[r.id] && Array.isArray(buMap[r.id]) && buMap[r.id].length > 0) {
+        bIds = buMap[r.id];
+      } else if (r.branch_ids && Array.isArray(r.branch_ids)) {
+        bIds = r.branch_ids;
+      } else if (r.branch_id) {
+        bIds = r.branch_id.includes(",")
+          ? r.branch_id.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [r.branch_id];
+      }
+
+      let bName = null;
+      if (bIds.length === 1) {
+        const raw = branchesList.find((b) => b.id === bIds[0])?.name;
+        bName = raw ? getShortBuName(raw) : null;
+      } else if (bIds.length > 1) {
+        const names = bIds
+          .map((id: string) => branchesList.find((b) => b.id === id)?.name)
+          .filter(Boolean)
+          .map((n: string) => getShortBuName(n));
+        bName = names.length > 0 ? names.join(", ") : `${bIds.length} BUs`;
+      } else if (r.branch_id) {
+        const raw = branchesList.find((b) => b.id === r.branch_id)?.name;
+        bName = raw ? getShortBuName(raw) : null;
+      }
+
       const sName = r.work_location_id ? locationsMap.get(r.work_location_id)?.name : null;
       const roleCategory = r.category || catMap[r.id] || getRoleCategoryKey(r);
       return {
         ...r,
+        branch_ids: bIds,
         category: roleCategory,
         branch_name: bName || null,
         site_name: sName || null,
@@ -86,7 +114,10 @@ export function useAdminData() {
 
     // If BU Admin, only show global roles or roles matching their BU
     const visibleRoles = (!isSuperAdmin && effectiveBranch)
-      ? enrichedRoles.filter((r) => !r.branch_id || r.branch_id === effectiveBranch)
+      ? enrichedRoles.filter((r) => {
+          if (!r.branch_id && (!r.branch_ids || r.branch_ids.length === 0)) return true;
+          return r.branch_ids?.includes(effectiveBranch) || r.branch_id === effectiveBranch;
+        })
       : enrichedRoles;
 
     const allAssignments = (usersRes.data || []) as any[];

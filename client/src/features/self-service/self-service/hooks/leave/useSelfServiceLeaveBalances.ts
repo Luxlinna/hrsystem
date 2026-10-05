@@ -45,11 +45,10 @@ export function useSelfServiceLeaveBalances({
   );
 
   const getUsedDays = useCallback(
-    (empId: string, type: string): number => {
+    (_empId: string, type: string): number => {
       return requests
         .filter(
           (r) =>
-            r.employee_id === empId &&
             (r.leave_type === type || (type === "annual" && r.leave_type === "vacation")) &&
             r.status === "approved" &&
             new Date(r.start_date).getFullYear() === currentYear
@@ -60,11 +59,10 @@ export function useSelfServiceLeaveBalances({
   );
 
   const getPendingDays = useCallback(
-    (empId: string, type: string): number => {
+    (_empId: string, type: string): number => {
       return requests
         .filter(
           (r) =>
-            r.employee_id === empId &&
             (r.leave_type === type || (type === "annual" && r.leave_type === "vacation")) &&
             r.status === "pending" &&
             new Date(r.start_date).getFullYear() === currentYear

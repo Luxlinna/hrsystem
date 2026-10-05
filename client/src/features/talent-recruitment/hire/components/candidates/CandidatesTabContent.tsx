@@ -26,6 +26,7 @@ interface CandidatesTabContentProps {
 export const CandidatesTabContent = memo(function CandidatesTabContent({
   candidates,
   viewMode,
+  canManage = false,
   onOpenCreate,
   onOpenEdit,
   onUpdateStage,
@@ -55,25 +56,27 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
         <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
           No applicants match your search query or selected stage filters.
         </p>
-        <div className="flex items-center justify-center gap-2.5 mt-4">
-          <button
-            type="button"
-            onClick={onOpenCreate}
-            className="px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
-          >
-            + Add Candidate
-          </button>
-          {onOpenImport && (
+        {canManage && (
+          <div className="flex items-center justify-center gap-2.5 mt-4">
             <button
               type="button"
-              onClick={onOpenImport}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-bold rounded-xl shadow-2xs hover:bg-slate-50 transition-all cursor-pointer flex items-center gap-1.5"
+              onClick={onOpenCreate}
+              className="px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
             >
-              <i className="ri-upload-cloud-2-line text-sm" />
-              <span>Import Hiring Info</span>
+              + Add Candidate
             </button>
-          )}
-        </div>
+            {onOpenImport && (
+              <button
+                type="button"
+                onClick={onOpenImport}
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-bold rounded-xl shadow-2xs hover:bg-slate-50 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <i className="ri-upload-cloud-2-line text-sm" />
+                <span>Import Hiring Info</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }

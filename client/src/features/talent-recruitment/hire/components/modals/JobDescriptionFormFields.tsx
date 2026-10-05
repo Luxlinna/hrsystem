@@ -311,7 +311,7 @@ export const JobDescriptionFormFields = memo(function JobDescriptionFormFields({
                 maxLength={500}
                 placeholder="Summarize the core mission and strategic purpose of this position within the department... (e.g. To support business expansion, replace existing role, etc.)"
                 value={form.jd_summary || ""}
-                onChange={(e) => setForm({ ...form, jd_summary: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, jd_summary: e.target.value }))}
                 className="w-full px-3.5 py-2.5 bg-slate-50/60 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none min-h-[90px] font-medium leading-relaxed pb-6"
               />
               <div className="absolute bottom-2 right-3 text-[10px] text-slate-400 font-mono">

@@ -43,9 +43,9 @@ export const RoleScopeSection = memo(function RoleScopeSection({
       items: actionItems.filter((i) => i.key.startsWith("leave_")),
     },
     {
-      title: "Recruitment Requisition Stages",
-      icon: "ri-file-list-3-line",
-      items: actionItems.filter((i) => i.key.startsWith("hiring_requests_")),
+      title: "Recruitment & Candidate Pipeline",
+      icon: "ri-user-add-line",
+      items: actionItems.filter((i) => i.key === "candidates_manage" || i.key.startsWith("hiring_requests_")),
     },
     {
       title: "Candidate Offer Signatures",
@@ -59,7 +59,8 @@ export const RoleScopeSection = memo(function RoleScopeSection({
         (i) =>
           !i.key.startsWith("leave_") &&
           !i.key.startsWith("hiring_requests_") &&
-          !i.key.startsWith("candidate_approval_")
+          !i.key.startsWith("candidate_approval_") &&
+          i.key !== "candidates_manage"
       ),
     },
   ];

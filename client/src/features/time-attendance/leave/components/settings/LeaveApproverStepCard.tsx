@@ -1,9 +1,10 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import type { Employee } from "../../types";
 import {
   type ApproverStepConfig,
   mapEmployeeToApprover,
 } from "../../services/leaveApprovalFlowService";
+import { LeaveApproverSearchSelect } from "./LeaveApproverSearchSelect";
 
 interface LeaveApproverStepCardProps {
   step: ApproverStepConfig;
@@ -20,19 +21,12 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
   onUpdateStep,
   onDeleteStep,
 }: LeaveApproverStepCardProps) {
-  const [selectedEmpId, setSelectedEmpId] = useState("");
-
-  const handleAddApprover = () => {
-    if (!selectedEmpId) return;
-    const emp = allEmployees.find((e) => e.id === selectedEmpId);
-    if (!emp) return;
+  const handleAddApprover = (emp: Employee) => {
     if (step.approvers.some((a) => a.id === emp.id)) return;
-
     onUpdateStep({
       ...step,
       approvers: [...step.approvers, mapEmployeeToApprover(emp)],
     });
-    setSelectedEmpId("");
   };
 
   const handleRemoveApprover = (id: string) => {
@@ -43,9 +37,9 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+    <div className="border border-gray-200 rounded-xl bg-white shadow-2xs relative">
       {/* Header bar */}
-      <div className="bg-[#3b82f6] text-white px-4 py-2 flex items-center justify-between">
+      <div className="bg-[#3b82f6] text-white px-4 py-2 flex items-center justify-between rounded-t-xl">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-xs">{step.stepTitle}</span>
           <span className="text-[10px] px-2 py-0.5 bg-white/20 rounded font-mono">
@@ -126,32 +120,11 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
           )}
         </div>
 
-        {/* Add approver selector */}
-        <div className="flex items-center gap-2 pt-1">
-          <select
-            value={selectedEmpId}
-            onChange={(e) => setSelectedEmpId(e.target.value)}
-            className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-[#3b82f6]"
-          >
-            <option value="">Select Employee to add as approver...</option>
-            {allEmployees
-              .filter((e) => !step.approvers.some((a) => a.id === e.id))
-              .map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.first_name} {e.last_name} ({e.role || e.department || "Staff"})
-                </option>
-              ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleAddApprover}
-            disabled={!selectedEmpId}
-            className="px-3 py-1.5 bg-[#3b82f6] disabled:bg-gray-300 hover:bg-blue-600 text-white font-medium rounded-lg text-xs transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1 shrink-0"
-          >
-            <i className="ri-user-add-line text-xs" />
-            <span>Add</span>
-          </button>
-        </div>
+        {/* Searchable Approver Selector */}
+        <LeaveApproverSearchSelect
+          availableEmployees={allEmployees.filter((e) => !step.approvers.some((a) => a.id === e.id))}
+          onAddApprover={handleAddApprover}
+        />
       </div>
     </div>
   );
