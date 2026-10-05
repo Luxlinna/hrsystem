@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { Candidate, CandidateDocument, OfferLetter } from "../../types";
 import { CandidateDocumentItem } from "./CandidateDocumentItem";
+import { CandidateCvPreviewModal } from "../modals/CandidateCvPreviewModal";
 
 interface CandidateResumeCardProps {
   candidate: Candidate;
@@ -25,6 +26,8 @@ export const CandidateResumeCard = memo(function CandidateResumeCard({
   onExportOfferPdf,
   onExportOfferWord,
 }: CandidateResumeCardProps) {
+  const [previewDoc, setPreviewDoc] = useState<CandidateDocument | null>(null);
+
   const documents: CandidateDocument[] =
     candidate.documents && candidate.documents.length > 0
       ? candidate.documents
@@ -94,6 +97,7 @@ export const CandidateResumeCard = memo(function CandidateResumeCard({
               onDeleteDocument={onDeleteDocument}
               onExportOfferPdf={onExportOfferPdf}
               onExportOfferWord={onExportOfferWord}
+              onPreviewDocument={setPreviewDoc}
             />
           ))}
         </div>
@@ -120,6 +124,15 @@ export const CandidateResumeCard = memo(function CandidateResumeCard({
         className="hidden"
         accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.zip"
         onChange={handleFileChange}
+      />
+
+      <CandidateCvPreviewModal
+        isOpen={Boolean(previewDoc)}
+        onClose={() => setPreviewDoc(null)}
+        candidateName={candidate.full_name}
+        position={candidate.applied_role || candidate.job_title}
+        fileUrl={previewDoc?.url}
+        fileName={previewDoc?.name}
       />
     </div>
   );

@@ -13,6 +13,7 @@ export function useJobDescriptionHeader(
   const [saving, setSaving] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
+  const [manageModalOpen, setManageModalOpen] = useState(false);
   const [selectedTplId, setSelectedTplId] = useState<string>(form.jd_template_id || "");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -185,6 +186,9 @@ export function useJobDescriptionHeader(
     parsing,
     pasteModalOpen,
     setPasteModalOpen,
+    manageModalOpen,
+    setManageModalOpen,
+    loadTemplates,
     selectedTplId,
     fileInputRef,
     applyExtracted,

@@ -5,6 +5,7 @@ import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
 import { initials, formatRelative } from "../../hireUtils";
 import { CandidateCard } from "./CandidateCard";
 import { EditHiringInfoModal } from "../candidate-detail/EditHiringInfoModal";
+import { CandidateCvPreviewModal } from "../modals/CandidateCvPreviewModal";
 
 interface CandidatesTabContentProps {
   candidates: Candidate[];
@@ -36,6 +37,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
   onOpenImport,
 }: CandidatesTabContentProps) {
   const [hiringInfoCandidate, setHiringInfoCandidate] = useState<Candidate | null>(null);
+  const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
 
   const handleHiringInfoSaved = (updated: Partial<Candidate>) => {
     if (hiringInfoCandidate) {
@@ -156,9 +158,13 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                     <td className="px-5 py-3.5 whitespace-nowrap text-gray-500 font-semibold text-[11px]">{formatRelative(c.applied_at)}</td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       {c.resume_url ? (
-                        <a href={c.resume_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#253C7D] hover:underline flex items-center gap-1">
-                          <i className="ri-file-text-line" /> View
-                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCandidate(c)}
+                          className="text-xs font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <i className="ri-file-text-line" /> View CV
+                        </button>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
@@ -207,6 +213,16 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
             onSaved={handleHiringInfoSaved}
           />
         )}
+
+        <CandidateCvPreviewModal
+          isOpen={Boolean(previewCandidate)}
+          onClose={() => setPreviewCandidate(null)}
+          candidateName={previewCandidate?.full_name}
+          position={previewCandidate?.applied_role || previewCandidate?.job_title}
+          appliedDate={previewCandidate?.applied_at ? formatRelative(previewCandidate.applied_at) : undefined}
+          fileUrl={previewCandidate?.resume_url}
+          fileName={previewCandidate?.resume_name || undefined}
+        />
       </div>
     );
   }
@@ -226,6 +242,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
             onDelete={onDelete}
             onScheduleInterview={onOpenInterview ? () => onOpenInterview(c) : undefined}
             onOpenHiringInfo={setHiringInfoCandidate}
+            onPreviewCv={setPreviewCandidate}
           />
         ))}
       </div>
@@ -238,6 +255,16 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
           onSaved={handleHiringInfoSaved}
         />
       )}
+
+      <CandidateCvPreviewModal
+        isOpen={Boolean(previewCandidate)}
+        onClose={() => setPreviewCandidate(null)}
+        candidateName={previewCandidate?.full_name}
+        position={previewCandidate?.applied_role || previewCandidate?.job_title}
+        appliedDate={previewCandidate?.applied_at ? formatRelative(previewCandidate.applied_at) : undefined}
+        fileUrl={previewCandidate?.resume_url}
+        fileName={previewCandidate?.resume_name || undefined}
+      />
     </>
   );
 });

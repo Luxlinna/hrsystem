@@ -18,6 +18,7 @@ interface CandidateDocumentItemProps {
   onDeleteDocument?: (url: string) => void;
   onExportOfferPdf?: (offer: OfferLetter) => void;
   onExportOfferWord?: (offer: OfferLetter) => Promise<any> | void;
+  onPreviewDocument?: (doc: CandidateDocument) => void;
 }
 
 export const CandidateDocumentItem = memo(function CandidateDocumentItem({
@@ -27,6 +28,7 @@ export const CandidateDocumentItem = memo(function CandidateDocumentItem({
   onDeleteDocument,
   onExportOfferPdf,
   onExportOfferWord,
+  onPreviewDocument,
 }: CandidateDocumentItemProps) {
   const [loading, setLoading] = useState(false);
   const style = getFileIcon(doc.name, doc.type);
@@ -37,7 +39,11 @@ export const CandidateDocumentItem = memo(function CandidateDocumentItem({
     setLoading(true);
     try {
       if (doc.url && !doc.url.startsWith("#") && !doc.url.startsWith("offer-")) {
-        window.open(doc.url, "_blank", "noopener,noreferrer");
+        if (onPreviewDocument) {
+          onPreviewDocument(doc);
+        } else {
+          window.open(doc.url, "_blank", "noopener,noreferrer");
+        }
         return;
       }
 

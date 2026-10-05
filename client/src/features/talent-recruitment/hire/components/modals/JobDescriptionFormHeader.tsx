@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { toast } from "@/components/Toast";
 import { PasteJdModal } from "./PasteJdModal";
+import { ManageJdTemplatesModal } from "./ManageJdTemplatesModal";
 import { useJobDescriptionHeader } from "../../hooks/useJobDescriptionHeader";
 import type { NewHiringRequestFormState } from "../../types";
 
@@ -17,6 +18,9 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
     parsing,
     pasteModalOpen,
     setPasteModalOpen,
+    manageModalOpen,
+    setManageModalOpen,
+    loadTemplates,
     selectedTplId,
     fileInputRef,
     applyExtracted,
@@ -64,7 +68,7 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
           </div>
         </div>
 
-        {/* Right Side: Actions matching image (Use existing JD, Upload file, Paste text) */}
+        {/* Right Side: Actions (Use existing JD, Manage Library, Upload file, Paste text) */}
         <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
           {/* Use existing JD Select */}
           <div className="relative min-w-[130px]">
@@ -85,6 +89,17 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
               <i className="ri-arrow-down-s-line" />
             </div>
           </div>
+
+          {/* Manage JD Library / Setting for Super Admin */}
+          <button
+            type="button"
+            onClick={() => setManageModalOpen(true)}
+            title="Super Admin JD Library & Templates Control"
+            className="px-2 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 text-[11px] font-semibold shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
+          >
+            <i className="ri-settings-4-line text-slate-600 text-xs" />
+            <span className="hidden sm:inline">JD Library</span>
+          </button>
 
           <input
             ref={fileInputRef}
@@ -125,6 +140,15 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
           toast("JD Auto-filled", "Form successfully populated from pasted text!", "success");
         }}
       />
+
+      <ManageJdTemplatesModal
+        isOpen={manageModalOpen}
+        onClose={() => setManageModalOpen(false)}
+        templates={templates}
+        onRefresh={loadTemplates}
+        onSelectTemplate={handleApplyTemplate}
+      />
     </div>
   );
 });
+

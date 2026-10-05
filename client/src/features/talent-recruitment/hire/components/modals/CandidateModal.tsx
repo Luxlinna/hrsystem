@@ -5,6 +5,7 @@ import { CANDIDATE_SOURCES, NOTICE_PERIOD_OPTIONS } from "../../constants";
 import { extractCv, type ExtractedCvData } from "../../utils/cvExtractor";
 import { queryCandidateDuplicates, findDuplicateCandidate, type DuplicateMatchResult } from "../../utils/cvDuplicateMatcher";
 import { DuplicateCandidateWarningModal } from "./DuplicateCandidateWarningModal";
+import { CandidateCvPreviewModal } from "./CandidateCvPreviewModal";
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -52,6 +53,8 @@ export const CandidateModal = memo(function CandidateModal({
   const [duplicateMatchResult, setDuplicateMatchResult] = useState<DuplicateMatchResult | null>(null);
   const [lastExtractedData, setLastExtractedData] = useState<ExtractedCvData | null>(null);
   const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
+  const [previewCvModalOpen, setPreviewCvModalOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [merging, setMerging] = useState(false);
   const [bypassDuplicateCheck, setBypassDuplicateCheck] = useState(false);
 
@@ -569,14 +572,27 @@ export const CandidateModal = memo(function CandidateModal({
                       <span className="font-bold text-gray-800 truncate max-w-[240px]">{file.name}</span>
                       <span className="text-[10px] text-gray-400 shrink-0">({formatFileSize(file.size)})</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile(idx)}
-                      className="w-6 h-6 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Remove file"
-                    >
-                      <i className="ri-close-line text-sm" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewFile(file);
+                          setPreviewCvModalOpen(true);
+                        }}
+                        className="w-6 h-6 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Preview CV / Document"
+                      >
+                        <i className="ri-eye-line text-sm" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(idx)}
+                        className="w-6 h-6 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Remove file"
+                      >
+                        <i className="ri-close-line text-sm" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -639,6 +655,17 @@ export const CandidateModal = memo(function CandidateModal({
           merging={merging}
         />
       )}
+
+      <CandidateCvPreviewModal
+        isOpen={previewCvModalOpen}
+        onClose={() => {
+          setPreviewCvModalOpen(false);
+          setPreviewFile(null);
+        }}
+        candidateName={form.full_name || "Uploaded CV"}
+        fileObj={previewFile}
+        rawText={lastExtractedData?.rawText || null}
+      />
     </div>
   );
 });

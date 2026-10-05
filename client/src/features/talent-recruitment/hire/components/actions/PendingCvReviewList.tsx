@@ -1,8 +1,9 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Candidate } from "../../types";
 import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
 import { initials, formatRelative } from "../../hireUtils";
+import { CandidateCvPreviewModal } from "../modals/CandidateCvPreviewModal";
 
 interface PendingCvReviewListProps {
   candidates: Candidate[];
@@ -13,6 +14,7 @@ export const PendingCvReviewList = memo(function PendingCvReviewList({
   candidates,
   onUpdateCandidateStage,
 }: PendingCvReviewListProps) {
+  const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs">
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
@@ -91,14 +93,13 @@ export const PendingCvReviewList = memo(function PendingCvReviewList({
                         </span>
                       )}
                       {c.resume_url && (
-                        <a
-                          href={c.resume_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[#253C7D] hover:underline font-bold inline-flex items-center gap-1"
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCandidate(c)}
+                          className="text-[#253C7D] hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
                         >
                           <i className="ri-file-text-line" /> View Resume
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -130,6 +131,16 @@ export const PendingCvReviewList = memo(function PendingCvReviewList({
           })}
         </div>
       )}
+
+      <CandidateCvPreviewModal
+        isOpen={Boolean(previewCandidate)}
+        onClose={() => setPreviewCandidate(null)}
+        candidateName={previewCandidate?.full_name}
+        position={previewCandidate?.applied_role || previewCandidate?.job_title}
+        appliedDate={previewCandidate?.applied_at ? formatRelative(previewCandidate.applied_at) : undefined}
+        fileUrl={previewCandidate?.resume_url}
+        fileName={previewCandidate?.resume_name || undefined}
+      />
     </div>
   );
 });

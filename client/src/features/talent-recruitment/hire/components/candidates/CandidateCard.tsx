@@ -16,6 +16,7 @@ interface CandidateCardProps {
   onDelete?: (id: string, name: string) => void;
   onScheduleInterview?: () => void;
   onOpenHiringInfo?: (c: Candidate) => void;
+  onPreviewCv?: (c: Candidate) => void;
 }
 
 export const CandidateCard = memo(function CandidateCard({
@@ -27,6 +28,7 @@ export const CandidateCard = memo(function CandidateCard({
   onEdit,
   onDelete,
   onOpenHiringInfo,
+  onPreviewCv,
 }: CandidateCardProps) {
   const normStage =
     candidate.stage === "applied" ? "cv_received" : candidate.stage === "interview" ? "hr_interview" : candidate.stage;
@@ -131,15 +133,26 @@ export const CandidateCard = memo(function CandidateCard({
           </div>
 
           {candidate.resume_url ? (
-            <a
-              href={candidate.resume_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1"
-            >
-              <i className="ri-file-text-line" />
-              Resume
-            </a>
+            onPreviewCv ? (
+              <button
+                type="button"
+                onClick={() => onPreviewCv(candidate)}
+                className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <i className="ri-file-text-line" />
+                Resume
+              </button>
+            ) : (
+              <a
+                href={candidate.resume_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1"
+              >
+                <i className="ri-file-text-line" />
+                Resume
+              </a>
+            )
           ) : (
             <label className="text-[11px] font-bold text-gray-400 hover:text-gray-600 cursor-pointer flex items-center gap-1">
               <i className="ri-upload-2-line" />
