@@ -48,6 +48,26 @@ export function useJobDescriptionHeader(
           }
         }
 
+        // Auto-detect Years of Experience
+        let yearsExp = p.years_of_experience;
+        const combinedText = `${req} ${qual} ${ext.rawText || ""}`;
+        const expMatch = combinedText.match(/(\d+)(?:\s*-\s*(\d+)|\+)?\s*(?:to\s*(\d+)\s*)?years?(?:\s+of)?\s*(?:relevant\s+)?experience/i);
+        if (expMatch) {
+          const minNum = parseInt(expMatch[1], 10);
+          if (minNum >= 8) yearsExp = "8+ years";
+          else if (minNum >= 5) yearsExp = "5 - 8 years";
+          else if (minNum >= 2) yearsExp = "2 - 5 years";
+          else if (minNum >= 1) yearsExp = "1 - 2 years";
+          else yearsExp = "0 - 1 year";
+        }
+
+        // Auto-detect Education Degree
+        let educationDegree = qual;
+        const eduMatch = combinedText.match(/(?:bachelor(?:'s)?|master(?:'s)?|phd|diploma|degree|associate)\s+(?:in|of)\s+[a-z\s,\/]+/i);
+        if (eduMatch) {
+          educationDegree = eduMatch[0].trim();
+        }
+
         return {
           ...p,
           title,
@@ -58,10 +78,12 @@ export function useJobDescriptionHeader(
           salary_max: p.salary_max || ext.salary_max || p.salary_max,
           headcount: ext.headcount || p.headcount || 1,
           justification,
+          years_of_experience: yearsExp || p.years_of_experience || "2 - 5 years",
+          experience_description: p.experience_description || (req.split("\n")[0] || "").replace(/^[•\-\*]\s*/, ""),
           jd_summary: summary,
           jd_responsibilities: resp,
           jd_requirements: req,
-          jd_qualifications: qual,
+          jd_qualifications: educationDegree || qual,
           jd_reporting_line: rep,
           job_description: `${summary}\n\nResponsibilities:\n${resp}\n\nRequirements:\n${req}\n\nQualifications:\n${qual}`.trim(),
         };
@@ -85,7 +107,11 @@ export function useJobDescriptionHeader(
         return;
       }
       applyExtracted(extracted);
-      toast("JD Auto-filled", `Extracted details from "${file.name}"`, "success");
+      if (extracted.isOcr) {
+        toast("OCR Document Scanned", `Extracted JD details from image/scanned file "${file.name}" via OCR engine!`, "success");
+      } else {
+        toast("JD Auto-filled", `Extracted details from "${file.name}"`, "success");
+      }
     } catch (err: any) {
       toast("Extraction Error", err.message || "Failed to parse file", "error");
     } finally {

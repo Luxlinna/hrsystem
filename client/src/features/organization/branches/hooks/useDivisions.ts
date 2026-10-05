@@ -11,9 +11,23 @@ export interface HeadOfDivisionOption {
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DIVISIONS_CACHE_KEY = "hr_divisions_cache";
+
+const getCachedDivisions = (): Division[] => {
+  try {
+    const raw = localStorage.getItem(DIVISIONS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const saveCachedDivisions = (list: Division[]) => {
+  try {
+    localStorage.setItem(DIVISIONS_CACHE_KEY, JSON.stringify(list));
+  } catch (e) { console.error(e); }
+};
 
 export function useDivisions(branchId?: string) {
-  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>(() => getCachedDivisions());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employees, setEmployees] = useState<HeadOfDivisionOption[]>([]);
@@ -43,19 +57,30 @@ export function useDivisions(branchId?: string) {
   const fetchDivisions = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("divisions")
         .select("*")
         .is("deleted_at", null)
         .order("name", { ascending: true });
-      setDivisions(!error && data ? (data as Division[]) : []);
+      if (branchId && UUID_REGEX.test(branchId)) {
+        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+      }
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        setDivisions(data as Division[]);
+        saveCachedDivisions(data as Division[]);
+      } else {
+        const cached = getCachedDivisions();
+        if (cached.length > 0) setDivisions(cached);
+      }
     } catch (err) {
       console.error("Error fetching divisions:", err);
-      setDivisions([]);
+      const cached = getCachedDivisions();
+      if (cached.length > 0) setDivisions(cached);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [branchId]);
 
   useEffect(() => {
     fetchDivisions();

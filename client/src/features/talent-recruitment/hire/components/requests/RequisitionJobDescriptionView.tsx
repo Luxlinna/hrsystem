@@ -26,18 +26,18 @@ export const RequisitionJobDescriptionView = memo(function RequisitionJobDescrip
   }
 
   return (
-    <div className="mt-2.5 rounded-2xl border border-blue-100/80 bg-blue-50/30 overflow-hidden text-xs transition-all">
+    <div className="mt-2 rounded-xl border border-blue-100/80 bg-blue-50/30 overflow-hidden text-[11px] transition-all">
       {collapsible && (
-        <div className="w-full px-3.5 py-2 flex items-center justify-between font-bold text-blue-900 bg-blue-50/40 transition-colors">
+        <div className="w-full px-3 py-1.5 flex items-center justify-between font-bold text-blue-900 bg-blue-50/40 transition-colors">
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
-            className="flex items-center gap-2 text-left hover:text-blue-700 cursor-pointer"
+            className="flex items-center gap-1.5 text-left hover:text-blue-700 cursor-pointer text-[11px]"
           >
-            <i className="ri-file-text-line text-blue-600" />
+            <i className="ri-file-text-line text-blue-600 text-xs" />
             <span>Job Description & Role Requirements</span>
             {hasStructuredJd && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-extrabold">
+              <span className="px-1.5 py-0.2 rounded-md text-[9px] bg-blue-100 text-blue-800 font-extrabold">
                 Structured Spec
               </span>
             )}
@@ -51,14 +51,14 @@ export const RequisitionJobDescriptionView = memo(function RequisitionJobDescrip
                   : exportHiringRequestPdf(r, { mode: "job_description", buLogo: "" })
               }
               title="Export Job Description Form PDF"
-              className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-[#253C7D] border border-blue-200 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              className="px-2 py-0.5 rounded-md bg-white hover:bg-blue-50 text-[#253C7D] border border-blue-200 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
             >
               <i className="ri-file-pdf-2-line text-rose-600 text-xs" /> Export JD Form
             </button>
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="text-blue-600 flex items-center gap-1 font-semibold text-[11px] hover:text-blue-800 cursor-pointer"
+              className="text-blue-600 flex items-center gap-0.5 font-semibold text-[10.5px] hover:text-blue-800 cursor-pointer"
             >
               {expanded ? "Hide Details" : "View Full JD"}
               <i className={expanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} />

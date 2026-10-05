@@ -61,7 +61,8 @@ export function useHire() {
 
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
   const canViewCrossBranch = Boolean(
-    hasEnterpriseRecruitmentPermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch)
+    isSuperAdmin ||
+    (hasEnterpriseRecruitmentPermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch))
   );
 
   const canBranchApprove = Boolean(isSuperAdmin || role?.hiring_requests_branch_approve || isBranchAdmin);

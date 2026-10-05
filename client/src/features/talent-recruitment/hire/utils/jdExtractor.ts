@@ -1,5 +1,6 @@
 import { extractTextFromPdf } from "./cvExtractor";
 import { extractTextFromDocx } from "./docxExtractor";
+import { performOcrOnPdfPages, performOcrOnImage } from "./ocrExtractor";
 import {
   splitGluedText,
   detectSectionType,
@@ -24,12 +25,13 @@ export interface ExtractedJdData {
   qualifications: string;
   reporting_line: string;
   rawText: string;
+  isOcr?: boolean;
 }
 
 /**
  * Parses raw text into structured JD sections and requisition metadata
  */
-export function heuristicExtractJd(rawText: string, filename?: string): ExtractedJdData {
+export function heuristicExtractJd(rawText: string, filename?: string, isOcr?: boolean): ExtractedJdData {
   const preparedText = splitGluedText(rawText);
   const lines = preparedText.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
   const result: ExtractedJdData = {
@@ -39,6 +41,7 @@ export function heuristicExtractJd(rawText: string, filename?: string): Extracte
     qualifications: "",
     reporting_line: "",
     rawText,
+    isOcr: Boolean(isOcr),
   };
 
   type SectionKey = "summary" | "responsibilities" | "requirements" | "qualifications" | "reporting_line" | "none";
@@ -148,19 +151,37 @@ export function heuristicExtractJd(rawText: string, filename?: string): Extracte
 }
 
 /**
- * Extracts structured JD data directly from an uploaded file (PDF, DOCX, TXT, MD)
+ * Extracts structured JD data directly from an uploaded file (PDF, DOCX, TXT, MD, PNG, JPG)
+ * Uses high-speed digital stream first, and automatically falls back to OCR if the file is scanned/image-only.
  */
-export async function extractJdFromFile(file: File): Promise<ExtractedJdData> {
+export async function extractJdFromFile(
+  file: File,
+  onStatusUpdate?: (statusText: string) => void
+): Promise<ExtractedJdData> {
   const ext = file.name.split(".").pop()?.toLowerCase();
   let text = "";
+  let usedOcr = false;
 
   if (ext === "pdf") {
+    // 1. Try digital text extraction first (instant)
     text = await extractTextFromPdf(file);
+
+    // 2. If PDF contains no selectable text (scanned document), run OCR fallback
+    if (!text.trim() || text.trim().length < 20) {
+      if (onStatusUpdate) onStatusUpdate("Scanning image-only PDF with OCR engine...");
+      text = await performOcrOnPdfPages(file);
+      usedOcr = true;
+    }
   } else if (ext === "docx") {
     text = await extractTextFromDocx(file);
+  } else if (ext === "png" || ext === "jpg" || ext === "jpeg" || ext === "webp") {
+    // Image file directly uploaded -> run OCR
+    if (onStatusUpdate) onStatusUpdate("Recognizing text from image with OCR...");
+    text = await performOcrOnImage(file);
+    usedOcr = true;
   } else {
     text = await file.text().catch(() => "");
   }
 
-  return heuristicExtractJd(text, file.name);
+  return heuristicExtractJd(text, file.name, usedOcr);
 }

@@ -63,41 +63,41 @@ export const HiringRequestCard = memo(function HiringRequestCard({
 
   return (
     <div
-      className={`bg-white rounded-3xl border p-5 transition-all duration-200 ${
+      className={`bg-white rounded-2xl border p-3.5 sm:p-4 transition-all duration-200 ${
         isHighlighted
           ? "border-amber-400 ring-4 ring-amber-400/20 bg-amber-50/10 shadow-lg"
-          : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+          : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
       }`}
     >
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-        <div className="flex-1 min-w-0 space-y-3">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-[#253C7D] border border-blue-100">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3.5">
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-blue-50 text-[#253C7D] border border-blue-100">
               {r.requisition_id || "REQ-DRAFT"}
             </span>
             <HiringRequestStatusBadges request={r} />
             {r.position_type === "replacement" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
                 <i className="ri-repeat-line" /> Replacement
               </span>
             )}
           </div>
 
           <div>
-            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 flex-wrap">
               <span>{r.title}</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">
+              <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600">
                 {r.headcount} {r.headcount > 1 ? "Openings" : "Opening"}
               </span>
             </h3>
 
-            <div className="flex items-center gap-x-4 gap-y-1.5 mt-2 flex-wrap text-xs text-gray-500 font-medium">
+            <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 flex-wrap text-[11px] text-gray-500 font-medium">
               <span className="flex items-center gap-1 text-slate-800 font-semibold">
                 <i className="ri-building-line text-[#253C7D]" />
                 {r.company ? `${r.company} · ` : ""}{r.branches?.name || r.business_unit || "Headquarters"}
               </span>
               {r.site && (
-                <span className="flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 text-[11px] font-semibold">
+                <span className="flex items-center gap-1 text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 text-[10px] font-semibold">
                   <i className="ri-map-pin-2-line text-emerald-600" />
                   Site: {r.site}
                 </span>
@@ -107,13 +107,13 @@ export const HiringRequestCard = memo(function HiringRequestCard({
                 {r.department}{r.division ? ` · ${r.division}` : ""}
               </span>
               {r.employee_level && (
-                <span className="flex items-center gap-1 text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 text-[11px] font-bold">
+                <span className="flex items-center gap-1 text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-200 text-[10px] font-bold">
                   <i className="ri-shield-star-line text-indigo-600" />
                   Level: {r.employee_level}
                 </span>
               )}
               {(r.contract_type || r.employee_type || r.employment_type) && (
-                <span className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 text-[11px] font-medium">
+                <span className="flex items-center gap-1 text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-200 text-[10px] font-medium">
                   <i className="ri-file-paper-2-line text-blue-600" />
                   {r.contract_type || r.employee_type || r.employment_type}
                 </span>
@@ -125,7 +125,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
                 </span>
               )}
               {recruiterName && (
-                <span className="flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                <span className="flex items-center gap-1 text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-md border border-purple-200">
                   <i className="ri-user-star-line text-purple-600 font-bold" />
                   Assigned Recruiter: <strong className="text-purple-900">{recruiterName}</strong>
                 </span>
@@ -134,44 +134,44 @@ export const HiringRequestCard = memo(function HiringRequestCard({
           </div>
 
           {/* Audit trail */}
-          <div className="flex items-center gap-2.5 pt-1 flex-wrap text-xs">
+          <div className="flex items-center gap-1.5 pt-0.5 flex-wrap text-[10.5px]">
             {r.branch_approved_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                <i className="ri-checkbox-circle-line text-amber-600" /> Endorsed: <strong>{r.branch_approved_by}</strong>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                <i className="ri-checkbox-circle-line text-amber-600 text-xs" /> Endorsed: <strong>{r.branch_approved_by}</strong>
                 {r.branch_approved_at && ` · ${formatDateTime(r.branch_approved_at)}`}
               </span>
             )}
             {r.hr_reviewed_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-medium">
-                <i className="ri-user-star-line text-sky-600" /> HR Reviewed: <strong>{r.hr_reviewed_by}</strong>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 text-sky-800 border border-sky-200 font-medium">
+                <i className="ri-user-star-line text-sky-600 text-xs" /> HR Reviewed: <strong>{r.hr_reviewed_by}</strong>
                 {r.hr_reviewed_at && ` · ${formatDateTime(r.hr_reviewed_at)}`}
               </span>
             )}
             {r.hr_admin_approved_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 font-medium">
-                <i className="ri-shield-star-line text-purple-600" /> HR Admin Approved: <strong>{r.hr_admin_approved_by}</strong>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 text-purple-800 border border-purple-200 font-medium">
+                <i className="ri-shield-star-line text-purple-600 text-xs" /> HR Admin Approved: <strong>{r.hr_admin_approved_by}</strong>
                 {r.hr_admin_approved_at && ` · ${formatDateTime(r.hr_admin_approved_at)}`}
               </span>
             )}
             {r.chairman_approved_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
-                <i className="ri-vip-crown-line text-emerald-600" /> Authorized: <strong>{r.chairman_approved_by}</strong>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+                <i className="ri-vip-crown-line text-emerald-600 text-xs" /> Authorized: <strong>{r.chairman_approved_by}</strong>
                 {r.chairman_approved_at && ` · ${formatDateTime(r.chairman_approved_at)}`}
               </span>
             )}
           </div>
 
           {/* Description & Justification */}
-          <div className="space-y-2 mt-2">
+          <div className="space-y-1.5 mt-1.5">
             {r.justification && (
-              <div className="p-3 bg-gray-50/80 rounded-2xl border border-gray-100 text-xs text-gray-600">
+              <div className="p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-[11px] text-gray-600 leading-relaxed">
                 <strong className="text-gray-700 font-bold block mb-0.5">Business Need:</strong>
                 {r.justification}
               </div>
             )}
             <RequisitionJobDescriptionView request={r} onOpenExport={onOpenExport} />
             {r.status === "rejected" && r.rejection_reason && (
-              <div className="p-3 bg-rose-50/70 rounded-2xl border border-rose-100 text-xs text-rose-800">
+              <div className="p-2.5 bg-rose-50/70 rounded-xl border border-rose-100 text-[11px] text-rose-800 leading-relaxed">
                 <strong className="text-rose-900 font-bold block mb-0.5">Rejection Feedback / Reason:</strong>
                 {r.rejection_reason}
               </div>

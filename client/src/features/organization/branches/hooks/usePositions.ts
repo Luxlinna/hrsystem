@@ -19,6 +19,7 @@ const SEED_POSITIONS: Partial<Position>[] = [
 ];
 
 const STORAGE_KEY = "hr_deleted_position_ids";
+const CACHE_KEY = "hr_positions_cache";
 const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
 const getDeletedSet = (): Set<string> => {
@@ -36,8 +37,28 @@ const saveDeletedIds = (ids: string[]) => {
   } catch (e) { console.error(e); }
 };
 
+const getCachedPositions = (): Position[] => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const saveCachedPositions = (list: Position[]) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+  } catch (e) { console.error(e); }
+};
+
 export function usePositions(branchId?: string) {
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<Position[]>(() => {
+    const cached = getCachedPositions();
+    if (cached.length > 0) {
+      const delSet = getDeletedSet();
+      return cached.filter((p) => !delSet.has(p.id) && !delSet.has(p.name));
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "create" | "edit" | "view">("list");
@@ -48,15 +69,25 @@ export function usePositions(branchId?: string) {
     const delSet = getDeletedSet();
     try {
       let query = supabase.from("positions").select("*").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
-      if (branchId) query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+      if (branchId && isUUID(branchId)) {
+        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+      }
       const { data, error } = await query;
       if (error || !data || data.length === 0) {
-        const fallbacks = SEED_POSITIONS
-          .map((p, i) => ({ id: `pos-fallback-${i + 1}`, branch_id: branchId || null, name: p.name || "", tax_position: p.tax_position || null, status: p.status || "active", sort_order: p.sort_order ?? i + 1, created_at: new Date().toISOString() }))
-          .filter((p) => !delSet.has(p.id) && !delSet.has(p.name));
-        setPositions(fallbacks);
+        const cached = getCachedPositions();
+        if (cached.length > 0) {
+          setPositions(cached.filter((p) => !delSet.has(p.id) && !delSet.has(p.name)));
+        } else {
+          const fallbacks = SEED_POSITIONS
+            .map((p, i) => ({ id: `pos-fallback-${i + 1}`, branch_id: branchId || null, name: p.name || "", tax_position: p.tax_position || null, status: p.status || "active", sort_order: p.sort_order ?? i + 1, created_at: new Date().toISOString() }))
+            .filter((p) => !delSet.has(p.id) && !delSet.has(p.name));
+          setPositions(fallbacks);
+          saveCachedPositions(fallbacks as Position[]);
+        }
       } else {
-        setPositions((data as Position[]).filter((p) => !delSet.has(p.id) && !delSet.has(p.name)));
+        const fresh = (data as Position[]).filter((p) => !delSet.has(p.id) && !delSet.has(p.name));
+        setPositions(fresh);
+        saveCachedPositions(fresh);
       }
     } catch (err) {
       console.error("Error fetching positions:", err);

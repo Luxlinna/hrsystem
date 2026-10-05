@@ -1,6 +1,8 @@
 import { memo, useEffect, useMemo } from "react";
 import type { Branch, NewHiringRequestFormState } from "../../types";
 import { useOrgMasterCategories } from "../../hooks/useOrgMasterCategories";
+import { useDivisions } from "@/features/organization/branches/hooks/useDivisions";
+import { ModernSearchSelect } from "./ModernSearchSelect";
 
 interface Props {
   form: NewHiringRequestFormState;
@@ -17,7 +19,6 @@ interface Props {
 export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrgFields({
   form,
   setForm,
-  branches,
   isSuperAdmin,
   assignedBuName,
   assignedBuId,
@@ -25,7 +26,13 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
   buSites,
 }: Props) {
   const activeBuId = form.branch_id || assignedBuId;
-  const { businessUnits, divisions, departments, workLocations, companies } = useOrgMasterCategories(activeBuId);
+  const { businessUnits, divisions: catDivisions, departments, workLocations, companies } = useOrgMasterCategories(activeBuId);
+  const { divisions: liveDivisions } = useDivisions(activeBuId);
+
+  const allDivisions = useMemo(() => {
+    const list = liveDivisions.length > 0 ? liveDivisions : catDivisions;
+    return list.filter((d) => (d.status || "active") === "active");
+  }, [liveDivisions, catDivisions]);
 
   // Combine parent branches with Org master business units so Super Admin sees every BU in the database
   const allParentBUs = useMemo(() => {
@@ -64,166 +71,130 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
   }, [form.company, form.site, companies, availableSites, setForm]);
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-4">
+    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs space-y-2.5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-          <i className="ri-git-merge-line text-blue-600" />
+        <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-900">
+          <i className="ri-git-merge-line text-blue-600 text-sm" />
           <span>Organizational Placement & Structure</span>
         </div>
         {!isSuperAdmin ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold border border-blue-100">
-            <i className="ri-shield-check-line text-blue-600" /> Scoped to Your BU
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-semibold border border-blue-100">
+            <i className="ri-shield-check-line text-blue-600 text-xs" /> Scoped to Your BU
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[11px] font-semibold border border-purple-100">
-            <i className="ri-shield-star-line text-purple-600" /> Super Admin Access
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-semibold border border-purple-100">
+            <i className="ri-shield-star-line text-purple-600 text-xs" /> Super Admin Access
           </span>
         )}
       </div>
 
       {/* 1. Business Unit & Company */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Business Unit (BU) *</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-              <i className="ri-building-line" />
-            </div>
-            {!isSuperAdmin ? (
-              <div className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center">
+          <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Business Unit (BU) <span className="text-rose-500 font-bold">*</span></label>
+          {!isSuperAdmin ? (
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i className="ri-building-line" />
+              </div>
+              <div className="w-full pl-8 pr-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center shadow-2xs">
                 {assignedBuName}
               </div>
-            ) : (
-              <>
-                <select
-                  value={form.branch_id}
-                  onChange={(e) => {
-                    const bId = e.target.value;
-                    const chosen = allParentBUs.find((b) => b.id === bId);
-                    setForm((prev) => ({
-                      ...prev,
-                      branch_id: bId,
-                      business_unit: chosen?.name || prev.business_unit,
-                      company: chosen?.company_name || prev.company,
-                      site: chosen?.name ? `${chosen.name} (Main Office)` : prev.site,
-                    }));
-                  }}
-                  className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
-                >
-                  <option value="">Select Business Unit...</option>
-                  {allParentBUs.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-                  <i className="ri-arrow-down-s-line" />
-                </div>
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <ModernSearchSelect
+              options={allParentBUs.map((b) => ({ id: b.id, name: b.name }))}
+              value={allParentBUs.find((b) => b.id === form.branch_id)?.name || form.business_unit || ""}
+              onChange={(bName) => {
+                const chosen = allParentBUs.find((b) => b.name === bName);
+                setForm((prev) => ({
+                  ...prev,
+                  branch_id: chosen?.id || "",
+                  business_unit: chosen?.name || bName,
+                  company: chosen?.company_name || prev.company,
+                  site: chosen?.name ? `${chosen.name} (Main Office)` : prev.site,
+                }));
+              }}
+              icon="ri-building-line"
+              placeholder="Select Business Unit..."
+              headerTitle="Business Units"
+              required
+            />
+          )}
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Company / Entity *</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-              <i className="ri-community-line" />
-            </div>
-            <select
-              value={form.company || "UNI"}
-              onChange={(e) => setForm({ ...form, company: e.target.value })}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
-            >
-              {companies.map((comp) => (
-                <option key={comp} value={comp}>
-                  {comp}
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-              <i className="ri-arrow-down-s-line" />
-            </div>
-          </div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Company / Entity <span className="text-rose-500 font-bold">*</span></label>
+          <ModernSearchSelect
+            options={companies}
+            value={form.company || "UNI"}
+            onChange={(comp) => setForm((prev) => ({ ...prev, company: comp }))}
+            icon="ri-community-line"
+            placeholder="Select Company / Entity..."
+            headerTitle="Companies"
+            required
+          />
         </div>
       </div>
 
       {/* 2. Department & Division */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Department *</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-              <i className="ri-team-line" />
-            </div>
-            <select
-              required
-              value={form.department}
-              onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
-            >
-              <option value="" disabled>Select Department</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.name}>{d.name}</option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-              <i className="ri-arrow-down-s-line" />
-            </div>
-          </div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Department <span className="text-rose-500 font-bold">*</span></label>
+          <ModernSearchSelect
+            options={departments.map((d) => ({ id: d.id, name: d.name }))}
+            value={form.department}
+            onChange={(deptName) => setForm((prev) => ({ ...prev, department: deptName }))}
+            icon="ri-team-line"
+            placeholder="Select Department"
+            headerTitle="Departments"
+            required
+          />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Division (Optional)</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-              <i className="ri-node-tree" />
-            </div>
-            <select
-              value={form.division || ""}
-              onChange={(e) => setForm({ ...form, division: e.target.value })}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
-            >
-              <option value="">None / General (Not assigned)</option>
-              {divisions.map((div) => (
-                <option key={div.id} value={div.name}>
-                  {div.name} {div.code ? `(${div.code})` : ""}
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-              <i className="ri-arrow-down-s-line" />
-            </div>
-          </div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Division (Optional)</label>
+          <ModernSearchSelect
+            options={[
+              { id: "none", name: "None / General (Not assigned)" },
+              ...allDivisions.map((div) => ({
+                id: div.id,
+                name: div.name,
+                code: div.code || undefined,
+              })),
+            ]}
+            value={form.division || "None / General (Not assigned)"}
+            onChange={(divName) =>
+              setForm((prev) => ({
+                ...prev,
+                division: divName === "None / General (Not assigned)" ? "" : divName,
+              }))
+            }
+            icon="ri-node-tree"
+            placeholder="Select Division..."
+            headerTitle="Organization Divisions"
+          />
         </div>
       </div>
 
       {/* 3. Site & Office / Floor / Location */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Site / Placement</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
-              <i className="ri-map-pin-2-line" />
-            </div>
-            <select
-              value={form.site || `${assignedBuName} (Main Office)`}
-              onChange={(e) => setForm({ ...form, site: e.target.value })}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
-            >
-              {availableSites.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-              <i className="ri-arrow-down-s-line" />
-            </div>
-          </div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Site / Placement</label>
+          <ModernSearchSelect
+            options={availableSites.map((s) => ({ id: s.id, name: s.name }))}
+            value={form.site || `${assignedBuName} (Main Office)`}
+            onChange={(siteName) => setForm((prev) => ({ ...prev, site: siteName }))}
+            icon="ri-map-pin-2-line"
+            placeholder="Select Site..."
+            headerTitle="Work Sites & Locations"
+          />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Office / Floor / Remote</label>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Office / Floor / Remote</label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">
               <i className="ri-building-2-line" />
             </div>
             <input
@@ -231,14 +202,12 @@ export const CreateHiringRequestOrgFields = memo(function CreateHiringRequestOrg
               placeholder="e.g. Floor 3, Building A, Remote..."
               value={form.location || ""}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 shadow-2xs"
             />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs">
-              <i className="ri-arrow-down-s-line" />
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
 });
+

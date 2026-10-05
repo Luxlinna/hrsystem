@@ -38,7 +38,8 @@ export function useHireData() {
 
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
   const canViewCrossBranch = Boolean(
-    hasEnterpriseRecruitmentPermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch)
+    isSuperAdmin ||
+    (hasEnterpriseRecruitmentPermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch))
   );
 
   const canHrReview = Boolean(isSuperAdmin || role?.hiring_requests_hr_review);
@@ -55,7 +56,7 @@ export function useHireData() {
 
   const loadData = useCallback(async () => {
     if (branchLoading || permLoading) return;
-    if (isPartnerBranchBlocked || (!hasEnterpriseRecruitmentPermission && !targetBranch && !userBranchId)) {
+    if (isPartnerBranchBlocked || (!isSuperAdmin && !hasEnterpriseRecruitmentPermission && !targetBranch && !userBranchId)) {
       setJobs([]);
       setCandidates([]);
       setInterviews([]);
@@ -88,7 +89,9 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      if (shouldScopeToBranch && targetBranch) {
+      // Super Admin and Enterprise HR reviewers see ALL requisitions across all BUs.
+      // Only local branch managers without global HR permissions are restricted to their local targetBranch.
+      if (!isSuperAdmin && !hasEnterpriseRecruitmentPermission && shouldScopeToBranch && targetBranch) {
         reqQuery = reqQuery.eq("branch_id", targetBranch);
       }
 
