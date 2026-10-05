@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0] p-4 font-sans">
       <div className="w-full max-w-md bg-white rounded-2xl p-8 md:p-10 border border-gray-100 shadow-xs">
         <div className="text-center mb-8">
-          <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-14 h-14 object-contain mx-auto mb-4" />
+          <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-20 h-20 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Forgot Password</h1>
           <p className="text-[13px] text-gray-500 mt-1">
             {requestStatus === "pending" ? "Awaiting Admin Approval" : requestStatus === "rejected" ? "Request Declined" : "Ask an admin to approve your reset"}

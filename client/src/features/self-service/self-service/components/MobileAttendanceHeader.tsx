@@ -32,7 +32,7 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
       <div className="flex items-center justify-between relative z-10 mb-6">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-2xl p-1.5 flex items-center justify-center shadow-md border border-white/90 shrink-0"
+            className="w-11 h-11 rounded-2xl p-1 flex items-center justify-center shadow-md border border-white/90 shrink-0"
             style={{ backgroundColor: "#ffffff" }}
           >
             <img src="/logo-mark.png" alt="HRSystem" className="w-full h-full object-contain" />
