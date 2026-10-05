@@ -76,6 +76,8 @@ export function useSelfServiceLeave({
     getLeaveTypeStats: balances.getLeaveTypeStats,
     stats: balances.stats,
     submitting: mutations.submitting,
+    cancellingId: mutations.cancellingId,
     handleSubmit: mutations.handleSubmit,
+    handleCancelRequest: mutations.handleCancelRequest,
   };
 }

@@ -42,7 +42,7 @@ export function useLeaveData() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      if (!user?.email || isPartnerBranchBlocked || (!targetBranch && !canViewAll && !isSuperAdmin)) {
+      if (!user?.email || isPartnerBranchBlocked) {
         setEmployees([]); setRequests([]); setCalendarRequests([]); setLoading(false); return;
       }
 

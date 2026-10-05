@@ -42,8 +42,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const isHrDivision = useMemo(() => {
     if (isSuperAdmin) return true;
     const isHrBranch =
-      /hr\s*division|human\s*resource/i.test(userBranchName || "") ||
-      /hr\s*division|human\s*resource/i.test(userSiteName || "");
+      /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(userBranchName || "") ||
+      /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(userSiteName || "");
     const hasHrPermissions = Boolean(
       role?.hiring_requests_hr_admin_approve ||
       role?.hiring_requests_hr_review ||

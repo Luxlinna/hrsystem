@@ -43,7 +43,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
   if (!inspectRequest) return null;
 
   const isOwn = inspectRequest.employee_id === myEmployeeId;
-  const canCancel = isOwn && (inspectRequest.status === "pending" || inspectRequest.status === "approved");
+  const canCancel = (isOwn || isSuperAdmin) && (inspectRequest.status === "pending" || inspectRequest.status === "approved");
   const { canAct, actionLabel } = canUserActOnRequest({
     request: inspectRequest,
     myEmployeeId,

@@ -11,6 +11,7 @@ import { usePositions } from "@/features/organization/branches/hooks/usePosition
 interface CreateHiringRequestFieldsProps {
   form: NewHiringRequestFormState;
   setForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>;
+  editingRequest?: any | null;
   branches: Branch[];
   departments: string[];
   employees?: SearchableEmployee[];
@@ -26,6 +27,7 @@ interface CreateHiringRequestFieldsProps {
 export const CreateHiringRequestFields = memo(function CreateHiringRequestFields({
   form,
   setForm,
+  editingRequest,
   branches,
   departments,
   employees = [],
@@ -111,7 +113,13 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-tight">Requisition ID</p>
             <p className="text-xs text-slate-900 font-bold leading-tight">
-              Auto-generated upon submission <span className="font-mono text-slate-600 font-semibold">(REQ-2026-XXXX)</span>
+              {editingRequest ? (
+                <span className="font-mono text-blue-700 font-bold">
+                  {editingRequest.requisition_id || (editingRequest.id ? `REQ-${editingRequest.id.slice(0, 8).toUpperCase()}` : "REQ-2026-XXXX")} (Existing)
+                </span>
+              ) : (
+                <>Auto-generated upon submission <span className="font-mono text-slate-600 font-semibold">(REQ-2026-XXXX)</span></>
+              )}
             </p>
           </div>
         </div>

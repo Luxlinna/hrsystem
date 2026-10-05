@@ -32,8 +32,8 @@ export function useHireData() {
   );
 
   const isHrDivisionBranch = Boolean(
-    /hr\s*division/i.test(effectiveBranchName || "") ||
-    /hr\s*division/i.test(userBranchName || "")
+    /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(effectiveBranchName || "") ||
+    /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(userBranchName || "")
   );
 
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";

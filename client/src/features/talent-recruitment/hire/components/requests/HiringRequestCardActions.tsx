@@ -8,8 +8,10 @@ interface Props {
   canActStage2: boolean;
   canActStage3: boolean;
   canActStage4: boolean;
+  canEdit?: boolean;
   canDelete: boolean;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
+  onEdit?: (req: HiringRequest) => void;
   onDelete?: (id: string) => void;
   onOpenExport?: (req: HiringRequest, mode: "full_requisition" | "job_description") => void;
 }
@@ -20,8 +22,10 @@ export const HiringRequestCardActions = memo(function HiringRequestCardActions({
   canActStage2,
   canActStage3,
   canActStage4,
+  canEdit = false,
   canDelete,
   onOpenDecision,
+  onEdit,
   onDelete,
   onOpenExport,
 }: Props) {
@@ -35,6 +39,18 @@ export const HiringRequestCardActions = memo(function HiringRequestCardActions({
       >
         <i className="ri-file-pdf-2-line text-rose-600 text-xs" /> Export PDF Form
       </button>
+
+      {onEdit && canEdit && (
+        <button
+          type="button"
+          onClick={() => onEdit(r)}
+          title="Edit Requisition Details"
+          className="flex-1 lg:w-40 py-1.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] flex items-center justify-center gap-1.5 border border-amber-200 hover:border-amber-400 cursor-pointer shadow-2xs transition-all"
+        >
+          <i className="ri-edit-line text-amber-600 text-xs" /> Edit Requisition
+        </button>
+      )}
+
       {canActStage1 && (
         <>
           <button

@@ -71,6 +71,8 @@ interface HireModalsContainerProps {
 
   showRequestModal: boolean;
   setShowRequestModal: (val: boolean) => void;
+  editingRequest?: HiringRequest | null;
+  setEditingRequest?: (val: HiringRequest | null) => void;
   requestForm: NewHiringRequestFormState;
   setRequestForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>;
   submittingRequest: boolean;
@@ -150,7 +152,15 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         allCandidates={props.allCandidates || props.candidates}
         employees={props.employees}
         branches={props.branches}
-        isHrDivisionBranch={Boolean(props.isHrDivisionBranch || /hr\s*division/i.test(props.userBranchName || "") || props.branches?.some(b => b.id === props.userBranchId && /hr\s*division/i.test(b.name)))}
+        isHrDivisionBranch={Boolean(
+          props.isHrDivisionBranch ||
+          /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(props.userBranchName || "") ||
+          props.branches?.some(
+            (b) =>
+              b.id === props.userBranchId &&
+              /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(b.name)
+          )
+        )}
         onClose={() => props.setCandidateModal(false)}
         onSubmit={props.handleSaveCandidate}
         onMergeCandidate={props.handleMergeCandidate}
@@ -209,7 +219,11 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
 
       <CreateHiringRequestModal
         isOpen={props.showRequestModal}
-        onClose={() => props.setShowRequestModal(false)}
+        editingRequest={props.editingRequest}
+        onClose={() => {
+          props.setShowRequestModal(false);
+          props.setEditingRequest?.(null);
+        }}
         form={props.requestForm}
         setForm={props.setRequestForm}
         branches={props.branches}

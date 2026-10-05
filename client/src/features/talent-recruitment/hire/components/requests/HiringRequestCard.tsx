@@ -21,6 +21,7 @@ interface HiringRequestCardProps {
   actorEmail?: string;
   myEmployeeId?: string;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
+  onEdit?: (req: HiringRequest) => void;
   onDelete?: (id: string) => void;
   onOpenExport?: (req: HiringRequest, mode: "full_requisition" | "job_description") => void;
 }
@@ -38,6 +39,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   actorEmail,
   myEmployeeId,
   onOpenDecision,
+  onEdit,
   onDelete,
   onOpenExport,
 }: HiringRequestCardProps) {
@@ -49,7 +51,9 @@ export const HiringRequestCard = memo(function HiringRequestCard({
     (actorName && r.requested_by_name?.toLowerCase() === actorName.toLowerCase())
   );
 
-  const canDeleteThisRequest = isOwner || isSuperAdmin || isAdmin;
+  // Only the requester who created the requisition (or Super Admin) can delete it.
+  // Other reviewers and approvers can only approve or reject.
+  const canDeleteThisRequest = isOwner || isSuperAdmin;
   const isStage1Branch = !r.status || r.status === "pending" || r.status === "pending_branch_review";
   const isStage2HrReview = r.status === "pending_hr_review";
   const isStage3HrAdmin = r.status === "pending_hr_admin_review";
@@ -186,8 +190,10 @@ export const HiringRequestCard = memo(function HiringRequestCard({
           canActStage2={canActStage2}
           canActStage3={canActStage3}
           canActStage4={canActStage4}
+          canEdit={Boolean(canDeleteThisRequest)}
           canDelete={Boolean(canDeleteThisRequest)}
           onOpenDecision={onOpenDecision}
+          onEdit={onEdit}
           onDelete={onDelete}
           onOpenExport={onOpenExport}
         />

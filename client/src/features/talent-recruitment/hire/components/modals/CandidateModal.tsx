@@ -6,6 +6,7 @@ import { extractCv, type ExtractedCvData } from "../../utils/cvExtractor";
 import { queryCandidateDuplicates, findDuplicateCandidate, type DuplicateMatchResult } from "../../utils/cvDuplicateMatcher";
 import { DuplicateCandidateWarningModal } from "./DuplicateCandidateWarningModal";
 import { CandidateCvPreviewModal } from "./CandidateCvPreviewModal";
+import { isEmployeeHrRecruiter, HR_ADMIN_DIVISION_REGEX } from "../../hooks/useHrRecruiters";
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -66,7 +67,7 @@ export const CandidateModal = memo(function CandidateModal({
       if (job && job.branch_id) {
         const jobBranch = branches.find((b) => b.id === job.branch_id);
         if (jobBranch) {
-          return /hr\s*division/i.test(jobBranch.name);
+          return HR_ADMIN_DIVISION_REGEX.test(jobBranch.name);
         }
       }
     }
@@ -86,30 +87,13 @@ export const CandidateModal = memo(function CandidateModal({
     return Array.from(map.values()).sort((a, b) => a.buName.localeCompare(b.buName));
   }, [jobs, branches]);
 
-  // Only employees belonging to HR Division AND holding an HR position are eligible recruiters
+  // Employees belonging to HR & Admin Division OR holding an HR position are eligible recruiters
   const hrEmployees = useMemo(() => {
-    const hrBranchIds = new Set(
-      (branches || [])
-        .filter((b) => /hr\s*division|human\s*resource/i.test(b.name))
-        .map((b) => b.id)
-    );
-
     return employees.filter((emp) => {
       // Always retain if already assigned to this candidate so existing data is never hidden
       if (form.assigned_recruiter_id && emp.id === form.assigned_recruiter_id) return true;
 
-      const empBranchName = emp.branch_name || branches.find((b) => b.id === emp.branch_id)?.name || "";
-      const isHrDivision =
-        (emp.branch_id && hrBranchIds.has(emp.branch_id)) ||
-        /hr\s*division|human\s*resource/i.test(empBranchName) ||
-        /hr\s*division/i.test(emp.department || "");
-
-      const isHrPosition =
-        /(^|\b)(hr|recruiter|recruitment|talent|people|talent\s*acquisition)(\b|$)/i.test(emp.role || "") ||
-        /hr\s*(officer|specialist|manager|executive|generalist|director|lead|coordinator|admin)/i.test(emp.role || "");
-
-      // Employee must belong to HR Division AND hold an HR position
-      return isHrDivision && isHrPosition;
+      return isEmployeeHrRecruiter(emp, branches);
     }).sort((a, b) => (a.first_name || "").localeCompare(b.first_name || ""));
   }, [employees, branches, form.assigned_recruiter_id]);
 

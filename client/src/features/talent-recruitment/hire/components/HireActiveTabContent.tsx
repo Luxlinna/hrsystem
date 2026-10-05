@@ -116,6 +116,7 @@ export const HireActiveTabContent = memo(function HireActiveTabContent({
             isChairman={h.isChairman} isSuperAdmin={h.isSuperAdmin} isAdmin={h.isAdmin}
             actorName={h.actorName} actorEmail={h.actorEmail} myEmployeeId={h.myEmployeeId}
             onOpenCreate={() => h.openCreateRequest()} onOpenDecision={h.openDecisionModal}
+            onEditRequest={h.openEditRequest}
             onDeleteRequest={h.handleDeleteRequest} onAssignHrOfficer={h.handleAssignHrOfficer}
           />
         )}

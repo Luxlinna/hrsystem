@@ -55,8 +55,8 @@ export function useHire() {
   );
 
   const isHrDivisionBranch = Boolean(
-    /hr\s*division/i.test(effectiveBranchName || "") ||
-    /hr\s*division/i.test(userBranchName || "")
+    /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(effectiveBranchName || "") ||
+    /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(userBranchName || "")
   );
 
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
@@ -91,6 +91,7 @@ export function useHire() {
     actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
     userBranchId, userBranchName, targetBranch, isAdmin, isSuperAdmin, isBranchAdmin,
     canBranchApprove, canChairmanApprove, canRequest, loadData: data.loadData, branches: data.branches,
+    jobs: data.jobs,
   });
 
   const modals = useHireModals({
@@ -196,7 +197,9 @@ export function useHire() {
     onboardingJoinDate: modals.onboardingJoinDate, setOnboardingJoinDate: modals.setOnboardingJoinDate, movingToOnboarding: actions.movingToOnboarding,
     feedbackModal: modals.feedbackModal, setFeedbackModal: modals.setFeedbackModal, feedbackInterview: modals.feedbackInterview, feedbackScore: modals.feedbackScore, setFeedbackScore: modals.setFeedbackScore, feedbackNotes: modals.feedbackNotes,
     setFeedbackNotes: modals.setFeedbackNotes, savingFeedback: actions.savingFeedback, postingJob: actions.postingJob,
-    showRequestModal: requests.showRequestModal, setShowRequestModal: requests.setShowRequestModal, requestForm: requests.requestForm, setRequestForm: requests.setRequestForm, submittingRequest: requests.submittingRequest, decisionModal: requests.decisionModal,
+    showRequestModal: requests.showRequestModal, setShowRequestModal: requests.setShowRequestModal,
+    editingRequest: requests.editingRequest, setEditingRequest: requests.setEditingRequest, openEditRequest: requests.openEditRequest,
+    requestForm: requests.requestForm, setRequestForm: requests.setRequestForm, submittingRequest: requests.submittingRequest, decisionModal: requests.decisionModal,
     setDecisionModal: requests.setDecisionModal, targetRequest: requests.targetRequest, decisionAction: requests.decisionAction, rejectionReason: requests.rejectionReason, setRejectionReason: requests.setRejectionReason, processingDecision: requests.processingDecision,
     openCreateRequest: requests.openCreateRequest, openDecisionModal: requests.openDecisionModal, handleCreateRequest: requests.handleCreateRequest, handleDeleteRequest: requests.handleDeleteRequest, handleDecision: requests.handleDecision, handleAssignHrOfficer: requests.handleAssignHrOfficer,
     openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob, openCreateCandidate: modals.openCreateCandidate, openEditCandidate: modals.openEditCandidate, openCreateInterview: modals.openCreateInterview,

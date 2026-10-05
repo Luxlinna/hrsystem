@@ -179,8 +179,40 @@ export function useSelfServiceLeaveMutations({
     ]
   );
 
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancelRequest = useCallback(
+    async (request: LeaveRequest, reason?: string) => {
+      if (!request?.id) return;
+      setCancellingId(request.id);
+      try {
+        const combinedReason = reason?.trim()
+          ? `${request.reason || ""}\n\n[Cancelled by employee: ${reason.trim()}]`.trim()
+          : `${request.reason || ""}\n\n[Cancelled by employee]`.trim();
+
+        const { error } = await supabase
+          .from("leave_requests")
+          .update({ status: "cancelled", reason: combinedReason })
+          .eq("id", request.id);
+
+        if (error) throw error;
+
+        showToast("success", "Leave request cancelled successfully.");
+        await fetchLeave();
+      } catch (err: any) {
+        console.error("Error cancelling leave request:", err);
+        showToast("error", err?.message || "Failed to cancel leave request.");
+      } finally {
+        setCancellingId(null);
+      }
+    },
+    [fetchLeave, showToast]
+  );
+
   return {
     submitting,
+    cancellingId,
     handleSubmit,
+    handleCancelRequest,
   };
 }

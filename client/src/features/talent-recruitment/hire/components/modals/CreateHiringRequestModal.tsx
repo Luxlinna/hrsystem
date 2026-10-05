@@ -7,6 +7,7 @@ import { toast } from "@/components/Toast";
 
 interface CreateHiringRequestModalProps {
   isOpen: boolean;
+  editingRequest?: any | null;
   onClose: () => void;
   form: NewHiringRequestFormState;
   setForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>;
@@ -24,6 +25,7 @@ interface CreateHiringRequestModalProps {
 
 export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
   isOpen,
+  editingRequest,
   onClose,
   form,
   setForm,
@@ -49,7 +51,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
     restoreDraft,
     clearDraft,
     saveDraftManually,
-  } = useHiringRequestAutoSave(isOpen, form, setForm);
+  } = useHiringRequestAutoSave(isOpen, form, setForm, Boolean(editingRequest));
 
   useEffect(() => {
     if (isOpen) {
@@ -147,21 +149,25 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-5 pb-2 shrink-0">
           <div className="flex items-start gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center text-base shrink-0 shadow-2xs">
-              <i className="ri-file-text-fill" />
+              <i className={editingRequest ? "ri-edit-line" : "ri-file-text-fill"} />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-snug">New Hiring Requisition</h2>
+                <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-snug">
+                  {editingRequest
+                    ? `Edit Requisition ${editingRequest.requisition_id ? `(${editingRequest.requisition_id})` : ""}`
+                    : "New Hiring Requisition"}
+                </h2>
                 
                 {/* Auto-Save Indicators */}
-                {autoSaveStatus === "saving" && (
+                {!editingRequest && autoSaveStatus === "saving" && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-medium text-amber-700 animate-pulse">
                     <i className="ri-loader-4-line animate-spin text-xs" />
                     <span>Saving draft...</span>
                   </span>
                 )}
 
-                {autoSaveStatus !== "saving" && lastSavedAt && (
+                {!editingRequest && autoSaveStatus !== "saving" && lastSavedAt && (
                   <span
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-medium text-emerald-700"
                     title={`Last auto-saved at ${lastSavedAt.toLocaleTimeString()}`}
@@ -171,7 +177,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
                   </span>
                 )}
 
-                {lastSavedAt && (
+                {!editingRequest && lastSavedAt && (
                   <button
                     type="button"
                     onClick={clearDraft}
@@ -183,29 +189,31 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Submit a complete enterprise hiring requisition for executive review and live posting.
+                {editingRequest ? "Modify requisition parameters, position requirements, and job description." : "Submit a complete enterprise hiring requisition for executive review and live posting."}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <label
-              className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg"
-              title={autoSaveEnabled ? "Auto-save is enabled" : "Auto-save is disabled"}
-            >
-              <input
-                type="checkbox"
-                checked={autoSaveEnabled}
-                onChange={(e) => setAutoSaveEnabled(e.target.checked)}
-                className="w-3 h-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-              />
-              <span className="font-medium">Auto-save</span>
-            </label>
-          </div>
+          {!editingRequest && (
+            <div className="flex items-center gap-2 shrink-0">
+              <label
+                className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg"
+                title={autoSaveEnabled ? "Auto-save is enabled" : "Auto-save is disabled"}
+              >
+                <input
+                  type="checkbox"
+                  checked={autoSaveEnabled}
+                  onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+                  className="w-3 h-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="font-medium">Auto-save</span>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Existing Draft Recovery Banner */}
-        {availableDraft && (
+        {!editingRequest && availableDraft && (
           <div className="mx-5 mb-2 p-2.5 bg-amber-50/90 border border-amber-200 rounded-xl flex items-center justify-between gap-2.5 text-xs text-amber-900 animate-in fade-in">
             <div className="flex items-center gap-2">
               <i className="ri-history-line text-amber-600 text-sm shrink-0" />
@@ -327,6 +335,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
           <CreateHiringRequestFields
             form={form}
             setForm={setForm}
+            editingRequest={editingRequest}
             branches={branches}
             departments={departments}
             employees={employees}
@@ -423,11 +432,12 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
                 >
                   {submitting ? (
                     <>
-                      <i className="ri-loader-4-line animate-spin" /> Submitting...
+                      <i className="ri-loader-4-line animate-spin" /> {editingRequest ? "Updating..." : "Submitting..."}
                     </>
                   ) : (
                     <>
-                      <i className="ri-send-plane-fill" /> Submit Requisition
+                      <i className={editingRequest ? "ri-save-line" : "ri-send-plane-fill"} />
+                      <span>{editingRequest ? "Save & Update Requisition" : "Submit Requisition"}</span>
                     </>
                   )}
                 </button>

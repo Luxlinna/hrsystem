@@ -31,7 +31,8 @@ function hasMeaningfulContent(f: NewHiringRequestFormState): boolean {
 export function useHiringRequestAutoSave(
   isOpen: boolean,
   form: NewHiringRequestFormState,
-  setForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>
+  setForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>,
+  isEditing: boolean = false
 ) {
   const [autoSaveEnabled, setAutoSaveEnabledState] = useState<boolean>(() => {
     try {
@@ -60,9 +61,9 @@ export function useHiringRequestAutoSave(
     }
   }, []);
 
-  // Auto-hydrate existing draft directly into form state when modal opens
+  // Auto-hydrate existing draft directly into form state when modal opens ONLY for new requests
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isEditing) {
       try {
         const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (savedDraft) {
@@ -81,17 +82,17 @@ export function useHiringRequestAutoSave(
       } catch (err) {
         console.error("Failed to restore hiring request draft:", err);
       }
-    } else {
+    } else if (!isOpen) {
       isHydratingRef.current = false;
       lastSavedPayloadRef.current = "";
       setAvailableDraft(null);
       setAutoSaveStatus("idle");
     }
-  }, [isOpen, setForm]);
+  }, [isOpen, isEditing, setForm]);
 
-  // Track field changes and trigger auto-save when user types
+  // Track field changes and trigger auto-save when user types (only for new requests)
   useEffect(() => {
-    if (!isOpen || !autoSaveEnabled) return;
+    if (!isOpen || isEditing || !autoSaveEnabled) return;
     if (isHydratingRef.current) return;
     if (!hasMeaningfulContent(form)) return;
 
@@ -129,7 +130,7 @@ export function useHiringRequestAutoSave(
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [form, autoSaveEnabled, isOpen]);
+  }, [form, autoSaveEnabled, isOpen, isEditing]);
 
   const saveDraftManually = useCallback(() => {
     if (!hasMeaningfulContent(form)) return false;

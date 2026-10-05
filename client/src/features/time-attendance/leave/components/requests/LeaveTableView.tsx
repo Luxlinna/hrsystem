@@ -56,7 +56,7 @@ export const LeaveTableView = memo(function LeaveTableView({
         <tbody className="divide-y divide-gray-100 bg-white">
           {requests.map((r, idx) => {
             const isOwn = r.employee_id === myEmployeeId;
-            const canCancel = isOwn && (r.status === "pending" || r.status === "approved");
+            const canCancel = (isOwn || isSuperAdmin) && (r.status === "pending" || r.status === "approved");
             const canDelete = isSuperAdmin || isBranchAdmin || canApproveLeave || isOwn;
             const { canAct, actionLabel } = canUserActOnRequest({
               request: r,

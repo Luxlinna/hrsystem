@@ -19,7 +19,7 @@ export const CreateHiringAuthorityFields = memo(function CreateHiringAuthorityFi
   employees = [],
   assignedBuName,
 }: Props) {
-  const { recruiters: hrRecruiters } = useHrRecruiters(branches);
+  const { recruiters: hrRecruiters } = useHrRecruiters(branches, employees);
 
   useEffect(() => {
     if (!form.assigned_recruiter_id && hrRecruiters.length > 0) {

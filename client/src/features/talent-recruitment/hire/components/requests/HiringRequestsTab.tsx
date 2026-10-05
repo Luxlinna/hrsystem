@@ -26,6 +26,7 @@ interface HiringRequestsTabProps {
   myEmployeeId?: string;
   onOpenCreate: () => void;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
+  onEditRequest?: (req: HiringRequest) => void;
   onDeleteRequest?: (id: string) => void;
   onAssignHrOfficer?: (requestId: string, hrId: string | null, hrName: string | null) => void;
 }
@@ -48,6 +49,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   myEmployeeId,
   onOpenCreate,
   onOpenDecision,
+  onEditRequest,
   onDeleteRequest,
   onAssignHrOfficer,
 }: HiringRequestsTabProps) {
@@ -168,6 +170,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
               actorEmail={actorEmail}
               myEmployeeId={myEmployeeId}
               onOpenDecision={onOpenDecision}
+              onEdit={onEditRequest}
               onDelete={onDeleteRequest}
               onOpenExport={(req, mode) => {
                 setExportReq(req);

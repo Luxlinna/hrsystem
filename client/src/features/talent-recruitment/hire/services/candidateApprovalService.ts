@@ -167,7 +167,8 @@ export async function resolveSignatoryNamesForApproval(
       const hrEmps = emps?.filter((e) => {
         const bName = (e.branches as any)?.name || "";
         return (
-          /hr\s*division/i.test(bName) &&
+          (/(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(bName) ||
+            /(^|\b)(hr|human\s*resources?|talent|people|admin)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(e.department || "")) &&
           /(hr\s*manager|manager|hr)/i.test(e.role || "") &&
           !/(director)/i.test(e.role || "")
         );
@@ -191,7 +192,8 @@ export async function resolveSignatoryNamesForApproval(
         emps?.find((e) => {
           const bName = (e.branches as any)?.name || "";
           return (
-            /hr\s*division/i.test(bName) &&
+            (/(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(bName) ||
+              /(^|\b)(hr|human\s*resources?|talent|people|admin)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(e.department || "")) &&
             /(hr.*director|head\s*of\s*hr|director)/i.test(e.role || "")
           );
         }) || emps?.find((e) => /(hr.*director|head\s*of\s*hr)/i.test(e.role || ""));

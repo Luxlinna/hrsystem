@@ -80,7 +80,7 @@ export async function getDefaultRecruiter(): Promise<{ id: string; name: string;
 
     const hrBranchIds = new Set(
       (branches || [])
-        .filter((b) => /hr\s*division|human\s*resource/i.test(b.name))
+        .filter((b) => /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(b.name))
         .map((b) => b.id)
     );
 

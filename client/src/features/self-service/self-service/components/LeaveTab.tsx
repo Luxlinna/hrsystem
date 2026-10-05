@@ -29,6 +29,8 @@ export default function LeaveTab({ employeeId, employee }: Props) {
     hrApprovers,
     getLeaveTypeStats,
     handleSubmit,
+    handleCancelRequest,
+    cancellingId,
     stats,
   } = useSelfServiceLeave({
     employeeId,
@@ -135,7 +137,11 @@ export default function LeaveTab({ employeeId, employee }: Props) {
       />
 
       {/* Leave Requests History List */}
-      <LeaveRequestsList requests={requests} />
+      <LeaveRequestsList
+        requests={requests}
+        onCancelRequest={handleCancelRequest}
+        cancellingId={cancellingId}
+      />
     </div>
   );
 }

@@ -43,7 +43,7 @@ export const LeaveCardView = memo(function LeaveCardView({
         const typeCfg = LEAVE_TYPE_CONFIG[r.leave_type] || LEAVE_TYPE_CONFIG.annual;
         const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
         const isOwn = r.employee_id === myEmployeeId;
-        const canCancel = isOwn && (r.status === "pending" || r.status === "approved");
+        const canCancel = (isOwn || isSuperAdmin) && (r.status === "pending" || r.status === "approved");
         const canDelete = isSuperAdmin || isBranchAdmin || _canApproveLeave || isOwn;
         const tier = getRequestTier(r);
         const hasEndorsed = (r.reason || "").includes("[Stage: Manager Endorsed") || (r.reason || "").includes("[Stage: BU Admin Endorsed");

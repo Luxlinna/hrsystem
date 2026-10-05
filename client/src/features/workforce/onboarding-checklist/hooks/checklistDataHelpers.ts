@@ -10,7 +10,7 @@ import {
 export function filterHrStaff(st: any[], branchList: any[]) {
   const hrBranchIds = new Set(
     (branchList || [])
-      .filter((b: any) => /hr\s*division|human\s*resource/i.test(b.name || ""))
+      .filter((b: any) => /(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(b.name || ""))
       .map((b: any) => b.id)
   );
 
@@ -19,10 +19,10 @@ export function filterHrStaff(st: any[], branchList: any[]) {
     const bName = Array.isArray(emp.branches)
       ? emp.branches[0]?.name || ""
       : emp.branches?.name || "";
-    if (/hr\s*division|human\s*resource/i.test(bName)) return true;
+    if (/(^|\b)(hr|human\s*resources?|people|talent)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(bName)) return true;
 
     const dept = (emp.department || "").trim().toLowerCase();
-    if (/^(hr|human\s*resources?|recruitment|talent|people)$/i.test(dept) || /hr\s*division/i.test(dept)) return true;
+    if (/(^|\b)(hr|human\s*resources?|recruitment|talent|people|admin)(\b|$)|hr\s*(&|and|\/|\+)\s*admin/i.test(dept)) return true;
 
     const role = (emp.role || "").trim().toLowerCase();
     if (/(^|\b)(hr|recruiter|recruitment|talent|human\s*resources?)(\b|$)/i.test(role) || /super\s*admin/i.test(role)) return true;
