@@ -130,7 +130,7 @@ export const CandidateResumeCard = memo(function CandidateResumeCard({
         isOpen={Boolean(previewDoc)}
         onClose={() => setPreviewDoc(null)}
         candidateName={candidate.full_name}
-        position={candidate.applied_role || candidate.job_title}
+        position={candidate.job_title || candidate.position || candidate.job_postings?.title || undefined}
         fileUrl={previewDoc?.url}
         fileName={previewDoc?.name}
       />

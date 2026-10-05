@@ -27,6 +27,7 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
     handleFileUpload,
     handleApplyTemplate,
     handleSaveAsTemplate,
+    canManageTemplates,
   } = useJobDescriptionHeader(form, setForm);
 
   return (
@@ -90,16 +91,18 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
             </div>
           </div>
 
-          {/* Manage JD Library / Setting for Super Admin */}
-          <button
-            type="button"
-            onClick={() => setManageModalOpen(true)}
-            title="Super Admin JD Library & Templates Control"
-            className="px-2 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 text-[11px] font-semibold shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
-          >
-            <i className="ri-settings-4-line text-slate-600 text-xs" />
-            <span className="hidden sm:inline">JD Library</span>
-          </button>
+          {/* Manage JD Library / Setting for Super Admin & Admin */}
+          {canManageTemplates && (
+            <button
+              type="button"
+              onClick={() => setManageModalOpen(true)}
+              title="Super Admin & Admin JD Library Control"
+              className="px-2 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 text-[11px] font-semibold shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <i className="ri-settings-4-line text-slate-600 text-xs" />
+              <span className="hidden sm:inline">JD Library</span>
+            </button>
+          )}
 
           <input
             ref={fileInputRef}

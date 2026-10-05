@@ -1,30 +1,51 @@
+import { useState, useCallback, useEffect } from "react";
 import { HireHeader } from "./components/HireHeader";
 import { HireTabsBar } from "./components/HireTabsBar";
-import { HireStatsRow } from "./components/HireStatsRow";
-import { HireFilterBar } from "./components/HireFilterBar";
-import { JobsTabContent } from "./components/jobs/JobsTabContent";
-import { CandidatesTabContent } from "./components/candidates/CandidatesTabContent";
-import { InterviewsTabContent } from "./components/interviews/InterviewsTabContent";
-import { PipelineKanbanView } from "./components/pipeline/PipelineKanbanView";
-import { PipelineMetricsChart } from "./components/pipeline/PipelineMetricsChart";
-import { HiringRequestsTab } from "./components/requests/HiringRequestsTab";
-import { RecruitmentActionsView } from "./components/actions/RecruitmentActionsView";
-import { OffersTabContent } from "./components/offers/OffersTabContent";
-import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
-import { OfferWorkflowModal } from "./components/offers/OfferWorkflowModal";
-import { HireModalsContainer } from "./components/modals/HireModalsContainer";
-import { ImportHiringInfoModal } from "./components/modals/ImportHiringInfoModal";
+import { HireActiveTabContent } from "./components/HireActiveTabContent";
+import { HirePageModals } from "./components/modals/HirePageModals";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { supabase } from "@/lib/supabase";
-import { toast } from "@/components/Toast";
 import { useHire } from "./hooks/useHire";
 import { useOfferLetters } from "./hooks/useOfferLetters";
-import { useState } from "react";
+import type { JobDescriptionTemplate, HireTab } from "./types";
+
+const TAB_ORDER: HireTab[] = [
+  "actions",
+  "requests",
+  "jobs",
+  "candidates",
+  "interviews",
+  "offers",
+  "pipeline",
+];
 
 export default function HirePage() {
   const h = useHire();
   const offersManager = useOfferLetters(h.actorName, h.loadData);
+  const [slideDirection, setSlideDirection] = useState<"right" | "left" | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showJdModal, setShowJdModal] = useState(false);
+  const [showCvBankModal, setShowCvBankModal] = useState(false);
+  const [jdTemplates, setJdTemplates] = useState<JobDescriptionTemplate[]>([]);
+
+  const handleSetTab = useCallback(
+    (newTab: HireTab) => {
+      const prevIdx = TAB_ORDER.indexOf(h.tab);
+      const nextIdx = TAB_ORDER.indexOf(newTab);
+      setSlideDirection(nextIdx >= prevIdx ? "right" : "left");
+      h.setTab(newTab);
+    },
+    [h]
+  );
+
+  const loadJdTemplates = useCallback(async () => {
+    const { data } = await supabase.from("job_description_templates").select("*").order("title");
+    setJdTemplates(data || []);
+  }, []);
+
+  useEffect(() => {
+    loadJdTemplates();
+  }, [loadJdTemplates]);
 
   if (h.loading && h.jobs.length === 0 && h.candidates.length === 0) {
     return (
@@ -69,6 +90,8 @@ export default function HirePage() {
         onOpenImportCandidates={() => setShowImportModal(true)}
         onOpenCreateInterview={() => h.openCreateInterview()}
         onOpenCreateRequest={() => h.openCreateRequest()}
+        onOpenManageJd={h.isSuperAdmin || h.isAdmin ? () => setShowJdModal(true) : undefined}
+        onOpenCvBank={h.isSuperAdmin || h.isAdmin ? () => setShowCvBankModal(true) : undefined}
         candidates={h.candidates}
         jobs={h.jobs}
         interviews={h.interviews}
@@ -77,7 +100,7 @@ export default function HirePage() {
 
       <HireTabsBar
         tab={h.tab}
-        setTab={h.setTab}
+        setTab={handleSetTab}
         jobsCount={h.jobs.length}
         candidatesCount={h.candidates.length}
         interviewsCount={h.interviews.length}
@@ -89,200 +112,24 @@ export default function HirePage() {
         isChairman={h.isChairman}
       />
 
-      {h.tab === "actions" && (
-        <RecruitmentActionsView
-          selectedRole={h.recruitmentActions.selectedRole}
-          onSelectRole={h.recruitmentActions.setSelectedRole}
-          defaultRole={h.recruitmentActions.defaultRole}
-          pendingCvReviews={h.recruitmentActions.pendingCvReviews}
-          feedbackDueInterviews={h.recruitmentActions.feedbackDueInterviews}
-          pendingApprovals={h.recruitmentActions.pendingApprovals}
-          counts={h.recruitmentActions.counts}
-          isHrDivisionScope={h.isHrDivisionScope}
-          onUpdateCandidateStage={h.updateCandidateStage}
-          onOpenFeedback={h.openFeedbackModal}
-          onOpenDecision={h.openDecisionModal}
-        />
-      )}
-
-      {h.tab !== "requests" && h.tab !== "actions" && h.tab !== "offers" && (
-        <>
-          <HireStatsRow
-            activeJobsCount={h.jobs.filter((j) => j.status === "active").length || h.jobs.length}
-            candidatesCount={h.candidates.length}
-            interviewsCount={h.interviews.length}
-            hiredCount={h.candidates.filter((c) => c.stage === "hired").length}
-            onSelectTab={h.setTab}
-          />
-          <HireFilterBar
-            activeTab={h.tab}
-            searchQuery={h.searchQuery}
-            setSearchQuery={h.setSearchQuery}
-            filterJobStatus={h.filterJobStatus}
-            setFilterJobStatus={h.setFilterJobStatus}
-            filterDepartment={h.filterDepartment}
-            setFilterDepartment={h.setFilterDepartment}
-            filterBranch={h.filterBranch}
-            setFilterBranch={h.setFilterBranch}
-            filterCandidateStage={h.filterCandidateStage}
-            setFilterCandidateStage={h.setFilterCandidateStage}
-            filterCandidateJob={h.filterCandidateJob}
-            setFilterCandidateJob={h.setFilterCandidateJob}
-            filterInterviewStatus={h.filterInterviewStatus}
-            setFilterInterviewStatus={h.setFilterInterviewStatus}
-            jobViewMode={h.jobViewMode}
-            setJobViewMode={h.setJobViewMode}
-            candidateViewMode={h.candidateViewMode}
-            setCandidateViewMode={h.setCandidateViewMode}
-            departments={h.departments}
-            branches={h.branches}
-            jobs={h.jobs}
-          />
-        </>
-      )}
-
-      {h.tab === "jobs" && (
-        <JobsTabContent
-          jobs={h.filteredJobs}
-          candidates={h.candidates}
-          viewMode={h.jobViewMode}
-          onOpenCreateJob={h.openCreateJob}
-          onEditJob={h.openEditJob}
-          onCloseJob={h.closeJob}
-          onReopenJob={h.reopenJob}
-          onDeleteJob={h.deleteJob}
-          onAddCandidate={(jobId) => h.openCreateCandidate(jobId)}
-          onClearFilters={h.resetFilters}
-          hasFilters={h.hasFilters}
-        />
-      )}
-
-      {h.tab === "candidates" && (
-        <CandidatesTabContent
-          candidates={h.filteredCandidates}
-          viewMode={h.candidateViewMode}
-          canManage={h.canRequest}
-          onOpenCreate={() => h.openCreateCandidate()}
-          onOpenEdit={h.openEditCandidate}
-          onUpdateStage={h.updateCandidateStage}
-          onRate={h.rateCandidate}
-          onDelete={h.deleteCandidate}
-          onUploadResume={async (id: string, file: File) => {
-            const url = await h.uploadCandidateResume(file);
-            if (url) {
-              await supabase.from("candidates").update({ resume_url: url }).eq("id", id);
-              h.loadData();
-              toast("Resume Uploaded", "Candidate resume updated successfully.", "success");
-            }
-          }}
-          onMoveToOnboarding={h.openMoveToOnboarding}
-          onOpenInterview={(c) => h.openCreateInterview(c.id)}
-          onOpenImport={() => setShowImportModal(true)}
-        />
-      )}
-
-      {h.tab === "interviews" && (
-        <InterviewsTabContent
-          interviews={h.filteredInterviews}
-          onOpenCreateInterview={() => h.openCreateInterview()}
-          onEditInterview={h.openEditInterview}
-          onOpenFeedback={h.openFeedbackModal}
-          onDeleteInterview={(id) => {
-            const match = h.interviews.find((i) => i.id === id);
-            if (match) h.deleteInterview(match);
-          }}
-          myEmployeeId={h.myEmployeeId}
-          actorName={h.actorName}
-          isAdminOrRecruiter={h.isAdminOrRecruiter}
-        />
-      )}
-
-      {h.tab === "pipeline" && (
-        <div className="space-y-6">
-          <PipelineKanbanView
-            candidates={h.filteredCandidates}
-            onUpdateStage={h.updateCandidateStage}
-            onMoveToOnboarding={h.openMoveToOnboarding}
-          />
-          <PipelineMetricsChart stageCounts={h.pipelineStageCounts} />
-        </div>
-      )}
-
-      {h.tab === "requests" && (
-        <HiringRequestsTab
-          requests={h.hiringRequests}
-          canRequest={h.canRequest}
-          canApprove={h.canApprove}
-          canBranchApprove={h.canBranchApprove}
-          canHrReview={h.canHrReview}
-          canHrAdminApprove={h.canHrAdminApprove}
-          canChairmanApprove={h.canChairmanApprove}
-          isHrDivisionBranch={h.isHrDivisionBranch}
-          userBranchId={h.userBranchId}
-          isChairman={h.isChairman}
-          isSuperAdmin={h.isSuperAdmin}
-          isAdmin={h.isAdmin}
-          actorName={h.actorName}
-          actorEmail={h.actorEmail}
-          myEmployeeId={h.myEmployeeId}
-          onOpenCreate={() => h.openCreateRequest()}
-          onOpenDecision={h.openDecisionModal}
-          onDeleteRequest={h.handleDeleteRequest}
-          onAssignHrOfficer={h.handleAssignHrOfficer}
-        />
-      )}
-
-      {h.tab === "offers" && (
-        <OffersTabContent
-          offers={offersManager.offers}
-          loading={offersManager.loading}
-          candidates={h.candidates}
-          hiringRequests={h.hiringRequests}
-          onOpenCreateProposal={offersManager.openCreateProposal}
-          onOpenWorkflowModal={offersManager.openWorkflowModal}
-          onGenerateDraft={offersManager.handleGenerateDraft}
-          onExportPdf={offersManager.handleExportPdf}
-          onExportWord={offersManager.handleExportWord}
-          onDeleteOffer={offersManager.handleDeleteOffer}
-        />
-      )}
-
-      <CreateSalaryProposalModal
-        isOpen={offersManager.isCreateProposalOpen}
-        onClose={offersManager.closeCreateProposal}
-        candidate={offersManager.targetCandidate}
-        candidates={h.candidates}
-        hiringRequests={h.hiringRequests}
-        existingOffers={offersManager.offers}
-        onSubmit={offersManager.handleCreateProposal}
+      <HireActiveTabContent
+        h={h}
+        offersManager={offersManager}
+        slideDirection={slideDirection}
+        onOpenImportModal={() => setShowImportModal(true)}
       />
 
-      <OfferWorkflowModal
-        isOpen={Boolean(offersManager.activeOffer && offersManager.modalType)}
-        onClose={offersManager.closeWorkflowModal}
-        offer={offersManager.activeOffer}
-        modalType={offersManager.modalType}
-        actorName={offersManager.currentUserName}
-        onApproveBuCeo={offersManager.handleApproveBuCeo}
-        onApproveHrManager={offersManager.handleApproveHrManager}
-        onApproveHrDirector={offersManager.handleApproveHrDirector}
-        onAuthorizeChairwoman={offersManager.handleAuthorizeChairwoman}
-        onApproveSalary={offersManager.handleApproveSalary}
-        onGenerateDraft={offersManager.handleGenerateDraft}
-        onEndorseHrReview={offersManager.handleEndorseHrReview}
-        onApproveManagement={offersManager.handleApproveManagement}
-        onIssueOffer={offersManager.handleIssueOffer}
-        onRecordDecision={offersManager.handleRecordDecision}
-        onExportPdf={offersManager.handleExportPdf}
-        onExportWord={offersManager.handleExportWord}
-      />
-
-      <HireModalsContainer {...h} />
-
-      <ImportHiringInfoModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onSuccess={h.loadData}
+      <HirePageModals
+        h={h}
+        offersManager={offersManager}
+        showImportModal={showImportModal}
+        setShowImportModal={setShowImportModal}
+        showJdModal={showJdModal}
+        setShowJdModal={setShowJdModal}
+        showCvBankModal={showCvBankModal}
+        setShowCvBankModal={setShowCvBankModal}
+        jdTemplates={jdTemplates}
+        loadJdTemplates={loadJdTemplates}
       />
     </div>
   );

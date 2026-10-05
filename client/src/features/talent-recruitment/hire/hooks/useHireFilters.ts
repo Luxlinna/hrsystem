@@ -3,6 +3,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import type { Job, Candidate, Interview, HireTab, Branch } from "../types";
 import { DEFAULT_DEPARTMENTS, PIPELINE_STAGES } from "../constants";
 
+const STAGE_ORDER = ["all", ...PIPELINE_STAGES];
+const JOB_STATUS_ORDER = ["all", "active", "closed"];
+const INTERVIEW_STATUS_ORDER = ["all", "scheduled", "completed", "cancelled"];
+
 export function useHireFilters(
   jobs: Job[],
   candidates: Candidate[],
@@ -15,23 +19,15 @@ export function useHireFilters(
   useEffect(() => {
     const candidateId = searchParams.get("candidateId");
     if (candidateId) {
-      const openApproval =
-        searchParams.get("openApproval") === "true" ||
-        searchParams.get("openCaf") === "true" ||
-        searchParams.get("approval") === "true";
-      const openOffer =
-        searchParams.get("openOffer") === "true" ||
-        searchParams.get("offer") === "true";
+      const openApproval = searchParams.get("openApproval") === "true" || searchParams.get("openCaf") === "true" || searchParams.get("approval") === "true";
+      const openOffer = searchParams.get("openOffer") === "true" || searchParams.get("offer") === "true";
       const query = openApproval ? "?openApproval=true" : openOffer ? "?openOffer=true" : "";
       navigate(`/hire/candidates/${candidateId}${query}`, { replace: true });
     }
   }, [searchParams, navigate]);
 
   const urlTab = searchParams.get("tab") as HireTab | null;
-  const initialTab: HireTab = (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests", "offers"].includes(urlTab))
-    ? urlTab
-    : "jobs";
-
+  const initialTab: HireTab = urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests", "offers"].includes(urlTab) ? urlTab : "jobs";
   const [tab, setTabState] = useState<HireTab>(initialTab);
 
   useEffect(() => {
@@ -52,27 +48,42 @@ export function useHireFilters(
   const [jobViewMode, setJobViewMode] = useState<"grid" | "list">("grid");
   const [candidateViewMode, setCandidateViewMode] = useState<"cards" | "list">("cards");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterJobStatus, setFilterJobStatus] = useState<string>("all");
+  const [filterJobStatus, setJobStatusState] = useState<string>("all");
+  const [jobStatusSlideDir, setJobStatusSlideDir] = useState<"right" | "left" | null>(null);
   const [filterDepartment, setFilterDepartment] = useState<string>("all");
   const [filterBranch, setFilterBranch] = useState<string>("all");
-  const [filterCandidateStage, setFilterCandidateStage] = useState<string>("all");
+  const [filterCandidateStage, setCandidateStageState] = useState<string>("all");
+  const [stageSlideDir, setStageSlideDir] = useState<"right" | "left" | null>(null);
   const [filterCandidateJob, setFilterCandidateJob] = useState<string>("all");
-  const [filterInterviewStatus, setFilterInterviewStatus] = useState<string>("all");
+  const [filterInterviewStatus, setInterviewStatusState] = useState<string>("all");
+  const [interviewStatusSlideDir, setInterviewStatusSlideDir] = useState<"right" | "left" | null>(null);
+
+  const setFilterJobStatus = useCallback((nextStatus: string) => {
+    const prevIdx = JOB_STATUS_ORDER.indexOf(filterJobStatus);
+    const nextIdx = JOB_STATUS_ORDER.indexOf(nextStatus);
+    setJobStatusSlideDir(nextIdx >= prevIdx ? "right" : "left");
+    setJobStatusState(nextStatus);
+  }, [filterJobStatus]);
+
+  const setFilterCandidateStage = useCallback((nextStage: string) => {
+    const prevIdx = STAGE_ORDER.indexOf(filterCandidateStage);
+    const nextIdx = STAGE_ORDER.indexOf(nextStage);
+    setStageSlideDir(nextIdx >= prevIdx ? "right" : "left");
+    setCandidateStageState(nextStage);
+  }, [filterCandidateStage]);
+
+  const setFilterInterviewStatus = useCallback((nextStatus: string) => {
+    const prevIdx = INTERVIEW_STATUS_ORDER.indexOf(filterInterviewStatus);
+    const nextIdx = INTERVIEW_STATUS_ORDER.indexOf(nextStatus);
+    setInterviewStatusSlideDir(nextIdx >= prevIdx ? "right" : "left");
+    setInterviewStatusState(nextStatus);
+  }, [filterInterviewStatus]);
 
   const departments = useMemo(() => {
     const standardDepts = DEFAULT_DEPARTMENTS.filter((d) => d !== "Other");
     const customDepts = new Set<string>();
-    jobs.forEach((j) => {
-      if (j.department && !standardDepts.includes(j.department)) {
-        customDepts.add(j.department);
-      }
-    });
-    candidates.forEach((c) => {
-      const dept = c.job_postings?.department;
-      if (dept && !standardDepts.includes(dept)) {
-        customDepts.add(dept);
-      }
-    });
+    jobs.forEach((j) => { if (j.department && !standardDepts.includes(j.department)) customDepts.add(j.department); });
+    candidates.forEach((c) => { if (c.job_postings?.department && !standardDepts.includes(c.job_postings.department)) customDepts.add(c.job_postings.department); });
     return [...standardDepts, ...Array.from(customDepts).sort()];
   }, [jobs, candidates]);
 
@@ -88,18 +99,12 @@ export function useHireFilters(
             const sName = (site.name || "").toLowerCase().trim();
             if (loc !== sName && !loc.includes(sName)) return false;
           }
-        } else {
-          if (j.branch_id && j.branch_id !== filterBranch) return false;
-        }
+        } else if (j.branch_id && j.branch_id !== filterBranch) return false;
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchTitle = (j.title || "").toLowerCase().includes(q);
-        const matchDept = (j.department || "").toLowerCase().includes(q);
-        const matchLoc = (j.location || "").toLowerCase().includes(q);
-        const matchBranch = (j.branches?.name || "").toLowerCase().includes(q);
-        const matchDesc = (j.description || "").toLowerCase().includes(q);
-        if (!matchTitle && !matchDept && !matchLoc && !matchBranch && !matchDesc) return false;
+        const str = `${j.title || ""} ${j.department || ""} ${j.location || ""} ${j.branches?.name || ""} ${j.description || ""}`.toLowerCase();
+        if (!str.includes(q)) return false;
       }
       return true;
     });
@@ -113,16 +118,8 @@ export function useHireFilters(
       if (filterDepartment !== "all" && c.job_postings?.department !== filterDepartment) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchCode = (c.candidate_code || "").toLowerCase().includes(q);
-        const matchName = c.full_name.toLowerCase().includes(q);
-        const matchEmail = c.email.toLowerCase().includes(q);
-        const matchPhone = (c.phone || "").toLowerCase().includes(q);
-        const matchLoc = (c.location || "").toLowerCase().includes(q);
-        const matchJob = (c.job_postings?.title || "").toLowerCase().includes(q);
-        const matchSource = (c.source || "").toLowerCase().includes(q);
-        const matchRecruiter = `${c.assigned_recruiter?.first_name || ""} ${c.assigned_recruiter?.last_name || ""}`.toLowerCase().includes(q);
-        const matchSkills = (c.skills || []).some((s) => s.toLowerCase().includes(q));
-        if (!matchCode && !matchName && !matchEmail && !matchPhone && !matchLoc && !matchJob && !matchSource && !matchRecruiter && !matchSkills) return false;
+        const str = `${c.candidate_code || ""} ${c.full_name || ""} ${c.email || ""} ${c.phone || ""} ${c.location || ""} ${c.job_postings?.title || ""} ${c.source || ""}`.toLowerCase();
+        if (!str.includes(q)) return false;
       }
       return true;
     });
@@ -133,12 +130,8 @@ export function useHireFilters(
       if (filterInterviewStatus !== "all" && i.status !== filterInterviewStatus) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchCand = (i.candidates?.full_name || "").toLowerCase().includes(q);
-        const matchJob = (i.candidates?.job_postings?.title || "").toLowerCase().includes(q);
-        const matchInterviewer = `${i.employees?.first_name || ""} ${i.employees?.last_name || ""}`
-          .toLowerCase()
-          .includes(q);
-        if (!matchCand && !matchJob && !matchInterviewer) return false;
+        const str = `${i.candidates?.full_name || ""} ${i.candidates?.job_postings?.title || ""} ${i.interviewer_name || ""}`.toLowerCase();
+        if (!str.includes(q)) return false;
       }
       return true;
     });
@@ -147,61 +140,30 @@ export function useHireFilters(
   const pipelineStageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     PIPELINE_STAGES.forEach((st) => {
-      counts[st] = candidates.filter((c) => {
-        const norm = c.stage === "applied" ? "cv_received" : c.stage === "interview" ? "hr_interview" : c.stage;
-        return norm === st;
-      }).length;
+      counts[st] = candidates.filter((c) => (c.stage === "applied" ? "cv_received" : c.stage === "interview" ? "hr_interview" : c.stage) === st).length;
     });
     return counts;
   }, [candidates]);
 
   const resetFilters = useCallback(() => {
     setSearchQuery("");
-    setFilterJobStatus("all");
+    setJobStatusState("all");
     setFilterDepartment("all");
     setFilterBranch("all");
-    setFilterCandidateStage("all");
+    setCandidateStageState("all");
     setFilterCandidateJob("all");
-    setFilterInterviewStatus("all");
+    setInterviewStatusState("all");
   }, []);
 
-  const hasFilters = Boolean(
-    searchQuery.trim() ||
-      filterJobStatus !== "all" ||
-      filterDepartment !== "all" ||
-      filterBranch !== "all" ||
-      filterCandidateStage !== "all" ||
-      filterCandidateJob !== "all" ||
-      filterInterviewStatus !== "all"
-  );
+  const hasFilters = Boolean(searchQuery.trim() || filterJobStatus !== "all" || filterDepartment !== "all" || filterBranch !== "all" || filterCandidateStage !== "all" || filterCandidateJob !== "all" || filterInterviewStatus !== "all");
 
   return {
-    tab,
-    setTab,
-    jobViewMode,
-    setJobViewMode,
-    candidateViewMode,
-    setCandidateViewMode,
-    searchQuery,
-    setSearchQuery,
-    filterJobStatus,
-    setFilterJobStatus,
-    filterDepartment,
-    setFilterDepartment,
-    filterBranch,
-    setFilterBranch,
-    filterCandidateStage,
-    setFilterCandidateStage,
-    filterCandidateJob,
-    setFilterCandidateJob,
-    filterInterviewStatus,
-    setFilterInterviewStatus,
-    resetFilters,
-    hasFilters,
-    departments,
-    filteredJobs,
-    filteredCandidates,
-    filteredInterviews,
-    pipelineStageCounts,
+    tab, setTab, jobViewMode, setJobViewMode, candidateViewMode, setCandidateViewMode,
+    searchQuery, setSearchQuery, filterJobStatus, setFilterJobStatus, jobStatusSlideDir,
+    filterDepartment, setFilterDepartment, filterBranch, setFilterBranch,
+    filterCandidateStage, setFilterCandidateStage, stageSlideDir,
+    filterCandidateJob, setFilterCandidateJob,
+    filterInterviewStatus, setFilterInterviewStatus, interviewStatusSlideDir,
+    resetFilters, hasFilters, departments, filteredJobs, filteredCandidates, filteredInterviews, pipelineStageCounts,
   };
 }

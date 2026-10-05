@@ -277,15 +277,55 @@
 }
 
 .animate-fullscreen-cover {
-  animation: powerpointFullScreenCover 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: powerpointFullScreenCover 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes hireSlideFromRight {
+  0% {
+    transform: translate3d(100%, 0, 0);
+    box-shadow: -30px 0 50px -10px rgba(0, 0, 0, 0.35);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    box-shadow: none;
+    opacity: 1;
+  }
+}
+
+@keyframes hireSlideFromLeft {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+    box-shadow: 30px 0 50px -10px rgba(0, 0, 0, 0.35);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    box-shadow: none;
+    opacity: 1;
+  }
+}
+
+.hire-tab-slide-right,
+.animate-cover-slide-right {
+  animation: hireSlideFromRight 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  will-change: transform, box-shadow;
+}
+
+.hire-tab-slide-left,
+.animate-cover-slide-left {
+  animation: hireSlideFromLeft 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  will-change: transform, box-shadow;
 }
 
 .animate-cover-next {
-  animation: powerpointCoverNext 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: powerpointCoverNext 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .animate-cover-prev {
-  animation: powerpointCoverPrev 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: powerpointCoverPrev 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .animate-cover-down {

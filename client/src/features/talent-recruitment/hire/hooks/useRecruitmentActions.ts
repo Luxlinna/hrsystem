@@ -35,7 +35,9 @@ export function useRecruitmentActions({
     [actorRole, myEmployeeRole]
   );
 
-  const [selectedRole, setSelectedRole] = useState<RecruitmentActionRole>(defaultRole);
+  const [selectedRole, setSelectedRole] = useState<RecruitmentActionRole>(
+    defaultRole || "hr_manager"
+  );
 
   // 1. Pending CV Review Items
   const pendingCvReviews = useMemo(() => {

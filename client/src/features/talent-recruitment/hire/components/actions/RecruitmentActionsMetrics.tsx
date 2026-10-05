@@ -11,136 +11,76 @@ interface RecruitmentActionsMetricsProps {
   };
   filterSection: ActionFilterSection;
   onSelectFilterSection: (sec: ActionFilterSection) => void;
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
 }
 
 export const RecruitmentActionsMetrics = memo(function RecruitmentActionsMetrics({
   counts,
   filterSection,
   onSelectFilterSection,
+  searchQuery = "",
+  setSearchQuery,
 }: RecruitmentActionsMetricsProps) {
+  const filterPills = [
+    { key: "all" as const, label: "All Items", count: counts.total, icon: "ri-apps-2-line" },
+    { key: "cv" as const, label: "Pending CV Review", count: counts.cvReviews, icon: "ri-file-user-line" },
+    { key: "feedback" as const, label: "Interview Feedback Due", count: counts.feedbackDue, icon: "ri-feedback-line" },
+    { key: "approvals" as const, label: "Approval Pending", count: counts.approvals, icon: "ri-shield-check-line" },
+  ];
+
   return (
-    <div className="space-y-4">
-      {/* 3 Interactive Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card 1: Pending CV Review */}
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection(filterSection === "cv" ? "all" : "cv")}
-          className={`p-5 rounded-3xl border transition-all text-left cursor-pointer ${
-            filterSection === "cv"
-              ? "bg-amber-500/10 border-amber-400 ring-2 ring-amber-400/20 shadow-xs"
-              : "bg-white hover:bg-amber-50/30 border-gray-200/80 shadow-2xs"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center text-lg">
-              <i className="ri-file-search-line" />
-            </div>
-            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-              {counts.cvReviews} Pending
-            </span>
-          </div>
-          <h3 className="text-sm font-extrabold text-gray-900">Pending CV Review</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Applicants awaiting stage review or screening advancement
-          </p>
-        </button>
+    <div className="bg-white rounded-2xl border border-gray-200/80 p-3 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      {/* Search Input */}
+      {setSearchQuery && (
+        <div className="relative flex-1 max-w-md">
+          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search action items by applicant, role, requisition..."
+            className="w-full pl-8 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+            >
+              <i className="ri-close-circle-fill text-xs" />
+            </button>
+          )}
+        </div>
+      )}
 
-        {/* Card 2: Interview Feedback Due */}
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection(filterSection === "feedback" ? "all" : "feedback")}
-          className={`p-5 rounded-3xl border transition-all text-left cursor-pointer ${
-            filterSection === "feedback"
-              ? "bg-sky-500/10 border-sky-400 ring-2 ring-sky-400/20 shadow-xs"
-              : "bg-white hover:bg-sky-50/30 border-gray-200/80 shadow-2xs"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-2xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center text-lg">
-              <i className="ri-feedback-line" />
-            </div>
-            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
-              {counts.feedbackDue} Due
-            </span>
-          </div>
-          <h3 className="text-sm font-extrabold text-gray-900">Interview Feedback Due</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Scheduled/completed interviews missing evaluation scores
-          </p>
-        </button>
-
-        {/* Card 3: Approval Pending */}
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection(filterSection === "approvals" ? "all" : "approvals")}
-          className={`p-5 rounded-3xl border transition-all text-left cursor-pointer ${
-            filterSection === "approvals"
-              ? "bg-purple-500/10 border-purple-400 ring-2 ring-purple-400/20 shadow-xs"
-              : "bg-white hover:bg-purple-50/30 border-gray-200/80 shadow-2xs"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center text-lg">
-              <i className="ri-shield-check-line" />
-            </div>
-            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-              {counts.approvals} Awaiting
-            </span>
-          </div>
-          <h3 className="text-sm font-extrabold text-gray-900">Approval Pending</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Headcount requisitions awaiting sign-off at your stage
-          </p>
-        </button>
-      </div>
-
-      {/* Filter Tabs Bar */}
-      <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection("all")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            filterSection === "all"
-              ? "bg-gray-900 text-white shadow-2xs"
-              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-          }`}
-        >
-          All Items ({counts.total})
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection("cv")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            filterSection === "cv"
-              ? "bg-amber-600 text-white shadow-2xs"
-              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-          }`}
-        >
-          Pending CV Review ({counts.cvReviews})
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection("feedback")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            filterSection === "feedback"
-              ? "bg-sky-600 text-white shadow-2xs"
-              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-          }`}
-        >
-          Interview Feedback Due ({counts.feedbackDue})
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelectFilterSection("approvals")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            filterSection === "approvals"
-              ? "bg-purple-600 text-white shadow-2xs"
-              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-          }`}
-        >
-          Approval Pending ({counts.approvals})
-        </button>
+      {/* Standard Site Theme Filter Pills */}
+      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+        {filterPills.map((pill) => {
+          const isActive = filterSection === pill.key;
+          return (
+            <button
+              key={pill.key}
+              type="button"
+              onClick={() => onSelectFilterSection(pill.key)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                isActive
+                  ? "bg-[#253C7D] text-white border-[#253C7D] shadow-xs"
+                  : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200/80"
+              }`}
+            >
+              <i className={`${pill.icon} text-xs ${isActive ? "text-white" : "text-[#253C7D]"}`} />
+              <span>{pill.label}</span>
+              <span
+                className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+                  isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {pill.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

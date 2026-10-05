@@ -26,41 +26,64 @@ export const OffersFilterBar = memo(function OffersFilterBar({
   metrics,
   onOpenCreateProposal,
 }: OffersFilterBarProps) {
+  const filterPills = [
+    { key: "all", label: "All Offers", count: totalOffersCount },
+    { key: "in_review", label: "In Review", count: metrics.inReview },
+    { key: "ready_to_issue", label: "Ready to Issue", count: metrics.readyToIssue },
+    { key: "issued", label: "Issued", count: metrics.issued },
+    { key: "accepted", label: "Accepted", count: metrics.accepted },
+    { key: "rejected", label: "Declined", count: metrics.rejected },
+  ];
+
   return (
-    <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3 flex-wrap flex-1">
+    <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5 flex-wrap flex-1 min-w-0">
         {/* Search */}
-        <div className="relative min-w-[220px]">
-          <i className="ri-search-line absolute left-3 top-2.5 text-slate-400 text-sm" />
+        <div className="relative min-w-[200px] flex-1 max-w-xs">
+          <i className="ri-search-line absolute left-3 top-2.5 text-slate-400 text-xs" />
           <input
             type="text"
             placeholder="Search candidate, role, or ref..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+            className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden font-medium"
           />
         </div>
 
-        {/* Status Filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-        >
-          <option value="all">All Statuses ({totalOffersCount})</option>
-          <option value="in_review">In Approval Pipeline ({metrics.inReview})</option>
-          <option value="ready_to_issue">Ready to Issue ({metrics.readyToIssue})</option>
-          <option value="issued">Issued / Awaiting ({metrics.issued})</option>
-          <option value="accepted">Accepted ({metrics.accepted})</option>
-          <option value="rejected">Declined ({metrics.rejected})</option>
-        </select>
+        {/* Status Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {filterPills.map((pill) => {
+            const isActive = statusFilter === pill.key;
+            return (
+              <button
+                key={pill.key}
+                type="button"
+                onClick={() => setStatusFilter(pill.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  isActive
+                    ? "bg-[#253C7D] text-white border-[#253C7D] shadow-xs"
+                    : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200/80"
+                }`}
+              >
+                <span>{pill.label}</span>
+                <span
+                  className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+                    isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {pill.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* Department Filter */}
         {departments.length > 0 && (
           <select
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
-            className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+            className="px-2.5 py-1.5 bg-gray-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
           >
             <option value="all">All Departments</option>
             {departments.map((d) => (
@@ -76,7 +99,7 @@ export const OffersFilterBar = memo(function OffersFilterBar({
       <button
         type="button"
         onClick={onOpenCreateProposal}
-        className="px-4 py-2 bg-[#253C7D] hover:bg-[#1e3066] text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+        className="px-3.5 py-2 bg-[#253C7D] hover:bg-[#1e3066] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
       >
         <i className="ri-add-line text-sm" />
         Create Salary Proposal

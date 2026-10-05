@@ -218,7 +218,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
           isOpen={Boolean(previewCandidate)}
           onClose={() => setPreviewCandidate(null)}
           candidateName={previewCandidate?.full_name}
-          position={previewCandidate?.applied_role || previewCandidate?.job_title}
+          position={previewCandidate?.job_title || previewCandidate?.position || previewCandidate?.job_postings?.title || undefined}
           appliedDate={previewCandidate?.applied_at ? formatRelative(previewCandidate.applied_at) : undefined}
           fileUrl={previewCandidate?.resume_url}
           fileName={previewCandidate?.resume_name || undefined}
@@ -260,7 +260,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
         isOpen={Boolean(previewCandidate)}
         onClose={() => setPreviewCandidate(null)}
         candidateName={previewCandidate?.full_name}
-        position={previewCandidate?.applied_role || previewCandidate?.job_title}
+        position={previewCandidate?.job_title || previewCandidate?.position || previewCandidate?.job_postings?.title || undefined}
         appliedDate={previewCandidate?.applied_at ? formatRelative(previewCandidate.applied_at) : undefined}
         fileUrl={previewCandidate?.resume_url}
         fileName={previewCandidate?.resume_name || undefined}

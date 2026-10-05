@@ -57,9 +57,22 @@
     "vite": "^6.3.5"
   },
   "overrides": {
-    "braces": ">=3.0.3",
-    "micromatch": ">=4.0.8",
-    "@grpc/grpc-js": ">=1.13.6",
-    "protobufjs": ">=7.4.0"
+    "braces": "^3.0.3",
+    "micromatch": "^4.0.8",
+    "@grpc/grpc-js": "^1.13.6",
+    "protobufjs": "^7.4.0",
+    "deepmerge-ts": "^8.0.0",
+    "mysql2": "^3.24.0",
+    "firebase": {
+      "@firebase/firestore": {
+        "@grpc/grpc-js": "^1.13.6"
+      }
+    },
+    "tailwindcss": {
+      "chokidar": {
+        "braces": "^3.0.3"
+      },
+      "micromatch": "^4.0.8"
+    }
   }
 }

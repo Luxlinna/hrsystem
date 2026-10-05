@@ -1,10 +1,12 @@
-import { memo, useState, useMemo, useEffect } from "react";
+import { memo, useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
 import { HiringRequestCard } from "./HiringRequestCard";
 import { HiringRequestsHeader } from "./HiringRequestsHeader";
-import { exportRequestsPDF } from "../../exports/exportRequestsPDF";
+import { HiringRequestsFilterBar } from "./HiringRequestsFilterBar";
 import { ExportHiringRequestModal } from "../modals/ExportHiringRequestModal";
+
+const STATUS_ORDER = ["all", "pending", "pending_hr_review", "pending_hr_admin_review", "pending_chairman_review", "approved"];
 
 interface HiringRequestsTabProps {
   requests: HiringRequest[];
@@ -52,10 +54,18 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [slideDir, setSlideDir] = useState<"right" | "left" | null>(null);
   const [buFilter, setBuFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [exportReq, setExportReq] = useState<HiringRequest | null>(null);
   const [exportMode, setExportMode] = useState<"full_requisition" | "job_description">("full_requisition");
+
+  const handleStatusFilterChange = useCallback((nextStatus: string) => {
+    const prevIdx = STATUS_ORDER.indexOf(statusFilter);
+    const nextIdx = STATUS_ORDER.indexOf(nextStatus);
+    setSlideDir(nextIdx >= prevIdx ? "right" : "left");
+    setStatusFilter(nextStatus);
+  }, [statusFilter]);
 
   const businessUnits = useMemo(() => {
     const set = new Set<string>();
@@ -115,6 +125,8 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
     });
   }, [requests, statusFilter, buFilter, search]);
 
+  const animClass = slideDir === "right" ? "animate-cover-slide-right" : slideDir === "left" ? "animate-cover-slide-left" : "";
+
   return (
     <div className="space-y-6">
       <HiringRequestsHeader
@@ -124,100 +136,54 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
         stats={stats}
       />
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1">
-          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search requisitions by role, department, branch, requester..."
-            className="w-full pl-9 pr-4 py-2 bg-gray-50/80 rounded-xl text-xs text-gray-800 placeholder-gray-400 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
-          />
-        </div>
+      <HiringRequestsFilterBar
+        stats={stats}
+        statusFilter={statusFilter}
+        setStatusFilter={handleStatusFilterChange}
+        search={search}
+        setSearch={setSearch}
+        buFilter={buFilter}
+        setBuFilter={setBuFilter}
+        businessUnits={businessUnits}
+        filtered={filtered}
+      />
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {businessUnits.length > 0 && (
-            <select
-              value={buFilter}
-              onChange={(e) => setBuFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50/80 rounded-xl text-xs font-semibold text-gray-700 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer"
-            >
-              <option value="all">All Business Units ({businessUnits.length})</option>
-              {businessUnits.map((bu) => (
-                <option key={bu} value={bu}>
-                  BU: {bu}
-                </option>
-              ))}
-            </select>
+      {/* Requisitions List Stage */}
+      <div className="relative w-full overflow-hidden">
+        <div key={`${statusFilter}-${slideDir || "init"}`} className={`space-y-4 ${animClass}`}>
+          {filtered.map((r) => (
+            <HiringRequestCard
+              key={r.id}
+              request={r}
+              canApprove={canApprove}
+              canBranchApprove={canBranchApprove}
+              canHrReview={canHrReview}
+              canHrAdminApprove={canHrAdminApprove}
+              canChairmanApprove={canChairmanApprove}
+              isHrDivisionBranch={isHrDivisionBranch}
+              userBranchId={userBranchId}
+              isSuperAdmin={isSuperAdmin}
+              isAdmin={isAdmin}
+              actorName={actorName}
+              actorEmail={actorEmail}
+              myEmployeeId={myEmployeeId}
+              onOpenDecision={onOpenDecision}
+              onDelete={onDeleteRequest}
+              onOpenExport={(req, mode) => {
+                setExportReq(req);
+                setExportMode(mode || "full_requisition");
+              }}
+            />
+          ))}
+
+          {filtered.length === 0 && (
+            <div className="bg-white rounded-3xl border border-gray-200/80 p-12 text-center text-gray-400">
+              <i className="ri-file-list-3-line text-4xl mb-2 block text-gray-300" />
+              <p className="text-sm font-bold text-gray-700">No hiring requisitions found</p>
+              <p className="text-xs text-gray-400 mt-1">There are no employee requests matching your filter criteria.</p>
+            </div>
           )}
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-50/80 rounded-xl text-xs font-semibold text-gray-700 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer"
-          >
-            <option value="all">All Requisition Statuses ({stats.total})</option>
-            <option value="pending">Stage 1: Branch Endorsement ({stats.pendingBranch})</option>
-            <option value="pending_hr_review">Stage 2: HR Manager Review ({stats.pendingHr})</option>
-            <option value="pending_hr_admin_review">Stage 3: HR Admin Director Approval ({stats.pendingHrAdmin})</option>
-            <option value="pending_chairman_review">Stage 4: Chairwoman Authorization ({stats.pendingChairman})</option>
-            <option value="approved">Fully Approved & Job Live ({stats.approved})</option>
-            <option value="rejected">Rejected</option>
-          </select>
-
-          <button
-            type="button"
-            onClick={() =>
-              exportRequestsPDF(
-                filtered,
-                buFilter !== "all" ? `Requisitions Summary — BU: ${buFilter}` : "Enterprise Requisitions Summary"
-              )
-            }
-            title="Export filtered list of requisitions as PDF"
-            className="px-3 py-2 bg-white hover:bg-blue-50 text-[#253C7D] font-bold text-xs rounded-xl border border-blue-200 hover:border-[#253C7D] transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
-          >
-            <i className="ri-file-pdf-2-line text-rose-600 text-sm" />
-            <span>Export List PDF</span>
-          </button>
         </div>
-      </div>
-
-      {/* Requisitions List */}
-      <div className="space-y-4">
-        {filtered.map((r) => (
-          <HiringRequestCard
-            key={r.id}
-            request={r}
-            canApprove={canApprove}
-            canBranchApprove={canBranchApprove}
-            canHrReview={canHrReview}
-            canHrAdminApprove={canHrAdminApprove}
-            canChairmanApprove={canChairmanApprove}
-            isHrDivisionBranch={isHrDivisionBranch}
-            userBranchId={userBranchId}
-            isSuperAdmin={isSuperAdmin}
-            isAdmin={isAdmin}
-            actorName={actorName}
-            actorEmail={actorEmail}
-            myEmployeeId={myEmployeeId}
-            onOpenDecision={onOpenDecision}
-            onDelete={onDeleteRequest}
-            onOpenExport={(req, mode) => {
-              setExportReq(req);
-              setExportMode(mode || "full_requisition");
-            }}
-          />
-        ))}
-
-        {filtered.length === 0 && (
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-12 text-center text-gray-400">
-            <i className="ri-file-list-3-line text-4xl mb-2 block text-gray-300" />
-            <p className="text-sm font-bold text-gray-700">No hiring requisitions found</p>
-            <p className="text-xs text-gray-400 mt-1">There are no employee requests matching your filter criteria.</p>
-          </div>
-        )}
       </div>
 
       <ExportHiringRequestModal

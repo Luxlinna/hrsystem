@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { HireTab, Candidate, Job, Interview, HiringRequest } from "../types";
 import { HireExportMenu } from "./HireExportMenu";
+import { HireSettingsDropdown } from "./HireSettingsDropdown";
 
 interface HireHeaderProps {
   activeJobsCount: number;
@@ -11,7 +12,9 @@ interface HireHeaderProps {
   onOpenCreateCandidate: () => void;
   onOpenImportCandidates?: () => void;
   onOpenCreateInterview: () => void;
-  onOpenCreateRequest: () => void;
+  onOpenCreateRequest?: () => void;
+  onOpenManageJd?: () => void;
+  onOpenCvBank?: () => void;
   candidates?: Candidate[];
   jobs?: Job[];
   interviews?: Interview[];
@@ -26,7 +29,8 @@ export const HireHeader = memo(function HireHeader({
   onOpenCreateCandidate,
   onOpenImportCandidates,
   onOpenCreateInterview,
-  onOpenCreateRequest,
+  onOpenManageJd,
+  onOpenCvBank,
   candidates = [],
   jobs = [],
   interviews = [],
@@ -41,7 +45,7 @@ export const HireHeader = memo(function HireHeader({
           <span className="text-[#253C7D] font-bold">Recruitment Hub</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
-          Recruitment & Hiring
+          Recruitment &amp; Hiring
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
             {activeJobsCount} Active Jobs
           </span>
@@ -53,6 +57,12 @@ export const HireHeader = memo(function HireHeader({
 
       {/* Top Action Buttons */}
       <div className="flex items-center gap-2.5 flex-wrap">
+        <HireSettingsDropdown
+          onOpenManageJd={onOpenManageJd}
+          onOpenCvBank={onOpenCvBank}
+          onOpenImportCandidates={onOpenImportCandidates}
+        />
+
         <HireExportMenu
           activeTab={activeTab}
           candidates={candidates}
@@ -62,27 +72,14 @@ export const HireHeader = memo(function HireHeader({
         />
 
         {activeTab === "candidates" && (
-          <div className="flex items-center gap-2">
-            {onOpenImportCandidates && (
-              <button
-                type="button"
-                onClick={onOpenImportCandidates}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:border-[#253C7D] hover:bg-slate-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-                title="Batch upload hiring records from Excel or CSV"
-              >
-                <i className="ri-upload-cloud-2-line text-sm text-[#253C7D]" />
-                <span>Import Hiring Info</span>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onOpenCreateCandidate}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-            >
-              <i className="ri-user-add-line text-sm" />
-              <span>+ Add Candidate</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onOpenCreateCandidate}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+          >
+            <i className="ri-user-add-line text-sm" />
+            <span>+ Add Candidate</span>
+          </button>
         )}
 
         {activeTab === "interviews" && (
@@ -96,28 +93,15 @@ export const HireHeader = memo(function HireHeader({
           </button>
         )}
 
-        {activeTab === "requests" ? (
-          canManage && (
-            <button
-              type="button"
-              onClick={onOpenCreateRequest}
-              className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-            >
-              <i className="ri-user-add-line text-base font-bold" />
-              Request New Employee
-            </button>
-          )
-        ) : (
-          canManage && (
-            <button
-              type="button"
-              onClick={onOpenCreateJob}
-              className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-            >
-              <i className="ri-briefcase-line text-base font-bold" />
-              Post New Job
-            </button>
-          )
+        {activeTab === "jobs" && canManage && (
+          <button
+            type="button"
+            onClick={onOpenCreateJob}
+            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+          >
+            <i className="ri-briefcase-line text-base font-bold" />
+            Post New Job
+          </button>
         )}
       </div>
     </div>

@@ -45,7 +45,7 @@ export const ROLE_INFO: Record<
 export function detectRecruitmentRole(
   actorRole: string,
   myEmployeeRole?: string | null
-): RecruitmentActionRole {
+): RecruitmentActionRole | null {
   const combined = `${actorRole || ""} ${myEmployeeRole || ""}`.toLowerCase();
   if (/chair|board/i.test(combined)) return "chairwoman";
   if (/ceo|president|division\s*director/i.test(combined)) return "ceo_director";
@@ -53,5 +53,6 @@ export function detectRecruitmentRole(
   if (/hr\s*manager|recruiter|talent|hr\s*specialist|hr\s*officer/i.test(combined)) return "hr_manager";
   if (/hiring\s*manager/i.test(combined)) return "hiring_manager";
   if (/manager|supervisor|lead|head/i.test(combined)) return "manager";
+  if (/superadmin|admin/i.test(actorRole)) return null;
   return "hr_manager";
 }

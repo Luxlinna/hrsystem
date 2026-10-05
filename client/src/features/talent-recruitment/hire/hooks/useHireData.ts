@@ -172,7 +172,7 @@ export function useHireData() {
   }, [
     branchLoading, permLoading, isPartnerBranchBlocked, targetBranch, effectiveBranchId,
     userBranchId, visibleBranches, canViewCrossBranch, hasEnterpriseRecruitmentPermission,
-    isHrDivisionBranch
+    isHrDivisionBranch, isSuperAdmin
   ]);
 
   useEffect(() => {
