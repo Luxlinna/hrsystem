@@ -4,39 +4,59 @@ import { supabase } from "@/lib/supabase";
 
 export default function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [requestStatus, setRequestStatus] = useState<"pending" | "approved" | "rejected" | null>(null);
   const navigate = useNavigate();
   const pollTimerRef = useRef<any>(null);
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldown > 0) return;
     setError("");
     setLoading(true);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("request-password-reset", {
-        body: { identifier: identifier.trim() },
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/request-password-reset`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": anonKey,
+        },
+        body: JSON.stringify({
+          identifier: identifier.trim(),
+          company_hp: honeypot,
+        }),
       });
 
-      if (fnError) {
-        let errorMsg = fnError.message || "Failed to submit password reset request";
-        try {
-          if ((fnError as any).context?.json) {
-            const body = await (fnError as any).context.json();
-            if (body?.error) errorMsg = body.error;
-          }
-        } catch {
-          // ignore json parse error
-        }
-        throw new Error(errorMsg);
+      let data: any = {};
+      try { data = await res.json(); } catch { /* empty body */ }
+
+      if (res.status === 429) {
+        const wait = data?.retry_after_seconds || 60;
+        setCooldown(wait);
+        throw new Error(data?.error || `Too many requests. Please wait ${wait}s before trying again.`);
       }
 
-      if (data?.error || !data?.success) {
-        throw new Error(data?.error || "No account found with this email or phone number.");
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || "Failed to submit password reset request");
       }
 
+      // Enforce a minimum 30-second cooldown between legitimate requests
+      setCooldown(30);
       setRequestId(data?.requestId || null);
       setRequestStatus("pending");
     } catch (err: any) {
@@ -147,6 +167,20 @@ export default function ForgotPasswordPage() {
           <>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-[12px] text-red-600">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Invisible anti-bot honeypot field */}
+              <div style={{ display: "none", position: "absolute", left: "-9999px" }} aria-hidden="true">
+                <label htmlFor="company_hp">Do not fill this</label>
+                <input
+                  id="company_hp"
+                  type="text"
+                  name="company_hp"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Phone Number or Email</label>
                 <div className="relative">
@@ -163,10 +197,22 @@ export default function ForgotPasswordPage() {
               </div>
               <button
                 type="submit"
-                disabled={loading || !identifier.trim()}
-                className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
+                disabled={loading || !identifier.trim() || cooldown > 0}
+                className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
               >
-                {loading ? "Submitting..." : "Request Admin Approval"}
+                {loading ? (
+                  <>
+                    <i className="ri-loader-4-line animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : cooldown > 0 ? (
+                  <>
+                    <i className="ri-time-line" />
+                    <span>Please wait {cooldown}s...</span>
+                  </>
+                ) : (
+                  "Request Admin Approval"
+                )}
               </button>
             </form>
             <p className="text-center text-[12px] text-gray-500 mt-6">
