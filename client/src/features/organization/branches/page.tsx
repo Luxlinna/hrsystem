@@ -4,6 +4,7 @@ import { BranchTabsNav, BranchTabType } from "./components/BranchTabsNav";
 import { BranchTabContent } from "./components/BranchTabContent";
 import { BranchModal } from "./components/BranchModal";
 import { useBranches } from "./hooks/useBranches";
+import type { Branch } from "./types";
 
 const TAB_STORAGE_KEY = "hr_branch_active_tab";
 
@@ -27,6 +28,17 @@ export default function Branches() {
     return storedTab || "profile";
   });
 
+  const urlBu = searchParams.get("bu");
+
+  useEffect(() => {
+    if (urlBu && branches.length > 0) {
+      const match = branches.find((b) => b.id === urlBu);
+      if (match && selectedBranch?.id !== match.id) {
+        setSelectedBranch(match);
+      }
+    }
+  }, [urlBu, branches, selectedBranch?.id, setSelectedBranch]);
+
   const handleTabChange = useCallback((tab: BranchTabType) => {
     setActiveTabState(tab);
     localStorage.setItem(TAB_STORAGE_KEY, tab);
@@ -37,6 +49,32 @@ export default function Branches() {
     }, { replace: true });
   }, [setSearchParams]);
 
+  const handleSelectBranch = useCallback((b: Branch) => {
+    setSelectedBranch(b);
+    setSelectedBranchId(b.id);
+    setActiveTabState("profile");
+    localStorage.setItem(TAB_STORAGE_KEY, "profile");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("bu", b.id);
+      next.set("tab", "profile");
+      return next;
+    }, { replace: true });
+  }, [setSelectedBranch, setSelectedBranchId, setSearchParams]);
+
+  const handleSelectBranchId = useCallback((id: string) => {
+    const b = branches.find((x) => x.id === id);
+    if (b) {
+      setSelectedBranch(b);
+      setSelectedBranchId(b.id);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("bu", b.id);
+        return next;
+      }, { replace: true });
+    }
+  }, [branches, setSelectedBranch, setSelectedBranchId, setSearchParams]);
+
   useEffect(() => {
     const urlTab = searchParams.get("tab") as BranchTabType | null;
     if (urlTab && urlTab !== activeTab) {
@@ -46,9 +84,13 @@ export default function Branches() {
   }, [searchParams, activeTab]);
 
   const currentBranch = useMemo(() => {
+    if (urlBu) {
+      const match = branches.find((b) => b.id === urlBu);
+      if (match) return match;
+    }
     if (selectedBranch) return selectedBranch;
     return activeBu || branches[0] || null;
-  }, [selectedBranch, activeBu, branches]);
+  }, [urlBu, selectedBranch, activeBu, branches]);
 
   if (loading && branches.length === 0) {
     return (
@@ -70,7 +112,7 @@ export default function Branches() {
               </div>
               <div className="flex items-center gap-2.5 mt-1 sm:mt-1.5 flex-wrap">
                 <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  {activeTab === "all" ? "Business Unit Management" : currentBranch?.name || "Company Profile"}
+                  {activeTab === "all" ? "Business Unit Management" : currentBranch?.company_name || currentBranch?.name || "Company Profile"}
                 </h1>
                 {activeTab !== "all" && currentBranch && (
                   <span className={`inline-flex items-center gap-1 text-[10.5px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full border ${currentBranch.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}>
@@ -108,8 +150,8 @@ export default function Branches() {
             deptGroups={deptGroups}
             empLoading={empLoading}
             allowedBranches={allowedBranches}
-            onSelectBranch={(b) => { setSelectedBranch(b); setSelectedBranchId(b.id); }}
-            onSelectBranchId={(id) => { const b = branches.find((x) => x.id === id); if (b) { setSelectedBranch(b); setSelectedBranchId(b.id); } }}
+            onSelectBranch={handleSelectBranch}
+            onSelectBranchId={handleSelectBranchId}
             onDeleteBranch={handleDeleteBranch}
             onOpenEditModal={openEditModal}
             setActiveTab={handleTabChange}

@@ -289,7 +289,9 @@ function BranchDetailDrawerInner({
           />
 
           {/* Biometric Fingerprint Machines Subcomponent */}
-          <BranchBiometricsSection branchId={branch.id} branchName={branch.name} canManage={canManageThisBranch} />
+          {branch.is_biometrics_enabled && (
+            <BranchBiometricsSection branchId={branch.id} branchName={branch.name} canManage={canManageThisBranch} />
+          )}
         </>
       )}
 

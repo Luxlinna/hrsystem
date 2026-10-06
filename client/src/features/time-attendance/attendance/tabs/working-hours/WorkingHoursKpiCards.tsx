@@ -12,9 +12,11 @@ export const WorkingHoursKpiCards = memo(function WorkingHoursKpiCards({ branch 
   const breakEnd = branch.break_end_time ? branch.break_end_time.slice(0, 5) : "13:00";
   const lateGrace = branch.late_grace_minutes ?? 15;
   const earlyGrace = branch.early_leave_grace_minutes ?? 15;
+  const isAutoCheckout = branch.is_auto_checkout_enabled ?? true;
+  const autoCheckoutTime = branch.auto_checkout_time ? branch.auto_checkout_time.slice(0, 5) : "18:00";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {/* 1. Standard Schedule */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between">
         <div>
@@ -101,6 +103,34 @@ export const WorkingHoursKpiCards = memo(function WorkingHoursKpiCards({ branch 
         </div>
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
           Checkouts within {earlyGrace}m of {endTime} avoid penalty
+        </div>
+      </div>
+
+      {/* 5. Auto Check-Out */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between">
+        <div>
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">
+            Auto Check-Out
+          </span>
+          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+            <span className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">
+              {isAutoCheckout ? autoCheckoutTime : "Disabled"}
+            </span>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
+                isAutoCheckout
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+              }`}
+            >
+              {isAutoCheckout ? "Active" : "Off"}
+            </span>
+          </div>
+        </div>
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+          {isAutoCheckout
+            ? `Shift auto-closes at ${autoCheckoutTime} if missed`
+            : "Requires manual check-out resolution"}
         </div>
       </div>
     </div>

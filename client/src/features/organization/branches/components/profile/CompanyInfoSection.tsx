@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { FormRow } from "./FormRow";
+import { BiometricHardwareField } from "./BiometricHardwareField";
 import type { BranchFormState } from "../../types";
 
 interface CompanyInfoSectionProps {
@@ -7,6 +8,8 @@ interface CompanyInfoSectionProps {
   setForm: React.Dispatch<React.SetStateAction<BranchFormState>>;
   uploadingLogo: boolean;
   onUploadLogo: (file: File) => void;
+  branchId?: string;
+  branchName?: string;
 }
 
 const INDUSTRY_OPTIONS = [
@@ -18,7 +21,7 @@ const INDUSTRY_OPTIONS = [
 const CURRENCIES = ["USD", "KHR", "THB", "EUR", "SGD", "VND"];
 const ROUNDINGS = ["0", "1", "2", "3", "4"];
 
-export function CompanyInfoSection({ form, setForm, uploadingLogo, onUploadLogo }: CompanyInfoSectionProps) {
+export function CompanyInfoSection({ form, setForm, uploadingLogo, onUploadLogo, branchId, branchName }: CompanyInfoSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -40,7 +43,6 @@ export function CompanyInfoSection({ form, setForm, uploadingLogo, onUploadLogo 
             className="hidden"
           />
 
-          {/* Bigger Logo Display Card */}
           <div className="w-64 h-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center justify-center shadow-2xs overflow-hidden">
             {form.logo_url ? (
               <img src={form.logo_url} alt="Company Logo" className="max-h-full max-w-full object-contain" />
@@ -153,9 +155,7 @@ export function CompanyInfoSection({ form, setForm, uploadingLogo, onUploadLogo 
             onChange={(e) => setForm((prev) => ({ ...prev, industry: e.target.value }))}
             className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
           >
-            {INDUSTRY_OPTIONS.map((ind) => (
-              <option key={ind} value={ind}>{ind}</option>
-            ))}
+            {INDUSTRY_OPTIONS.map((ind) => (<option key={ind} value={ind}>{ind}</option>))}
           </select>
           {form.industry === "Other" && (
             <input
@@ -190,6 +190,9 @@ export function CompanyInfoSection({ form, setForm, uploadingLogo, onUploadLogo 
           {ROUNDINGS.map((d) => (<option key={d} value={d}>{d}</option>))}
         </select>
       </FormRow>
+
+      {/* Biometric Machines Configuration */}
+      <BiometricHardwareField form={form} setForm={setForm} branchId={branchId} branchName={branchName} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { BranchScheduleData, WorkingHoursFormState } from "./types";
+import { AutoCheckoutField } from "./AutoCheckoutField";
 
 interface Props {
   isOpen: boolean;
@@ -69,7 +70,6 @@ export function AdjustWorkingHoursModal({ isOpen, branch, formState, setFormStat
               {!formState.is_four_punch_enabled ? "Morning check-in & evening check-out (lunch is auto-deducted)" : "Morning check-in, lunch out/in, and evening check-out"}
             </p>
           </div>
-
           {/* Shift & Lunch Hours */}
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div>
@@ -89,7 +89,6 @@ export function AdjustWorkingHoursModal({ isOpen, branch, formState, setFormStat
               <input type="time" required value={formState.break_end_time} onChange={(e) => setFormState((p) => ({ ...p, break_end_time: e.target.value }))} className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 font-mono" />
             </div>
           </div>
-
           {/* Grace Tolerances */}
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div>
@@ -168,6 +167,9 @@ export function AdjustWorkingHoursModal({ isOpen, branch, formState, setFormStat
               </div>
             )}
           </div>
+
+          {/* Auto Check-Out Control */}
+          <AutoCheckoutField formState={formState} setFormState={setFormState} />
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">

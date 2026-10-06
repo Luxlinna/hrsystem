@@ -7,23 +7,22 @@ export function useBranchesData() {
   const [loading, setLoading] = useState(true);
 
   const loadBranches = useCallback(async () => {
-    const [branchesRes, empRes, profileSettingsRes] = await Promise.all([
-      supabase
-        .from("branches")
-        .select("*")
-        .is("deleted_at", null),
-      supabase
-        .from("employees")
-        .select("id, branch_id, status")
-        .is("deleted_at", null),
-      supabase
-        .from("system_settings")
-        .select("key, value")
-        .ilike("key", "bu_profile_%"),
+    const [branchesRes, empRes, profileSettingsRes, devicesRes] = await Promise.all([
+      supabase.from("branches").select("*").is("deleted_at", null),
+      supabase.from("employees").select("id, branch_id, status").is("deleted_at", null),
+      supabase.from("system_settings").select("key, value").ilike("key", "bu_profile_%"),
+      supabase.from("biometric_devices").select("id, branch_id"),
     ]);
 
     const branchesList: Branch[] = branchesRes.data || [];
     const employeesList = empRes.data || [];
+
+    const deviceBranchSet = new Set<string>();
+    if (devicesRes.data) {
+      for (const d of devicesRes.data) {
+        if (d.branch_id) deviceBranchSet.add(d.branch_id);
+      }
+    }
 
     // Parse backup profile settings from system_settings
     const profileMap: Record<string, any> = {};
@@ -48,6 +47,12 @@ export function useBranchesData() {
 
     const calculatedBranches = branchesList.map((branch) => {
       const profile = profileMap[branch.id] || {};
+      const hasRegisteredDevices = deviceBranchSet.has(branch.id);
+      const isBioEnabled =
+        branch.is_biometrics_enabled === true ||
+        profile.is_biometrics_enabled === true ||
+        (branch.is_biometrics_enabled !== false && profile.is_biometrics_enabled !== false && hasRegisteredDevices);
+
       return {
         ...branch,
         // 1. Company Info
@@ -58,6 +63,7 @@ export function useBranchesData() {
         industry: branch.industry ?? profile.industry ?? null,
         currency: branch.currency ?? profile.currency ?? "USD",
         rounding_digit: branch.rounding_digit ?? profile.rounding_digit ?? 2,
+        is_biometrics_enabled: isBioEnabled,
 
         // 2. Physical Address Info
         physical_address: branch.physical_address ?? profile.physical_address ?? branch.location ?? null,
@@ -105,6 +111,7 @@ export function useBranchesData() {
       .channel("branches-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => loadBranches())
       .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => loadBranches())
+      .on("postgres_changes", { event: "*", schema: "public", table: "biometric_devices" }, () => loadBranches())
       .on("postgres_changes", { event: "*", schema: "public", table: "system_settings" }, () => loadBranches())
       .subscribe();
     return () => {

@@ -22,37 +22,39 @@ export function useBranches() {
   const { branches, loading, loadBranches } = useBranchesData();
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
-  // Scoped branches: users strictly see their own BU only
+  // Scoped branches: super admins see all branches; branch admins/staff see their own BU
   const allowedBranches = useMemo(() => {
+    const isGlobalSuper = roleName.toLowerCase() === "super admin" || isSuperAdmin || isAdmin;
+    if (isGlobalSuper && branches.length > 0) return branches;
+
     if (userBranchId) {
       const my = branches.filter((b) => b.id === userBranchId);
       if (my.length > 0) return my;
     }
-    const isGlobalSuper = (roleName.toLowerCase() === "super admin" || isSuperAdmin) && !userBranchId;
-    if (isGlobalSuper && branches.length > 0) return branches;
 
     if (effectiveBranchId && effectiveBranchId !== "all") {
       const active = branches.filter((b) => b.id === effectiveBranchId);
       if (active.length > 0) return active;
     }
     return branches.slice(0, 1);
-  }, [branches, userBranchId, roleName, isSuperAdmin, effectiveBranchId]);
+  }, [branches, userBranchId, roleName, isSuperAdmin, isAdmin, effectiveBranchId]);
 
-  // Currently active BU displayed on the Company Profile page
+  // Currently active BU displayed across tabs
   const activeBu = useMemo(() => {
-    if (userBranchId) {
-      const my = branches.find((b) => b.id === userBranchId);
-      if (my) return my;
-    }
     if (selectedBranch && allowedBranches.some((b) => b.id === selectedBranch.id)) {
       return selectedBranch;
     }
     if (effectiveBranchId && effectiveBranchId !== "all") {
       const found = branches.find((b) => b.id === effectiveBranchId);
-      if (found) return found;
+      if (found && allowedBranches.some((b) => b.id === found.id)) return found;
+    }
+    const isGlobalSuper = roleName.toLowerCase() === "super admin" || isSuperAdmin || isAdmin;
+    if (!isGlobalSuper && userBranchId) {
+      const my = branches.find((b) => b.id === userBranchId);
+      if (my) return my;
     }
     return allowedBranches[0] || branches[0] || null;
-  }, [userBranchId, branches, selectedBranch, allowedBranches, effectiveBranchId]);
+  }, [selectedBranch, allowedBranches, effectiveBranchId, branches, roleName, isSuperAdmin, isAdmin, userBranchId]);
 
   const [branchEmployees, setBranchEmployees] = useState<Employee[]>([]);
   const [empLoading, setEmpLoading] = useState(false);

@@ -17,6 +17,8 @@ export interface Branch {
   break_start_time?: string | null;
   break_end_time?: string | null;
   is_four_punch_enabled?: boolean | null;
+  is_auto_checkout_enabled?: boolean | null;
+  auto_checkout_time?: string | null;
   late_grace_minutes: number | null;
   early_leave_grace_minutes: number | null;
   morning_check_in_start?: string | null;
@@ -38,6 +40,7 @@ export interface Branch {
   industry?: string | null;
   currency?: string | null;
   rounding_digit?: number | null;
+  is_biometrics_enabled?: boolean | null;
 
   // 2. Physical Address Info
   physical_address?: string | null;
@@ -103,6 +106,8 @@ export interface BranchFormState {
   afternoon_check_in_end: string;
   afternoon_check_out_start: string;
   afternoon_check_out_end: string;
+  is_auto_checkout_enabled?: boolean;
+  auto_checkout_time?: string;
 
   // 1. Company Info
   logo_url: string;
@@ -112,6 +117,7 @@ export interface BranchFormState {
   industry: string;
   currency: string;
   rounding_digit: string;
+  is_biometrics_enabled?: boolean;
 
   // 2. Physical Address Info
   physical_address: string;

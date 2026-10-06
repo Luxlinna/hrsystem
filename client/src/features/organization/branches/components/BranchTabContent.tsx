@@ -117,9 +117,11 @@ export function BranchTabContent({
               canManage={canManage}
             />
           </div>
-          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
-          </div>
+          {currentBranch.is_biometrics_enabled && (
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+              <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
+            </div>
+          )}
         </div>
       )}
 

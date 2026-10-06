@@ -17,6 +17,8 @@ export interface BranchScheduleData {
   afternoon_check_out_start?: string | null;
   afternoon_check_out_end?: string | null;
   is_four_punch_enabled?: boolean | null;
+  is_auto_checkout_enabled?: boolean | null;
+  auto_checkout_time?: string | null;
 }
 
 export interface WorkingHoursFormState {
@@ -35,4 +37,6 @@ export interface WorkingHoursFormState {
   afternoon_check_in_end: string;
   afternoon_check_out_start: string;
   afternoon_check_out_end: string;
+  is_auto_checkout_enabled: boolean;
+  auto_checkout_time: string;
 }

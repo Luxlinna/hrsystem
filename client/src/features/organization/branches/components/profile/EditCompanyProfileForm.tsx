@@ -85,18 +85,37 @@ export function EditCompanyProfileForm({
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         geofence_radius_m: form.geofence_radius_m ? parseInt(form.geofence_radius_m, 10) : 100,
+        is_biometrics_enabled: Boolean(form.is_biometrics_enabled),
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("branches")
         .update(payload)
         .eq("id", branch.id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Fallback if column is missing from raw table
+        const { is_biometrics_enabled: _, ...fallbackPayload } = payload;
+        const res = await supabase.from("branches").update(fallbackPayload).eq("id", branch.id).select().single();
+        if (res.error) throw res.error;
+        data = res.data;
+      }
+
+      // Sync backup to system_settings
+      try {
+        await supabase.from("system_settings").upsert({
+          key: `bu_profile_${branch.id}`,
+          value: JSON.stringify(payload),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "key" });
+      } catch (_e) {
+        // ignore background sync error
+      }
+
       toast("Saved", "Company Profile updated successfully.", "success");
-      onSaveSuccess(data as Branch);
+      onSaveSuccess({ ...(data as Branch), is_biometrics_enabled: Boolean(form.is_biometrics_enabled) });
     } catch (err) {
       toast("Save Failed", err instanceof Error ? err.message : "Failed to update profile", "error");
     } finally {
@@ -118,6 +137,8 @@ export function EditCompanyProfileForm({
           setForm={setForm}
           uploadingLogo={uploadingLogo}
           onUploadLogo={handleUploadLogo}
+          branchId={branch.id}
+          branchName={branch.company_name || branch.name}
         />
         <PhysicalAddressSection form={form} setForm={setForm} />
         <ContactAndTimezoneSection form={form} setForm={setForm} />

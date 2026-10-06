@@ -182,8 +182,21 @@ export default function GeofenceCheckInAlert() {
         endMinutes = toMinutes(branch.work_end_time);
       }
 
+      const branchId = (employee as any).branch_id;
+      const settingsMap: Record<string, string> = {};
+      (scheduleRows || []).forEach((r: any) => { if (r.key) settingsMap[r.key] = r.value; });
+
+      const autoCheckoutEnabledSetting = branchId ? settingsMap[`bu_auto_checkout_enabled_${branchId}`] : undefined;
+      const isAutoCheckoutEnabled = autoCheckoutEnabledSetting !== undefined
+        ? autoCheckoutEnabledSetting === "true"
+        : true;
+
+      const configuredAutoTimeStr = branchId ? settingsMap[`bu_auto_checkout_time_${branchId}`] : null;
+
       const checkoutAlertMin = endMinutes;
-      const autoCheckoutThresholdMin = endMinutes + 60; // Auto checkout 60m after shift ends (e.g. 6:00 PM for 5:00 PM shift)
+      const autoCheckoutThresholdMin = configuredAutoTimeStr
+        ? (toMinutes(configuredAutoTimeStr) || (endMinutes + 60))
+        : (endMinutes + 60);
 
       const formatMinToLabel = (mins: number) => {
         const h = Math.floor(mins / 60) % 24;
@@ -199,9 +212,9 @@ export default function GeofenceCheckInAlert() {
       const siteBreakEnd = branch.break_end_time?.slice(0, 5) || scheduleSettings.breakEndTime;
 
       // 1. AUTOMATIC CHECKOUT:
-      // Only for normal working employees in BUs without 4-punch, no active shift assignment, and no outside task
+      // Controlled per Business Unit policy in Organization page
       if (
-        !isFourPunch &&
+        isAutoCheckoutEnabled &&
         hasClockedIn &&
         !hasClockedOut &&
         nowZ.minutesOfDay >= autoCheckoutThresholdMin &&

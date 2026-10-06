@@ -44,6 +44,7 @@ export const INITIAL_BRANCH_FORM: BranchFormState = {
   industry: "",
   currency: "USD",
   rounding_digit: "2",
+  is_biometrics_enabled: false,
 
   // 2. Physical Address Info
   physical_address: "",

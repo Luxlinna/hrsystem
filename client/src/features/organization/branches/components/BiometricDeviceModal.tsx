@@ -135,9 +135,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
             >
               <option value="">{branchName || "Main BU Location"}</option>
               {sites.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -145,9 +143,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
           {/* IP Address & Port */}
           <div className="grid grid-cols-3 gap-3 border-t border-gray-100 pt-3">
             <div className="col-span-2">
-              <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                Local IP Address (Wi-Fi / Ethernet)
-              </label>
+              <label className="block text-[11px] font-semibold text-gray-700 mb-1">Local IP Address (Wi-Fi / Ethernet)</label>
               <input
                 type="text"
                 value={form.device_ip}
@@ -174,7 +170,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
               type="text"
               value={form.device_model}
               onChange={(e) => setForm({ ...form, device_model: e.target.value })}
-              placeholder="e.g. ZKTeco K40 / SilkBio-101TC"
+              placeholder="e.g. ZKTeco K40 / SilkBio"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#253C7D]"
             />
           </div>
@@ -183,8 +179,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                <i className="ri-cloud-line text-[#253C7D]" />
-                Remote Cloud Server (ADMS / Push)
+                <i className="ri-cloud-line text-[#253C7D]" /> Remote Cloud Server (ADMS / Push)
               </p>
               <button
                 type="button"
