@@ -977,6 +977,7 @@ model branches {
   document_folders                                                    document_folders[]
   documents                                                           documents[]
   employee_levels                                                     employee_levels[]
+  employee_types                                                      employee_types[]
   employee_movements                                                  employee_movements[]
   employees                                                           employees[]
   expense_records                                                     expense_records[]
