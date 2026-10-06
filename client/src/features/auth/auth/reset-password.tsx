@@ -25,10 +25,16 @@ export default function ResetPasswordPage() {
         <div className="text-center mb-8">
           <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-20 h-20 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-[#1A1A1A]">
-            {isInvite ? "Set Up Your Account" : "Set New Password"}
+            {!hasSession && !checking
+              ? "This Link Has Already Been Used"
+              : isInvite
+              ? "Set Up Your Account"
+              : "Set New Password"}
           </h1>
           <p className="text-[13px] text-gray-500 mt-1">
-            {isInvite
+            {!hasSession && !checking
+              ? "Your account has already been activated with this setup link"
+              : isInvite
               ? "Create a password to activate your account"
               : "Create a new password to access your account"}
           </p>
