@@ -50,10 +50,15 @@ process.on("SIGTERM", () => { stopBackendServer(); process.exit(0); });
 
 // --- In-Memory Rate Limiter ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const MAX_REQUESTS_PER_WINDOW = 200;
+const MAX_REQUESTS_PER_WINDOW = 3000; // Generous limit for modern SPA multi-chunk asset loading
 const ipRequestHistory = new Map();
 
-function isRateLimited(ip) {
+function isRateLimited(ip, url = "") {
+  // Never rate-limit static hashed asset requests
+  if (url.startsWith("/assets/") || url.endsWith(".js") || url.endsWith(".css") || url.endsWith(".woff2") || url.endsWith(".png") || url.endsWith(".svg")) {
+    return false;
+  }
+
   const now = Date.now();
   const cutoff = now - RATE_LIMIT_WINDOW_MS;
   const history = (ipRequestHistory.get(ip) || []).filter((t) => t > cutoff);
@@ -175,7 +180,7 @@ const server = createServer(async (req, res) => {
     const clientIp = getRequestIp(req);
     const isHardwareOrApi = req.url.startsWith("/iclock") || req.url.startsWith("/api");
 
-    if (!isHardwareOrApi && isRateLimited(clientIp)) {
+    if (!isHardwareOrApi && isRateLimited(clientIp, req.url)) {
       res.writeHead(429, { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" });
       res.end("429 Too Many Requests: Rate limit exceeded.");
       return;

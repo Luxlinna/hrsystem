@@ -99,7 +99,7 @@ export function useAttendanceData(
           attendanceCache.getWorkLocations(force),
           attendanceCache.getTableValues("departments", [], force),
           attendanceCache.getTableValues("positions", [], force),
-          attendanceCache.getTableValues("employee_types", ["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"], force),
+          Promise.resolve(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]),
           attendanceCache.getTableValues("employee_levels", ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"], force),
           attendanceCache.getBiometricDevices(targetBranch, force),
           user?.email ? attendanceCache.getMyEmployee(user.email, force) : Promise.resolve(null),

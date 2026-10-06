@@ -43,7 +43,7 @@ export function useAttendanceScheduleMatrix() {
       }
     };
     loadTable("positions", setPositionList);
-    loadTable("employee_types", setEmployeeTypeList, ["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+    setEmployeeTypeList(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
     loadTable("employee_levels", setEmployeeLevelList, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
   }, []);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
