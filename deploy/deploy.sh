@@ -30,6 +30,7 @@ cd "$APP_DIR"
 BEFORE=$(as_app git rev-parse --short HEAD)
 
 log "Downloading the latest code"
+as_app git checkout -- . 2>/dev/null || true
 as_app env GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
   git pull --ff-only origin "$BRANCH"
 echo "$BEFORE -> $(as_app git rev-parse --short HEAD)"
