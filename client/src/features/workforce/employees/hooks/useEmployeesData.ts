@@ -25,8 +25,8 @@ export function useEmployeesData({
   const [jobStatuses, setJobStatuses] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
-  const [employeeTypes, setEmployeeTypes] = useState<string[]>([]);
-  const [employeeLevels, setEmployeeLevels] = useState<string[]>([]);
+  const [employeeTypes, setEmployeeTypes] = useState<string[]>(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+  const [employeeLevels, setEmployeeLevels] = useState<string[]>(["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
   const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, AccountStatus>>({});
   const [biometricDevices, setBiometricDevices] = useState<BiometricDeviceRef[]>([]);
@@ -102,7 +102,7 @@ export function useEmployeesData({
 
     loadRealTable("departments", setDepartments);
     loadRealTable("positions", setPositions);
-    loadRealTable("employee_types", setEmployeeTypes, ["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+    setEmployeeTypes(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
     loadRealTable("employee_levels", setEmployeeLevels, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
     loadRealTable("contract_types", setContractTypes);
     loadRealTable("job_statuses", setJobStatuses);

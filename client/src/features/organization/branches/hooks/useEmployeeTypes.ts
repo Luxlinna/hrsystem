@@ -36,7 +36,6 @@ export function useEmployeeTypes(branchId?: string) {
       const { data, error } = await query;
 
       if (error) {
-        console.warn("Employee types query error or table not yet created:", error.message);
         setEmployeeTypes(
           SEED_EMPLOYEE_TYPES.map((t, index) => ({
             id: `emptype-fallback-${index + 1}`,

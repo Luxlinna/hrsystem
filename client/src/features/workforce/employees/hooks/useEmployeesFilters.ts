@@ -168,21 +168,31 @@ export function useEmployeesFilters({
     (newPageOrFn: number | ((prev: number) => number)) => {
       setPageState((prev) => {
         const resolved = typeof newPageOrFn === "function" ? newPageOrFn(prev) : newPageOrFn;
-        const validPage = Math.max(1, resolved);
-        setSearchParams((sp) => {
-          const next = new URLSearchParams(sp);
-          if (validPage > 1) {
-            next.set("page", String(validPage));
-          } else {
-            next.delete("page");
-          }
-          return next;
-        });
-        return validPage;
+        return Math.max(1, resolved);
       });
     },
-    [setSearchParams]
+    []
   );
+
+  useEffect(() => {
+    setSearchParams(
+      (sp) => {
+        const next = new URLSearchParams(sp);
+        const currentParam = next.get("page");
+        const targetParam = page > 1 ? String(page) : null;
+        if (currentParam === targetParam || (!currentParam && !targetParam)) {
+          return sp;
+        }
+        if (targetParam) {
+          next.set("page", targetParam);
+        } else {
+          next.delete("page");
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  }, [page, setSearchParams]);
 
   const isInitialMountRef = useRef(true);
   const [showFilters, setShowFilters] = useState(false);

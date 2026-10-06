@@ -153,7 +153,7 @@ export function useOrgMasterCategories(selectedBranchId?: string | null): OrgMas
         let deptQuery = supabase.from("departments").select("id, name, parent_department_name, status, branch_id, sort_order").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
         let posQuery = supabase.from("positions").select("*").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
         let locQuery = supabase.from("work_locations").select("id, name, address, branch_id, is_default, status").is("deleted_at", null).order("name");
-        let empTypeQuery = supabase.from("employee_types").select("id, name, status, sort_order").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
+        let empTypeQuery = Promise.resolve({ data: [{ name: "FULL-TIME" }, { name: "HOD" }, { name: "INTERNSHIP" }, { name: "PART-TIME" }], error: null });
         let empLvlQuery = supabase.from("employee_levels").select("id, name, remark, status, sort_order").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
         let contractQuery = supabase.from("contract_types").select("id, name, term, status, sort_order").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
         let branchQuery = supabase.from("branches").select("id, name, company_name, status").is("deleted_at", null).order("name");
