@@ -90,15 +90,67 @@ Deno.serve(async (req) => {
       page += 1;
     }
 
-    const { data: assignments, error: assignmentsError } = await admin
+    const { data: allAssignments, error: assignmentsError } = await admin
       .from("user_role_assignments")
       .select("*, app_roles(id, name, color)")
-      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (assignmentsError) throw assignmentsError;
 
-    return json({ users, assignments: assignments || [] });
+    const deletedEmails = new Set(
+      (allAssignments || [])
+        .filter((a) => Boolean(a.deleted_at))
+        .map((a) => a.email?.toLowerCase().trim())
+        .filter(Boolean)
+    );
+    const deletedUserIds = new Set(
+      (allAssignments || [])
+        .filter((a) => Boolean(a.deleted_at))
+        .map((a) => a.user_id)
+        .filter(Boolean)
+    );
+
+    // Build a set of all auth user IDs that have ANY assignment row (active or deleted).
+    // Auth users with NO row at all are "orphaned" — their assignment was permanently deleted
+    // by a broken fallback that wiped the DB row without deleting the auth account.
+    // We track these so the frontend doesn't synthesize them back as "unassigned active users".
+    const allAssignedEmails = new Set(
+      (allAssignments || [])
+        .map((a) => a.email?.toLowerCase().trim())
+        .filter(Boolean)
+    );
+    const allAssignedUserIds = new Set(
+      (allAssignments || [])
+        .map((a) => a.user_id)
+        .filter(Boolean)
+    );
+
+    const orphanedAuthUserIds: string[] = users
+      .filter((u) => {
+        // An auth user is "orphaned" if they have no assignment row at all
+        const hasAssignmentById = u.id && allAssignedUserIds.has(u.id);
+        const hasAssignmentByEmail = u.email && allAssignedEmails.has(u.email.toLowerCase().trim());
+        return !hasAssignmentById && !hasAssignmentByEmail;
+      })
+      .map((u) => u.id)
+      .filter(Boolean);
+
+    // Filter out users who have been soft-deleted / moved to Recycle Bin
+    const activeAuthUsers = users.filter((u) => {
+      if (u.id && deletedUserIds.has(u.id)) return false;
+      if (u.email && deletedEmails.has(u.email.toLowerCase().trim())) return false;
+      return true;
+    });
+
+    const activeAssignments = (allAssignments || []).filter((a) => !a.deleted_at);
+    const deletedAssignments = (allAssignments || []).filter((a) => Boolean(a.deleted_at));
+
+    return json({
+      users: activeAuthUsers,
+      assignments: activeAssignments,
+      deleted_assignments: deletedAssignments,
+      orphaned_auth_user_ids: orphanedAuthUserIds,
+    });
   } catch (err: any) {
     console.error("List auth users error:", err);
     return json({ error: err.message || "Internal server error" }, 500);

@@ -37,10 +37,12 @@ export async function listAuthAccounts(): Promise<AuthAccountsResult> {
     return {
       accounts: Array.isArray(result.users) ? result.users : [],
       assignments: Array.isArray(result.assignments) ? result.assignments : null,
+      deleted_assignments: Array.isArray(result.deleted_assignments) ? result.deleted_assignments : null,
+      orphaned_auth_user_ids: Array.isArray(result.orphaned_auth_user_ids) ? result.orphaned_auth_user_ids : null,
     };
   } catch (err) {
     console.warn("Notice: Auth accounts fetch error:", err);
-    return { accounts: [], assignments: null };
+    return { accounts: [], assignments: null, deleted_assignments: null, orphaned_auth_user_ids: null };
   }
 }
 

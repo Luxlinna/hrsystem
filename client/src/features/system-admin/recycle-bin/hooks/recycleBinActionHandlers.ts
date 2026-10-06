@@ -113,6 +113,10 @@ export async function deleteForeverSingleItem(item: BinItem): Promise<any> {
   let error: any = null;
 
   if (item.table === "user_role_assignments") {
+    // IMPORTANT: We MUST go through the Edge Function for user permanent delete.
+    // The Edge Function deletes BOTH the auth.users account AND the assignment row.
+    // If we only delete the assignment row (no auth user deletion), the orphaned
+    // auth user will be resurrected as an "unassigned" user on the next page refresh.
     try {
       const {
         data: { session },
@@ -135,12 +139,11 @@ export async function deleteForeverSingleItem(item: BinItem): Promise<any> {
       const result = await res.json().catch(() => ({}));
       if (!res.ok || result.error)
         throw new Error(result.error || "Failed to delete user permanently");
-    } catch {
-      const { error: dbErr } = await supabase
-        .from("user_role_assignments")
-        .delete()
-        .eq("id", item.id);
-      error = dbErr;
+    } catch (edgeErr: any) {
+      // DO NOT silently fall back to deleting only the DB row here.
+      // Doing so would leave an orphaned auth.users account that gets resurrected on refresh.
+      // Surface the error to the caller so the admin knows the deletion failed.
+      error = edgeErr instanceof Error ? edgeErr : new Error(edgeErr?.message || "Failed to permanently delete user");
     }
   } else if (item.table === "employees") {
     const { data: emp } = await supabase.from("employees").select("email").eq("id", item.id).maybeSingle();

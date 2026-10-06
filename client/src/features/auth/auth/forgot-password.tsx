@@ -19,9 +19,24 @@ export default function ForgotPasswordPage() {
       const { data, error: fnError } = await supabase.functions.invoke("request-password-reset", {
         body: { identifier: identifier.trim() },
       });
-      if (fnError || data?.error) {
-        throw new Error(data?.error || fnError?.message || "Failed to submit password reset request");
+
+      if (fnError) {
+        let errorMsg = fnError.message || "Failed to submit password reset request";
+        try {
+          if ((fnError as any).context?.json) {
+            const body = await (fnError as any).context.json();
+            if (body?.error) errorMsg = body.error;
+          }
+        } catch {
+          // ignore json parse error
+        }
+        throw new Error(errorMsg);
       }
+
+      if (data?.error || !data?.success) {
+        throw new Error(data?.error || "No account found with this email or phone number.");
+      }
+
       setRequestId(data?.requestId || null);
       setRequestStatus("pending");
     } catch (err: any) {

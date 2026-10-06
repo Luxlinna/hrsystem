@@ -58,6 +58,7 @@ export interface AuthAccount {
   id: string;
   email: string | null;
   display_name: string | null;
+  created_at?: string | null;
   email_confirmed_at: string | null;
   confirmed_at: string | null;
   invite_pending?: boolean;
@@ -66,6 +67,9 @@ export interface AuthAccount {
 export interface AuthAccountsResult {
   accounts: AuthAccount[];
   assignments: UserAssignment[] | null;
+  deleted_assignments?: UserAssignment[] | null;
+  /** Auth user IDs whose assignment row was completely wiped (not soft-deleted). These are orphaned auth accounts that should NOT be synthesized as unassigned active users. */
+  orphaned_auth_user_ids?: string[] | null;
 }
 
 export interface DirectoryEmployee {

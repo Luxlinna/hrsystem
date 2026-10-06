@@ -5,7 +5,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import { listAuthAccounts } from "../api";
 import { sortBranchesList, buildEnrichedAssignments, buildEnrichedEmployees } from "./adminDataHelpers";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone, normalizePhone } from "@/lib/phoneUtils";
-import type { AppRole, DirectoryEmployee, PasswordResetRequest, UserAssignment } from "../types";
+import type { AppRole, DirectoryEmployee, PasswordResetRequest, UserAssignment, AuthAccountsResult } from "../types";
 import { getRoleCategoryKey, getShortBuName } from "../constants";
 
 export function useAdminData() {
@@ -27,10 +27,10 @@ export function useAdminData() {
 
     const effectiveBranch = targetBranch || userBranchId || null;
 
-    const authAccountsPromise = listAuthAccounts().catch((err) => {
+    const authAccountsPromise: Promise<AuthAccountsResult> = listAuthAccounts().catch((err) => {
       const msg = err instanceof Error ? err.message : "Failed to load auth accounts";
       setUserLoadError(msg);
-      return { accounts: [], assignments: null };
+      return { accounts: [], assignments: null, deleted_assignments: null };
     });
 
     let empQuery = supabase
@@ -121,13 +121,21 @@ export function useAdminData() {
       : enrichedRoles;
 
     const allAssignments = (usersRes.data || []) as any[];
+    const serverDeletedAssignments = (authAccountsResult.deleted_assignments || []) as any[];
+    const orphanedAuthUserIds = new Set<string>((authAccountsResult.orphaned_auth_user_ids || []).filter(Boolean));
     const activeAssignments: UserAssignment[] = allAssignments.filter((u: any) => !u.deleted_at);
-    const deletedAssignments = allAssignments.filter((u: any) => Boolean(u.deleted_at));
+    const deletedAssignments = [
+      ...allAssignments.filter((u: any) => Boolean(u.deleted_at)),
+      ...serverDeletedAssignments,
+    ];
 
     const deletedEmails = new Set(deletedAssignments.map((u: any) => u.email?.toLowerCase().trim()).filter(Boolean));
     const deletedUserIds = new Set(deletedAssignments.map((u: any) => u.user_id).filter(Boolean));
 
     const isDeletedAccount = (email?: string | null, userId?: string | null): boolean => {
+      // Treat as deleted if the auth user_id is in the orphaned set
+      // (their assignment row was permanently wiped, not just soft-deleted)
+      if (userId && orphanedAuthUserIds.has(userId)) return true;
       if (userId && deletedUserIds.has(userId)) return true;
       if (!email) return false;
       const clean = email.toLowerCase().trim();
@@ -172,7 +180,7 @@ export function useAdminData() {
     const assignedEmails = new Set(activeAssignments.map((u) => u.email?.toLowerCase()).filter(Boolean));
 
     // Map auth accounts by lowercased email
-    const authMap = new Map((authAccountsResult.accounts || []).map((a) => [a.email?.toLowerCase(), a]));
+    const authMap = new Map<string, any>((authAccountsResult.accounts || []).map((a: any) => [a.email?.toLowerCase(), a]));
 
     // Link user_id from auth accounts if missing on assignment
     activeAssignments.forEach((u) => {

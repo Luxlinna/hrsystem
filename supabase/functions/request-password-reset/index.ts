@@ -86,6 +86,12 @@ Deno.serve(async (req) => {
 
     const authUser = await findUserByEmail(admin, normalizedEmail);
 
+    if (!authUser) {
+      return json({
+        error: `No user account found for "${rawInput}". Please make sure your account has been created by an administrator in User Management.`
+      }, 404);
+    }
+
     const { data: existing } = await admin
       .from("password_reset_requests")
       .select("id, status, admin_note")
@@ -96,7 +102,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const requestId = existing?.id || crypto.randomUUID();
-    if (!existing && authUser) {
+    if (!existing) {
       const { error: insertError } = await admin.from("password_reset_requests").insert({
         id: requestId,
         user_id: authUser.id,
@@ -107,31 +113,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (authUser) {
-      const { data: admins } = await admin
-        .from("user_role_assignments")
-        .select("user_id, app_roles!inner(is_admin, allowed_modules)")
-        .is("deleted_at", null)
-        .not("user_id", "is", null);
+    const { data: admins } = await admin
+      .from("user_role_assignments")
+      .select("user_id, app_roles!inner(is_admin, allowed_modules)")
+      .is("deleted_at", null)
+      .not("user_id", "is", null);
 
-      const contactDisplay = isPhone ? `Phone: ${cleanDigits}` : normalizedEmail;
-      const adminNotifications = (admins || [])
-        .filter((row: any) => {
-          const role = Array.isArray(row.app_roles) ? row.app_roles[0] : row.app_roles;
-          return role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings");
-        })
-        .map((row: any) => ({
-          title: "Password Reset Approval Needed",
-          message: `${contactDisplay} requested approval to reset their password.`,
-          type: "warning",
-          source: "password_reset",
-          entity_id: requestId,
-          recipient_user_id: row.user_id,
-        }));
+    const contactDisplay = isPhone ? `Phone: ${cleanDigits}` : normalizedEmail;
+    const adminNotifications = (admins || [])
+      .filter((row: any) => {
+        const role = Array.isArray(row.app_roles) ? row.app_roles[0] : row.app_roles;
+        return role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings");
+      })
+      .map((row: any) => ({
+        title: "Password Reset Approval Needed",
+        message: `${contactDisplay} requested approval to reset their password.`,
+        type: "warning",
+        source: "password_reset",
+        entity_id: requestId,
+        recipient_user_id: row.user_id,
+      }));
 
-      if (adminNotifications.length > 0) {
-        await admin.from("notifications").insert(adminNotifications);
-      }
+    if (adminNotifications.length > 0) {
+      await admin.from("notifications").insert(adminNotifications);
     }
 
     return json({
