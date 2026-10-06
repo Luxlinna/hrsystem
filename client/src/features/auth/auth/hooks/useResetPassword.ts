@@ -24,6 +24,7 @@ export function useResetPassword() {
     const init = async () => {
       const result = await resolveResetPasswordSession();
       if (!isMounted) return;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       setHasSession(result.hasSession);
       setInvitedEmail(result.email);
       setChecking(false);
@@ -47,7 +48,7 @@ export function useResetPassword() {
     init();
     fallbackTimer = setTimeout(() => {
       if (isMounted) setChecking(false);
-    }, 1500);
+    }, 10000);
 
     return () => {
       isMounted = false;
