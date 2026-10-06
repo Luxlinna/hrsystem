@@ -10,9 +10,9 @@ export const LeaveDetailStatCards = memo(function LeaveDetailStatCards({
   request,
 }: LeaveDetailStatCardsProps) {
   const [stats, setStats] = useState({
-    entitlement: 13.5,
-    used: 5.5,
-    available: 8,
+    entitlement: 18,
+    used: 0,
+    available: 18,
   });
 
   useEffect(() => {
@@ -33,16 +33,21 @@ export const LeaveDetailStatCards = memo(function LeaveDetailStatCards({
 
         if (!isMounted) return;
 
-        const totalEntitlement = emp?.annual_leave_days ?? 13.5;
+        const totalEntitlement =
+          emp?.annual_leave_days !== null && emp?.annual_leave_days !== undefined
+            ? Number(emp.annual_leave_days)
+            : 18;
+
         const totalUsed = (allReqs || [])
           .filter((r) => r.status === "approved")
           .reduce((sum, r) => sum + (Number(r.days) || 0), 0);
+
         const available = Math.max(0, totalEntitlement - totalUsed);
 
         setStats({
-          entitlement: totalEntitlement || 13.5,
-          used: totalUsed || (request.status === "approved" ? Number(request.days) : 5.5),
-          available: available || 8,
+          entitlement: totalEntitlement,
+          used: totalUsed,
+          available: available,
         });
       } catch {
         // fallback to standard display
@@ -58,34 +63,52 @@ export const LeaveDetailStatCards = memo(function LeaveDetailStatCards({
   }, [request.employee_id, request.status, request.days]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Red / Coral Card */}
-      <div className="bg-[#f43f5e] rounded-xl p-5 text-white shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[90px]">
-        <div className="flex justify-end">
-          <span className="text-3xl font-extrabold tracking-tight">{stats.entitlement}</span>
+    <div className="space-y-2.5 sm:space-y-3">
+      {/* 1. Full-Width Pink / Coral Entitlement Card */}
+      <div className="bg-gradient-to-r from-[#fb7185] via-[#f43f5e] to-[#e11d48] rounded-2xl p-3.5 sm:p-4 text-white shadow-xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white text-base shrink-0 shadow-2xs">
+            <i className="ri-calendar-event-fill" />
+          </div>
+          <span className="text-xs sm:text-[13px] font-bold text-white/95 truncate">
+            Total Entitlement
+          </span>
         </div>
-        <div className="text-xs font-medium text-rose-100 mt-2">
-          Total Leave Entitlement
-        </div>
+        <span className="text-2xl sm:text-3xl font-black tracking-tight text-white shrink-0">
+          {stats.entitlement}
+        </span>
       </div>
 
-      {/* Purple Card */}
-      <div className="bg-[#8b5cf6] rounded-xl p-5 text-white shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[90px]">
-        <div className="flex justify-end">
-          <span className="text-3xl font-extrabold tracking-tight">{stats.used}</span>
+      {/* 2. Row of 2 Cards: Leave Used & Leave Available */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        {/* Purple Card: Leave Used */}
+        <div className="bg-gradient-to-br from-[#a855f7] via-[#9333ea] to-[#7e22ce] rounded-2xl p-3 sm:p-3.5 text-white shadow-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white text-sm shrink-0 shadow-2xs">
+              <i className="ri-download-2-fill" />
+            </div>
+            <span className="text-[11px] sm:text-xs font-bold text-white/95 truncate">
+              Leave Used
+            </span>
+          </div>
+          <span className="text-xl sm:text-2xl font-black tracking-tight text-white shrink-0">
+            {stats.used}
+          </span>
         </div>
-        <div className="text-xs font-medium text-purple-100 mt-2">
-          Total Leave Used
-        </div>
-      </div>
 
-      {/* Cyan / Teal Card */}
-      <div className="bg-[#06b6d4] rounded-xl p-5 text-white shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[90px]">
-        <div className="flex justify-end">
-          <span className="text-3xl font-extrabold tracking-tight">{stats.available}</span>
-        </div>
-        <div className="text-xs font-medium text-cyan-100 mt-2">
-          Total Leave Available
+        {/* Teal / Cyan Card: Leave Available */}
+        <div className="bg-gradient-to-br from-[#22d3ee] via-[#06b6d4] to-[#0891b2] rounded-2xl p-3 sm:p-3.5 text-white shadow-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white text-sm shrink-0 shadow-2xs">
+              <i className="ri-checkbox-circle-fill" />
+            </div>
+            <span className="text-[11px] sm:text-xs font-bold text-white/95 truncate">
+              Leave Available
+            </span>
+          </div>
+          <span className="text-xl sm:text-2xl font-black tracking-tight text-white shrink-0">
+            {stats.available}
+          </span>
         </div>
       </div>
     </div>

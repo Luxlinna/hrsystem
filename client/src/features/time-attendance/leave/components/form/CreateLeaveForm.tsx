@@ -107,52 +107,60 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
   }, [formMode, myEmployee, selectedEmployee, isDirectApproval]);
 
   return (
-    <div className={isEmbedded ? "w-full space-y-6 font-sans" : "min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans"}>
-      <div className="w-full space-y-6">
+    <div className={isEmbedded ? "w-full space-y-3 font-sans pb-10 sm:pb-0" : "min-h-screen bg-[#f0f4f9] dark:bg-slate-950 p-3 sm:p-5 lg:p-7 pb-24 sm:pb-8 font-sans"}>
+      <div className="max-w-4xl mx-auto space-y-3 sm:space-y-3.5">
+        {/* Header with Back and Title */}
         <LeaveFormHeader onBack={onBack} isSuperAdmin={isSuperAdmin} formMode={formMode} />
 
-        <form onSubmit={onSubmit} className="space-y-6">
-          <LeaveFormEmployeeSection
-            selectedEmployee={selectedEmployee}
-            isEmployeeSelectorEditable={isEmployeeSelectorEditable}
-            isEmpDropdownOpen={isEmpDropdownOpen}
-            setIsEmpDropdownOpen={setIsEmpDropdownOpen}
-            empDropdownRef={empDropdownRef}
-            employeeSearch={employeeSearch}
-            setEmployeeSearch={setEmployeeSearch}
-            filteredEmployees={filteredEmployees}
-            activeEmpId={activeEmpId}
-            onSelectEmployee={(empId) => setFormData((prev) => ({ ...prev, employee_id: empId }))}
-          />
+        <form onSubmit={onSubmit} className="space-y-3 sm:space-y-3.5">
+          {/* Card 1: Main Form Grid (Employee, Leave Type, Dates, Reason) */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-3.5 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {/* Left Column: Employee & Leave Type Info */}
+              <div className="space-y-3">
+                {isEmployeeSelectorEditable && (
+                  <LeaveFormEmployeeSection
+                    selectedEmployee={selectedEmployee}
+                    isEmployeeSelectorEditable={isEmployeeSelectorEditable}
+                    isEmpDropdownOpen={isEmpDropdownOpen}
+                    setIsEmpDropdownOpen={setIsEmpDropdownOpen}
+                    empDropdownRef={empDropdownRef}
+                    employeeSearch={employeeSearch}
+                    setEmployeeSearch={setEmployeeSearch}
+                    filteredEmployees={filteredEmployees}
+                    activeEmpId={activeEmpId}
+                    onSelectEmployee={(empId) => setFormData((prev) => ({ ...prev, employee_id: empId }))}
+                  />
+                )}
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
-            <h2 className="text-xs font-extrabold text-[#253C7D] dark:text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <i className="ri-calendar-todo-line text-base" />
-              Leave Type Info
-            </h2>
+                <LeaveFormTypeBalances
+                  formData={formData}
+                  setFormData={setFormData}
+                  activeTypeCfg={activeTypeCfg}
+                  currentStats={currentStats}
+                  handleSelectSpecialCategory={handleSelectSpecialCategory}
+                  handleSelectMaternityCategory={handleSelectMaternityCategory}
+                  handleApply90DaysMaternity={handleApply90DaysMaternity}
+                />
+              </div>
 
-            <LeaveFormTypeBalances
-              formData={formData}
-              setFormData={setFormData}
-              activeTypeCfg={activeTypeCfg}
-              currentStats={currentStats}
-              handleSelectSpecialCategory={handleSelectSpecialCategory}
-              handleSelectMaternityCategory={handleSelectMaternityCategory}
-              handleApply90DaysMaternity={handleApply90DaysMaternity}
-            />
-
-            <LeaveFormDatesSection
-              formData={formData}
-              setFormData={setFormData}
-              requestedDays={requestedDays}
-              showDeductionPeriod={showDeductionPeriod}
-              setShowDeductionPeriod={setShowDeductionPeriod}
-              currentStats={currentStats}
-              remainingAfterLeave={remainingAfterLeave}
-              isOverBalance={isOverBalance}
-            />
+              {/* Right Column: Dates, Reason, Deduction Toggle */}
+              <div className="md:border-l md:border-slate-100 dark:md:border-slate-800 md:pl-5 space-y-3">
+                <LeaveFormDatesSection
+                  formData={formData}
+                  setFormData={setFormData}
+                  requestedDays={requestedDays}
+                  showDeductionPeriod={showDeductionPeriod}
+                  setShowDeductionPeriod={setShowDeductionPeriod}
+                  currentStats={currentStats}
+                  remainingAfterLeave={remainingAfterLeave}
+                  isOverBalance={isOverBalance}
+                />
+              </div>
+            </div>
           </div>
 
+          {/* Card 2: Approval Workflow Chain */}
           <LeaveFormApproversSection
             lineManager={lineManager}
             myApproverName={myApproverName}
@@ -160,6 +168,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
             applicantTier={applicantTier}
           />
 
+          {/* Card 3: Attachment Section */}
           <LeaveFormAttachmentSection
             formData={formData}
             activeTypeCfg={activeTypeCfg}
@@ -171,6 +180,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
             handleRemoveAttachment={handleRemoveAttachment}
           />
 
+          {/* Submit Button */}
           <LeaveFormActions
             submitting={submitting}
             isSuperAdmin={isSuperAdmin}

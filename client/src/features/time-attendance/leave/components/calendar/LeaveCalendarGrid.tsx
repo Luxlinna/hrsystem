@@ -106,16 +106,15 @@ export const LeaveCalendarGrid = memo(function LeaveCalendarGrid({
                 </div>
                 <div className="flex items-center gap-1">
                   {isKm && isSil && (
-                    <span className="text-[10px]" title="ថ្ងៃសីល · Buddhist Holy Day">
-                      🌕
+                    <span title="ថ្ងៃសីល · Buddhist Holy Day">
+                      <i className="ri-moon-clear-fill text-amber-500 text-xs" />
                     </span>
                   )}
                   {isHoliday && (
                     <span
-                      className="text-[10px]"
-                      title={`🎉 ${isKm && holiday?.local_name ? holiday.local_name : holiday?.name}`}
+                      title={`${isKm && holiday?.local_name ? holiday.local_name : holiday?.name}`}
                     >
-                      🎉
+                      <i className="ri-calendar-event-fill text-purple-600 dark:text-purple-400 text-xs" />
                     </span>
                   )}
                   {hasLeaves && (

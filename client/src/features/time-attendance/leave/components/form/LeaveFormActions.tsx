@@ -4,62 +4,50 @@ interface LeaveFormActionsProps {
   submitting: boolean;
   isSuperAdmin: boolean;
   formMode?: "self" | "for_employee";
-  onExportSlip: () => void;
-  onBack: () => void;
+  onExportSlip?: () => void;
+  onBack?: () => void;
 }
 
 export function LeaveFormActions({
   submitting,
   isSuperAdmin,
   formMode = "self",
-  onExportSlip,
   onBack,
 }: LeaveFormActionsProps) {
   const submitLabel = isSuperAdmin
-    ? "Save & Approve Direct"
+    ? "Submit & Approve Direct"
     : formMode === "for_employee"
     ? "Submit Leave for Staff"
     : "Submit Leave Request";
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-      <div className="flex items-center gap-2.5">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
-        >
-          {submitting ? (
-            <>
-              <i className="ri-loader-4-line animate-spin text-sm" />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <i className="ri-save-3-line text-sm" />
-              <span>{submitLabel}</span>
-            </>
-          )}
-        </button>
-
+    <div className="pt-2 flex items-center justify-end gap-2.5 sm:gap-3 w-full">
+      {onBack && (
         <button
           type="button"
-          onClick={onExportSlip}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+          onClick={onBack}
+          disabled={submitting}
+          className="flex-1 sm:flex-initial px-5 sm:px-6 py-2.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-[0.99] text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700 font-bold rounded-xl text-xs sm:text-[13px] shadow-2xs transition-all cursor-pointer disabled:opacity-50 text-center"
         >
-          <i className="ri-printer-line text-sm text-[#253C7D] dark:text-sky-400" />
-          <span>Export Leave Form</span>
+          Cancel
         </button>
-      </div>
-
+      )}
       <button
-        type="button"
-        onClick={onBack}
+        type="submit"
         disabled={submitting}
-        className="px-4 py-2.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 border border-transparent dark:border-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+        className="flex-[2] sm:flex-initial px-6 sm:px-8 py-2.5 bg-[#253C7D] hover:bg-[#1e3064] active:scale-[0.99] text-white font-bold rounded-xl text-xs sm:text-[13px] shadow-md shadow-[#253C7D]/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
       >
-        <i className="ri-close-line mr-1" />
-        Discard
+        {submitting ? (
+          <>
+            <i className="ri-loader-4-line animate-spin text-sm" />
+            <span>Submitting...</span>
+          </>
+        ) : (
+          <>
+            <i className="ri-send-plane-fill text-sm" />
+            <span>{submitLabel}</span>
+          </>
+        )}
       </button>
     </div>
   );

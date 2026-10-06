@@ -26,7 +26,7 @@ export const BranchApprovalFlowSection = memo(function BranchApprovalFlowSection
   const [savedToast, setSavedToast] = useState<string | null>(null);
 
   useEffect(() => {
-    setSteps(getStoredApproverFlow(branchId));
+    setSteps(getStoredApproverFlow(branchId, branchName));
     setLoading(true);
     let query = supabase
       .from("employees")
@@ -56,14 +56,22 @@ export const BranchApprovalFlowSection = memo(function BranchApprovalFlowSection
           });
       }
     });
-  }, [branchId]);
+  }, [branchId, branchName]);
 
   const handleUpdateStep = (updated: ApproverStepConfig) => {
-    setSteps((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    setSteps((prev) => {
+      const next = prev.map((s) => (s.id === updated.id ? updated : s));
+      saveApproverFlow(next, branchId, branchName);
+      return next;
+    });
   };
 
   const handleDeleteStep = (id: string) => {
-    setSteps((prev) => prev.filter((s) => s.id !== id));
+    setSteps((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      saveApproverFlow(next, branchId, branchName);
+      return next;
+    });
   };
 
   const handleAddStep = () => {
@@ -75,15 +83,20 @@ export const BranchApprovalFlowSection = memo(function BranchApprovalFlowSection
       condition: "OR",
       approvers: [],
     };
-    setSteps((prev) => [...prev, newStep]);
+    setSteps((prev) => {
+      const next = [...prev, newStep];
+      saveApproverFlow(next, branchId, branchName);
+      return next;
+    });
   };
 
   const handleResetDefault = () => {
     setSteps(DEFAULT_APPROVAL_FLOW);
+    saveApproverFlow(DEFAULT_APPROVAL_FLOW, branchId, branchName);
   };
 
   const handleSave = () => {
-    saveApproverFlow(steps, branchId);
+    saveApproverFlow(steps, branchId, branchName);
     setSavedToast(`Approval flow for "${branchName}" saved successfully.`);
     setTimeout(() => setSavedToast(null), 3000);
   };
@@ -97,7 +110,7 @@ export const BranchApprovalFlowSection = memo(function BranchApprovalFlowSection
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
       {/* Toast */}
       {savedToast && (
         <div className="fixed bottom-5 right-5 z-50 px-4 py-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-2xl shadow-xl text-xs font-bold flex items-center gap-2 animate-in slide-in-from-bottom-3 duration-150">
@@ -107,7 +120,7 @@ export const BranchApprovalFlowSection = memo(function BranchApprovalFlowSection
       )}
 
       {/* Section Header */}
-      <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40">
+      <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40 rounded-t-2xl">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
@@ -144,7 +157,7 @@ export const BranchApprovalFlowSection = memo(function BranchApprovalFlowSection
       </div>
 
       {/* Steps List */}
-      <div className="p-4 sm:p-6 space-y-4 max-w-3xl">
+      <div className="p-4 sm:p-6 space-y-4 w-full">
         {steps.map((step) => (
           <LeaveApproverStepCard
             key={step.id}

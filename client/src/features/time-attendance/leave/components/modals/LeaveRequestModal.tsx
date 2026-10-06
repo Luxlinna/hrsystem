@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { createPortal } from "react-dom";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Employee, LeaveFormData } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
@@ -39,8 +40,8 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
   const remainingDays = activeEmpId ? getRemaining(activeEmpId, formData.leave_type) : null;
   const isOverBalance = remainingDays !== null && requestedDays > remainingDays;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
@@ -165,6 +166,7 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { createPortal } from "react-dom";
 import type { LeaveRequest } from "../../types";
 import { canUserActOnRequest } from "../../utils/leaveApprovalChain";
 import { LeaveDetailStatCards } from "../detail/LeaveDetailStatCards";
@@ -43,7 +44,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
   if (!inspectRequest) return null;
 
   const isOwn = inspectRequest.employee_id === myEmployeeId;
-  const canCancel = (isOwn || isSuperAdmin) && (inspectRequest.status === "pending" || inspectRequest.status === "approved");
+  const canCancel = inspectRequest.status === "pending" || ((isOwn || isSuperAdmin || isBranchAdmin || hasRoleApprovalAccess) && inspectRequest.status === "approved");
   const { canAct, actionLabel } = canUserActOnRequest({
     request: inspectRequest,
     myEmployeeId,
@@ -56,21 +57,21 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
     hasBuAdminEndorseAccess,
   });
 
-  return (
-    <div className="fixed inset-0 z-50 bg-[#f8fafc] overflow-y-auto p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-5">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-[#f8fafc] dark:bg-slate-950 overflow-y-auto p-3 sm:p-5 lg:p-7 pb-28 sm:pb-8 font-sans">
+      <div className="max-w-3xl mx-auto space-y-3.5 sm:space-y-4">
         {/* Top Header matching reference */}
-        <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-          <h1 className="text-xl font-semibold text-slate-700 tracking-tight">
-            View Leave Detail
-          </h1>
+        <div className="flex items-center justify-between pb-2 border-b border-gray-200/80 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-md text-xs font-medium text-gray-700 shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-slate-200 shadow-2xs transition-colors cursor-pointer"
           >
             <span>&larr; Back</span>
           </button>
+          <h1 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white tracking-tight text-center flex-1 pr-12">
+            View Leave Detail
+          </h1>
         </div>
 
         {/* 1. Top Stat Cards (Entitlement, Used, Available) */}
@@ -134,6 +135,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

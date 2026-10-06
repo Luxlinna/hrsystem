@@ -82,7 +82,11 @@ export const LeaveCalendarDayAgenda = memo(function LeaveCalendarDayAgenda({
         {isKm && lunarInfo?.fullText && (
           <div className="mb-3.5 px-3 py-2 rounded-xl bg-amber-50/80 border border-amber-200/80 text-amber-950 flex items-center justify-between text-xs shadow-2xs">
             <div className="flex items-center gap-1.5 truncate">
-              <span className="text-sm">{lunarInfo.isSilDay ? "🌕" : "🌙"}</span>
+              {lunarInfo.isSilDay ? (
+                <i className="ri-moon-clear-fill text-amber-500 text-sm" />
+              ) : (
+                <i className="ri-moon-line text-amber-600 text-sm" />
+              )}
               <span className="font-semibold truncate text-[11px] font-sans">{lunarInfo.fullText}</span>
             </div>
             {lunarInfo.isSilDay && (
@@ -97,7 +101,9 @@ export const LeaveCalendarDayAgenda = memo(function LeaveCalendarDayAgenda({
         {selectedDayHoliday && (
           <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50/50 to-purple-50/30 border border-purple-200/80 shadow-2xs">
             <div className="flex items-center gap-2">
-              <span className="text-base">🎉</span>
+              <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                <i className="ri-calendar-event-fill text-xs" />
+              </div>
               <div className="min-w-0 flex-1">
                 <h5 className="font-extrabold text-xs text-purple-900 truncate">
                   {isKm && selectedDayHoliday.local_name

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { createPortal } from "react-dom";
 import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
 import { formatDateShort } from "../../dateUtils";
@@ -26,8 +27,8 @@ export const LeaveCancelModal = memo(function LeaveCancelModal({
 
   const cfg = LEAVE_TYPE_CONFIG[cancelTargetRequest.leave_type] || LEAVE_TYPE_CONFIG.annual;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between mb-4">
@@ -95,6 +96,7 @@ export const LeaveCancelModal = memo(function LeaveCancelModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

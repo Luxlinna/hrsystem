@@ -31,7 +31,7 @@ export const LeaveFilterBar = memo(function LeaveFilterBar({
   setPage,
 }: LeaveFilterBarProps) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200/80 p-2 sm:p-2.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2">
+    <div className="hidden lg:flex bg-white rounded-xl border border-slate-200/80 p-2 sm:p-2.5 shadow-2xs flex-col md:flex-row md:items-center justify-between gap-2">
       {/* Search Input */}
       <div className="relative w-full md:max-w-xs">
         <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />

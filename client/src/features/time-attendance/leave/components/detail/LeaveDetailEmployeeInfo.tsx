@@ -64,83 +64,69 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
   }, [request.employee_id]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200/80 p-5 shadow-2xs">
-      <div className="text-[#0284c7] font-semibold text-xs tracking-wider uppercase pb-3 border-b border-gray-100">
-        EMPLOYEE INFO
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-3">
+      <div className="text-[#0284c7] dark:text-sky-400 font-bold text-xs tracking-wider uppercase pb-2 border-b border-gray-100 dark:border-slate-800">
+        Employee Profile
       </div>
 
-      <div className="mt-4 flex flex-col md:flex-row items-start md:items-center gap-6">
-        {/* Avatar & Employed Badge */}
-        <div className="flex flex-col items-center gap-2 shrink-0">
-          {emp?.avatar_url ? (
-            <img
-              src={emp.avatar_url}
-              alt={empName}
-              className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 shadow-2xs"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-200 text-slate-600 font-bold text-lg flex items-center justify-center border-2 border-gray-200">
-              {emp?.first_name?.[0] || "E"}
-            </div>
-          )}
-          <span className="px-2.5 py-0.5 bg-[#14b8a6] text-white text-[10px] font-semibold rounded-full shadow-2xs">
-            Employed
-          </span>
+      {/* Avatar & Employee Basic Info */}
+      <div className="flex items-center gap-3">
+        {emp?.avatar_url ? (
+          <img
+            src={emp.avatar_url}
+            alt={empName}
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover border border-gray-200 dark:border-slate-700 shadow-2xs"
+          />
+        ) : (
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-base flex items-center justify-center border border-gray-200 dark:border-slate-700 shadow-2xs">
+            {emp?.first_name?.[0] || "E"}
+          </div>
+        )}
+        <div className="min-w-0">
+          <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-slate-100 truncate">
+            {empName}
+          </h3>
+          <p className="text-[11px] text-gray-500 dark:text-slate-400 font-mono mt-0.5">
+            {empCode}
+          </p>
+        </div>
+      </div>
+
+      {/* Metadata with Icons */}
+      <div className="space-y-2 text-xs pt-1">
+        {/* Designation */}
+        <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium">
+          <i className="ri-id-card-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
+          <span className="truncate">{emp?.role || "Software Developer Intern"}</span>
         </div>
 
-        {/* Info Grid */}
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-3.5 gap-x-6 text-xs">
-          {/* Column 1 */}
-          <div>
-            <div className="font-bold text-gray-900 text-sm">{empName}</div>
-            <div className="mt-2">
-              <div className="font-semibold text-gray-800">{empCode}</div>
-              <div className="text-[11px] text-gray-400">Employee Code</div>
-            </div>
-            <div className="mt-2">
-              <div className="font-semibold text-gray-800">{emp?.role || "Shift Leader 3"}</div>
-              <div className="text-[11px] text-gray-400">Designation</div>
-            </div>
-            <div className="mt-2">
-              <div className="font-semibold text-gray-800 uppercase">{emp?.department || "OPERATIONS"}</div>
-              <div className="text-[11px] text-gray-400">Department</div>
-            </div>
-          </div>
+        {/* Department */}
+        <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium">
+          <i className="ri-briefcase-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
+          <span className="truncate uppercase">{emp?.department || "TECHNOLOGY & DEVELOPMENT"}</span>
+        </div>
 
-          {/* Column 2 */}
-          <div className="space-y-2">
-            <div>
-              <div className="font-semibold text-gray-800">{extraEmp.supervisor_name || "Unknown"}</div>
-              <div className="text-[11px] text-gray-400">Supervisor</div>
-            </div>
-            <div>
-              <div className="font-semibold text-gray-800 uppercase">{extraEmp.employment_type || "FULL-TIME"}</div>
-              <div className="text-[11px] text-gray-400">Employee Type</div>
-            </div>
-            <div>
-              <div className="font-semibold text-gray-800 uppercase">{extraEmp.contract_type || "PERMANENT (UDC)"}</div>
-              <div className="text-[11px] text-gray-400">Contract Type</div>
-            </div>
+        {/* 2-Column Row 1: Supervisor & Location */}
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium min-w-0">
+            <i className="ri-user-follow-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
+            <span className="truncate">{extraEmp.supervisor_name || "Not Assigned"}</span>
           </div>
+          <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium min-w-0">
+            <i className="ri-global-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
+            <span className="truncate">{extraEmp.branch_name || "Unknown"}</span>
+          </div>
+        </div>
 
-          {/* Column 3 */}
-          <div className="space-y-2">
-            <div>
-              <div className="font-semibold text-gray-800">{extraEmp.branch_name || "KD00001"}</div>
-              <div className="text-[11px] text-gray-400">Site</div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-semibold text-gray-800">USD ******</span>
-                <span className="px-1.5 py-0.2 bg-blue-100 text-blue-700 text-[10px] rounded font-medium">Monthly</span>
-                <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 text-[10px] rounded font-medium">Basic (C)</span>
-              </div>
-              <div className="text-[11px] text-gray-400 mt-0.5">Rate</div>
-            </div>
-            <div>
-              <div className="font-semibold text-gray-800">{extraEmp.join_date || "15/09/2025"}</div>
-              <div className="text-[11px] text-gray-400">Joining Date</div>
-            </div>
+        {/* 2-Column Row 2: Employment Type & Contract Type */}
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium min-w-0">
+            <i className="ri-file-text-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
+            <span className="truncate uppercase">{extraEmp.employment_type || "FULL-TIME"}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium min-w-0">
+            <i className="ri-shield-star-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
+            <span className="truncate uppercase">{extraEmp.contract_type || "PERMANENT (UDC)"}</span>
           </div>
         </div>
       </div>

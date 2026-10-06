@@ -56,7 +56,7 @@ export const LeaveCalendarHeader = memo(function LeaveCalendarHeader({
             className="px-2.5 py-1 text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 rounded-lg border border-purple-200 dark:border-purple-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
             title="Cambodia Labor Law Public Holidays"
           >
-            <span>🎉</span>
+            <i className="ri-calendar-event-fill text-purple-600 dark:text-purple-400 text-xs" />
             <span>{isKm ? "បុណ្យជាតិ" : "Public Holidays"}</span>
             {holidayCount !== undefined && holidayCount > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 font-extrabold">
@@ -78,7 +78,7 @@ export const LeaveCalendarHeader = memo(function LeaveCalendarHeader({
             }`}
             title="View Calendar in English"
           >
-            <span>🇬🇧</span>
+            <i className="ri-global-line text-xs text-[#253C7D] dark:text-blue-300" />
             <span>EN</span>
           </button>
           <button
@@ -91,7 +91,7 @@ export const LeaveCalendarHeader = memo(function LeaveCalendarHeader({
             }`}
             title="មើលប្រតិទិនជាភាសាខ្មែរ (ចន្ទគតិ និងបុណ្យជាតិ)"
           >
-            <span>🇰🇭</span>
+            <i className="ri-flag-fill text-xs text-purple-600 dark:text-purple-400" />
             <span>ខ្មែរ</span>
           </button>
         </div>

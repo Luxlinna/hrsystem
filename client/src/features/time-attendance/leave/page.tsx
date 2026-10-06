@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { LeaveHeader } from "./components/LeaveHeader";
 import { LeaveTabsBar } from "./components/LeaveTabsBar";
 import { LeaveStatsRow } from "./components/LeaveStatsRow";
@@ -21,6 +21,18 @@ export default function Leave() {
   const [viewMode, setViewMode] = useState<"hub" | "settings" | "create_type">("hub");
   const [formMode, setFormMode] = useState<"self" | "for_employee">("self");
   const [showHolidaysModal, setShowHolidaysModal] = useState(false);
+
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleOpenApprovalModal = useCallback((req: any, action: "approved" | "rejected") => {
     l.setSelectedRequest(req);
@@ -188,19 +200,8 @@ export default function Leave() {
         </div>
       )}
 
-      {/* Mobile Coming Soon Display */}
-      <div className="block md:hidden min-h-[65vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-3xl mb-4 shadow-sm border border-sky-100 dark:border-sky-900/50">
-          <i className="ri-calendar-event-line" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Coming Soon</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-xs">
-          Leave Management is currently under development for mobile and will be available soon.
-        </p>
-      </div>
-
-      {/* Desktop Portal View */}
-      <div className="hidden md:block space-y-6">
+      {/* Leave Management View */}
+      <div className="space-y-4 md:space-y-6">
         <LeaveHeader
           onLeaveTodayCount={l.stats.onLeaveToday}
           filteredRequests={l.filteredRequests}

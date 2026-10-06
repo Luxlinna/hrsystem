@@ -27,120 +27,102 @@ export function LeaveFormEmployeeSection({
   activeEmpId,
   onSelectEmployee,
 }: LeaveFormEmployeeSectionProps) {
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-2xs">
-      <h2 className="text-xs font-extrabold text-[#253C7D] dark:text-sky-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-        <i className="ri-user-star-line text-base" />
-        Employee Info
-      </h2>
+  const empName = selectedEmployee
+    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+    : "Select Employee";
+  const empSub = selectedEmployee
+    ? `${selectedEmployee.role || "Staff"} - ${selectedEmployee.department || "INFORMATION (IT)"}`
+    : "Choose team member";
+  const initials = selectedEmployee
+    ? `${selectedEmployee.first_name?.[0] || ""}${selectedEmployee.last_name?.[0] || ""}`.toUpperCase()
+    : "CK";
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300">
+  return (
+    <div className="space-y-2">
+      {/* Section Header */}
+      <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-[#1e293b] dark:text-slate-100">
+        <div className="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs shadow-2xs">
+          <i className="ri-user-3-fill" />
+        </div>
+        <span>Employee Info</span>
+      </div>
+
+      <div className="space-y-1" ref={empDropdownRef}>
+        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
           Employee Name <span className="text-rose-500">*</span>
         </label>
 
-        <div className="md:col-span-9 relative" ref={empDropdownRef}>
-          {isEmployeeSelectorEditable ? (
-            <div>
-              <div
-                onClick={() => setIsEmpDropdownOpen((prev) => !prev)}
-                className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 flex items-center justify-between cursor-pointer focus-within:border-[#253C7D] dark:focus-within:border-sky-400 transition-colors"
-              >
-                <span className="truncate">
-                  {selectedEmployee
-                    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name} ${
-                        selectedEmployee.employee_code || selectedEmployee.biometric_user_id
-                          ? `(#${formatPaddedPin(selectedEmployee.biometric_user_id) || selectedEmployee.employee_code})`
-                          : ""
-                      } - ${selectedEmployee.department || "Staff"}`
-                    : "Search by full name or ID (e.g. 001)..."}
-                </span>
-                <i className="ri-arrow-down-s-line text-gray-400 dark:text-slate-500 text-base" />
-              </div>
-
-              {isEmpDropdownOpen && (
-                <div className="absolute z-30 left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-2 max-h-72 overflow-y-auto animate-in fade-in-50 zoom-in-95">
-                  <div className="relative mb-2">
-                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 text-xs" />
-                    <input
-                      type="text"
-                      autoFocus
-                      placeholder="Type employee name or ID number (e.g. 1, 001, 45)..."
-                      value={employeeSearch}
-                      onChange={(e) => setEmployeeSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
-                    />
-                  </div>
-
-                  <div className="divide-y divide-gray-100 dark:divide-slate-800 max-h-56 overflow-y-auto">
-                    {filteredEmployees.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-gray-400 dark:text-slate-500">
-                        No employees matching "{employeeSearch}"
-                      </div>
-                    ) : (
-                      filteredEmployees.map((emp) => {
-                        const paddedPin = formatPaddedPin(emp.biometric_user_id);
-                        const isSelected = emp.id === activeEmpId;
-                        return (
-                          <div
-                            key={emp.id}
-                            onClick={() => {
-                              onSelectEmployee(emp.id);
-                              setIsEmpDropdownOpen(false);
-                              setEmployeeSearch("");
-                            }}
-                            className={`p-2.5 rounded-xl flex items-center justify-between cursor-pointer text-xs transition-colors ${
-                              isSelected
-                                ? "bg-[#253C7D]/10 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 font-bold"
-                                : "hover:bg-slate-50 dark:hover:bg-slate-800/80 text-gray-800 dark:text-slate-200"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-slate-800 text-[#253C7D] dark:text-sky-300 font-extrabold flex items-center justify-center text-[11px] shrink-0">
-                                {emp.first_name?.[0] || "E"}
-                              </div>
-                              <div>
-                                <div className="font-extrabold">
-                                  {emp.first_name} {emp.last_name}
-                                  {paddedPin && (
-                                    <span className="ml-1.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 text-[10px] font-mono font-black border border-blue-200 dark:border-blue-800/60">
-                                      ID #{paddedPin}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-[10px] text-gray-400 dark:text-slate-400 font-medium">
-                                  {emp.role || "Staff"} &middot; {emp.department || "General"}
-                                  {emp.branches?.name && ` &middot; ${emp.branches.name}`}
-                                </div>
-                              </div>
-                            </div>
-                            {isSelected && <i className="ri-check-line text-sm text-[#253C7D] dark:text-sky-400" />}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+        <div className="relative">
+          <div
+            onClick={() => {
+              if (isEmployeeSelectorEditable) {
+                setIsEmpDropdownOpen((prev) => !prev);
+              }
+            }}
+            className={`w-full p-2 sm:p-2.5 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl flex items-center justify-between transition-all ${
+              isEmployeeSelectorEditable
+                ? "cursor-pointer hover:border-slate-300 focus-within:border-[#2563eb]"
+                : "bg-slate-50/50"
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {selectedEmployee?.avatar_url ? (
+                <img
+                  src={selectedEmployee.avatar_url}
+                  alt={empName}
+                  className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0 border border-slate-200">
+                  {initials}
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-800 dark:text-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="ri-user-fill text-[#253C7D] dark:text-sky-400" />
-                <span>
-                  {selectedEmployee
-                    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
-                    : "Current User"}
-                </span>
-                {selectedEmployee?.biometric_user_id && (
-                  <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 text-[10px] font-mono font-bold border border-blue-200 dark:border-blue-800/60">
-                    ID #{formatPaddedPin(selectedEmployee.biometric_user_id)}
-                  </span>
-                )}
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate">
+                  {empName}
+                </p>
+                <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
+                  {empSub}
+                </p>
               </div>
-              <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-400">
-                {selectedEmployee?.role || "Employee"} &middot; {selectedEmployee?.department || "General"}
-              </span>
+            </div>
+
+            <i className="ri-arrow-down-s-line text-slate-400 text-xs shrink-0 ml-1" />
+          </div>
+
+          {/* Searchable Dropdown Popup */}
+          {isEmpDropdownOpen && isEmployeeSelectorEditable && (
+            <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 rounded-xl shadow-lg p-2 max-h-60 overflow-y-auto">
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search name..."
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none mb-1.5"
+              />
+              <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                {filteredEmployees.map((emp) => {
+                  const paddedPin = formatPaddedPin(emp.biometric_user_id);
+                  const isSelected = emp.id === activeEmpId;
+                  return (
+                    <div
+                      key={emp.id}
+                      onClick={() => {
+                        onSelectEmployee(emp.id);
+                        setIsEmpDropdownOpen(false);
+                        setEmployeeSearch("");
+                      }}
+                      className={`p-2 rounded-lg flex items-center justify-between cursor-pointer text-xs ${
+                        isSelected ? "bg-blue-50 text-[#2563eb] font-bold" : "hover:bg-slate-50 text-slate-800"
+                      }`}
+                    >
+                      <span>{emp.first_name} {emp.last_name}</span>
+                      {paddedPin && <span className="text-[10px] font-mono text-slate-400">#{paddedPin}</span>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

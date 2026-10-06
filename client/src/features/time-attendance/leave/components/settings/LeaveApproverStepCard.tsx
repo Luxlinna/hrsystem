@@ -37,12 +37,12 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl bg-white shadow-2xs relative">
+    <div className="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-2xs relative">
       {/* Header bar */}
-      <div className="bg-[#3b82f6] text-white px-4 py-2 flex items-center justify-between rounded-t-xl">
+      <div className="bg-[#0088cc] text-white px-4 py-2.5 flex items-center justify-between rounded-t-2xl shadow-xs">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-xs">{step.stepTitle}</span>
-          <span className="text-[10px] px-2 py-0.5 bg-white/20 rounded font-mono">
+          <span className="font-bold text-xs tracking-wide">{step.stepTitle}</span>
+          <span className="text-[10.5px] px-2.5 py-0.5 bg-white/20 rounded-full font-medium backdrop-blur-xs">
             {step.condition === "OR" ? "Any Approver (OR)" : "All Approvers (AND)"}
           </span>
         </div>
@@ -50,25 +50,28 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
           <button
             type="button"
             onClick={() => onDeleteStep(step.id)}
-            className="text-white/80 hover:text-white text-xs cursor-pointer"
+            className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
             title="Delete Step"
           >
-            <i className="ri-delete-bin-line text-sm" />
+            <i className="ri-delete-bin-line text-xs" />
           </button>
         )}
       </div>
 
-      <div className="p-4 space-y-3 text-xs">
+      <div className="p-4 space-y-3.5 text-xs">
         {/* Step settings */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500 font-medium">Condition:</span>
+        <div className="flex items-center justify-between gap-3 flex-wrap bg-slate-50/80 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <span className="text-slate-500 dark:text-slate-400 font-semibold text-xs flex items-center gap-1.5">
+              <i className="ri-sound-module-line text-[#0088cc]" />
+              Condition:
+            </span>
             <select
               value={step.condition}
               onChange={(e) =>
                 onUpdateStep({ ...step, condition: e.target.value as "OR" | "AND" })
               }
-              className="px-2.5 py-1 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 font-semibold focus:outline-none focus:border-[#3b82f6]"
+              className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold focus:outline-none focus:border-[#0088cc] shadow-2xs cursor-pointer"
             >
               <option value="OR">OR (Any one approver can approve)</option>
               <option value="AND">AND (All approvers must approve)</option>
@@ -76,38 +79,48 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
           </div>
         </div>
 
+        {/* Searchable Approver Selector (at top) */}
+        <LeaveApproverSearchSelect
+          availableEmployees={allEmployees.filter((e) => !step.approvers.some((a) => a.id === e.id))}
+          onAddApprover={handleAddApprover}
+        />
+
         {/* Approver list */}
-        <div className="divide-y divide-gray-100 border border-gray-100 rounded-lg overflow-hidden bg-gray-50/40">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/30 dark:bg-slate-900">
           {step.approvers.map((appr, idx) => (
             <div key={appr.id}>
               {idx > 0 && (
-                <div className="text-center py-0.5 text-[10px] font-bold text-gray-400 bg-gray-50 uppercase tracking-widest border-y border-gray-100">
+                <div className="text-center py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/60 uppercase tracking-widest border-y border-slate-100 dark:border-slate-800">
                   {step.condition}
                 </div>
               )}
-              <div className="p-2.5 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-2.5">
+              <div className="p-2.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center gap-3">
                   {appr.avatar_url ? (
                     <img
                       src={appr.avatar_url}
                       alt={appr.name}
-                      className="w-7 h-7 rounded-full object-cover border border-gray-200"
+                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center">
-                      {appr.name[0]}
+                    <div className="w-8 h-8 rounded-full bg-[#0088cc]/10 text-[#0088cc] font-bold text-xs flex items-center justify-center shrink-0 border border-[#0088cc]/20">
+                      {appr.name[0]?.toUpperCase() || "A"}
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-gray-800">{appr.name}</div>
-                    <div className="text-[10px] text-gray-400">{appr.role}</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                      {appr.name}
+                    </div>
+                    <div className="text-[10.5px] text-slate-400 dark:text-slate-500 font-medium mt-0.2">
+                      {appr.role}
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => handleRemoveApprover(appr.id)}
-                  className="text-gray-400 hover:text-rose-600 p-1 cursor-pointer transition-colors"
+                  className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center cursor-pointer transition-colors"
                   title="Remove Approver"
                 >
                   <i className="ri-close-line text-sm" />
@@ -116,16 +129,14 @@ export const LeaveApproverStepCard = memo(function LeaveApproverStepCard({
             </div>
           ))}
           {step.approvers.length === 0 && (
-            <div className="p-3 text-center text-gray-400 italic">No approvers in this step</div>
+            <div className="p-4 text-center text-slate-400 text-xs italic flex items-center justify-center gap-1.5">
+              <i className="ri-information-line text-sm" />
+              <span>No approvers in this step yet. Search above to add approvers.</span>
+            </div>
           )}
         </div>
-
-        {/* Searchable Approver Selector */}
-        <LeaveApproverSearchSelect
-          availableEmployees={allEmployees.filter((e) => !step.approvers.some((a) => a.id === e.id))}
-          onAddApprover={handleAddApprover}
-        />
       </div>
     </div>
   );
 });
+

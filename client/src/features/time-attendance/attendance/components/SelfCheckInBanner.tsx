@@ -27,9 +27,9 @@ export const SelfCheckInBanner = memo(function SelfCheckInBanner({
             <span className="text-xs font-semibold text-sky-200">Personal Punch Card</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             {todayHoliday && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[11px] font-bold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[11px] font-bold">
                 <i className="ri-calendar-event-fill text-amber-300" />
-                🎉 Public Holiday: {todayHoliday.name}
+                <span>Public Holiday: {todayHoliday.name}</span>
               </span>
             )}
           </div>

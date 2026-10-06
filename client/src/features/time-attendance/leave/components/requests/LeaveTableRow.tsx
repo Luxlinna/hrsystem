@@ -137,6 +137,10 @@ export const LeaveTableRow = memo(function LeaveTableRow({
           <span className="inline-block px-3 py-1 bg-rose-500 text-white text-[11px] font-semibold rounded-md shadow-2xs">
             Rejected
           </span>
+        ) : r.status === "cancelled" ? (
+          <span className="inline-block px-3 py-1 bg-slate-400 text-white text-[11px] font-semibold rounded-md shadow-2xs">
+            Cancelled
+          </span>
         ) : (
           <span className="inline-block px-3 py-1 bg-[#38bdf8] text-white text-[11px] font-semibold rounded-md shadow-2xs">
             Pending

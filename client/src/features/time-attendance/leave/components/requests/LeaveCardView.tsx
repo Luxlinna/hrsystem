@@ -1,8 +1,8 @@
 import { memo } from "react";
 import type { LeaveRequest } from "../../types";
-import { LEAVE_TYPE_CONFIG, STATUS_CONFIG } from "../../constants";
 import { formatDateShort } from "../../dateUtils";
-import { canUserActOnRequest, getRequestTier } from "../../utils/leaveApprovalChain";
+import { getLeaveTypeDisplay } from "../../utils/leaveDisplayUtils";
+import { canUserActOnRequest } from "../../utils/leaveApprovalChain";
 
 interface LeaveCardViewProps {
   requests: LeaveRequest[];
@@ -38,15 +38,19 @@ export const LeaveCardView = memo(function LeaveCardView({
   onDeleteRequest,
 }: LeaveCardViewProps) {
   return (
-    <div className="lg:hidden divide-y divide-slate-100">
-      {requests.map((r) => {
-        const typeCfg = LEAVE_TYPE_CONFIG[r.leave_type] || LEAVE_TYPE_CONFIG.annual;
-        const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
+    <div className="lg:hidden space-y-3">
+      {requests.map((r, idx) => {
+        const typeInfo = getLeaveTypeDisplay(r.leave_type);
+        const simpleTypeName = typeInfo.fullName.split("(")[0].trim();
         const isOwn = r.employee_id === myEmployeeId;
-        const canCancel = (isOwn || isSuperAdmin) && (r.status === "pending" || r.status === "approved");
+        const canCancel = r.status === "pending" || ((isOwn || isSuperAdmin || isBranchAdmin || _canApproveLeave) && r.status === "approved");
         const canDelete = isSuperAdmin || isBranchAdmin || _canApproveLeave || isOwn;
-        const tier = getRequestTier(r);
-        const hasEndorsed = (r.reason || "").includes("[Stage: Manager Endorsed") || (r.reason || "").includes("[Stage: BU Admin Endorsed");
+        
+        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
+        const deptName = r.employees?.department || "General";
+        const initials = `${r.employees?.first_name?.[0] || ""}${r.employees?.last_name?.[0] || ""}`.toUpperCase() || "EM";
+        const reqCode = `REQ-${(idx + 100)}`;
+
         const { canAct, actionLabel } = canUserActOnRequest({
           request: r, myEmployeeId, myDepartment, actorRole,
           isSuperAdmin, isBranchAdmin, hasRoleApprovalAccess,
@@ -57,120 +61,127 @@ export const LeaveCardView = memo(function LeaveCardView({
           <div
             key={r.id}
             id={`leave-request-card-${r.id}`}
-            className="p-3.5 sm:p-4 space-y-2.5 hover:bg-slate-50/70 transition-colors cursor-pointer"
+            className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 sm:p-3.5 space-y-2 hover:shadow-xs transition-all cursor-pointer"
             onClick={() => onInspectRequest(r)}
           >
-            {/* Header */}
+            {/* Top Header: Employee Avatar, Name, Department & Status Badge */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-[#253C7D]/10 text-[#253C7D] font-bold text-xs flex items-center justify-center shrink-0">
-                  {r.employees?.first_name?.[0]}
-                  {r.employees?.last_name?.[0]}
-                </div>
+                {r.employees?.avatar_url ? (
+                  <img
+                    src={r.employees.avatar_url}
+                    alt={empName}
+                    className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                    {initials}
+                  </div>
+                )}
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 text-xs sm:text-[13px] truncate">
-                    {r.employees?.first_name} {r.employees?.last_name}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-medium truncate">
-                    {r.employees?.department || "General"}
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight truncate">
+                    {empName}
+                  </h3>
+                  <p className="text-[9px] sm:text-[10px] font-bold tracking-wider text-slate-400 uppercase mt-0.2 truncate">
+                    {deptName}
                   </p>
                 </div>
               </div>
 
-              {r.status === "pending" && hasEndorsed ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-amber-50 text-amber-700 border-amber-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  Step 2: HR Pending
-                </span>
-              ) : r.status === "pending" && tier === "bu_admin" ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-indigo-50 text-indigo-700 border-indigo-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                  HR Review
-                </span>
-              ) : r.status === "pending" && tier === "manager" ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-purple-50 text-purple-700 border-purple-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-                  Step 1: BU Admin
-                </span>
-              ) : r.status === "pending" ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-amber-50 text-amber-700 border-amber-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  Pending
-                </span>
-              ) : (
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${statusCfg.bg}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                  {statusCfg.label}
-                </span>
-              )}
+              {/* Status Badge */}
+              <div className="shrink-0">
+                {r.status === "pending" ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/90 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span>Pending</span>
+                  </span>
+                ) : r.status === "approved" ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>Approved</span>
+                  </span>
+                ) : r.status === "rejected" ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/90 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    <span>Rejected</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    <span>Cancelled</span>
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-              <span className={`font-semibold flex items-center gap-1.5 ${typeCfg.text}`}>
-                <i className={typeCfg.icon} />
-                {typeCfg.label}
+            {/* Middle Highlight Box: Leave Type & Dates */}
+            <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#ecfdf5] border border-[#a7f3d0] text-emerald-900">
+              <span className="font-bold text-[11px] sm:text-xs flex items-center gap-1.5 text-emerald-800 truncate">
+                <i className="ri-sun-line text-xs text-emerald-600 shrink-0" />
+                <span className="truncate">{simpleTypeName} ({typeInfo.code})</span>
               </span>
-              <span className="font-semibold text-slate-800">
+              <span className="font-bold text-[11px] sm:text-xs text-slate-900 shrink-0">
                 {r.days} {r.days === 1 ? "day" : "days"} ({formatDateShort(r.start_date)} - {formatDateShort(r.end_date)})
               </span>
             </div>
 
+            {/* Reason Text */}
             {r.reason && (
-              <p className="text-[11px] text-slate-500 line-clamp-1 italic">
+              <p className="text-[11px] sm:text-xs text-slate-500 italic leading-relaxed pt-0.2 line-clamp-2">
                 &ldquo;{r.reason}&rdquo;
               </p>
             )}
 
-            {/* Actions */}
+            {/* Bottom Row: Request ID & Actions */}
             <div
-              className="flex items-center justify-end gap-1.5 pt-0.5"
+              className="border-t border-slate-100 pt-2 flex items-center justify-between gap-2"
               onClick={(e) => e.stopPropagation()}
             >
-              {canAct && (
-                <>
+              <span className="text-[10px] font-mono font-medium text-slate-400 tracking-wider">
+                {reqCode}
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                {canAct && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onOpenApprovalModal(r, "approved")}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer shadow-2xs"
+                    >
+                      {actionLabel}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onOpenApprovalModal(r, "rejected")}
+                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+
+                {canCancel && (
                   <button
-                    onClick={() => onOpenApprovalModal(r, "approved")}
-                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    type="button"
+                    onClick={() => onOpenCancelModal(r)}
+                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer shadow-2xs"
                   >
-                    {actionLabel}
+                    Cancel
                   </button>
+                )}
+
+                {canDelete && onDeleteRequest && (
                   <button
-                    onClick={() => onOpenApprovalModal(r, "rejected")}
-                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    type="button"
+                    onClick={() => onDeleteRequest(r)}
+                    className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                    title="Delete Request"
                   >
-                    Reject
+                    <i className="ri-delete-bin-line text-xs" />
                   </button>
-                </>
-              )}
-
-              {canCancel && (
-                <button
-                  onClick={() => onOpenCancelModal(r)}
-                  className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-              )}
-
-              {canDelete && onDeleteRequest && (
-                <button
-                  onClick={() => onDeleteRequest(r)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                  title="Delete Request"
-                >
-                  <i className="ri-delete-bin-line text-sm" />
-                </button>
-              )}
-
-              <button
-                onClick={() => onInspectRequest(r)}
-                className="p-1.5 text-slate-400 hover:text-[#253C7D] transition-colors cursor-pointer"
-                title="View Details"
-              >
-                <i className="ri-eye-line text-sm" />
-              </button>
+                )}
+              </div>
             </div>
           </div>
         );

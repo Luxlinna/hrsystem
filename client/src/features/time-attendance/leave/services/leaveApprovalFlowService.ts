@@ -25,21 +25,12 @@ export interface UserApproverFlowConfig {
 
 const STORAGE_KEY = "hrsystem_leave_approver_flows";
 
-export const DEFAULT_APPROVAL_FLOW: ApproverStepConfig[] = [
-  {
-    id: "step-1",
-    stepNumber: 1,
-    stepTitle: "Step 1",
-    condition: "OR",
-    approvers: [
-      { id: "appr-1", name: "You Steven", role: "Executive Director", avatar_url: null },
-      { id: "appr-2", name: "Chea Rachana", role: "HR Admin Officer", avatar_url: null },
-      { id: "appr-3", name: "Chorn Sokcheng", role: "HR Admin Officer", avatar_url: null },
-    ],
-  },
-];
+export const DEFAULT_APPROVAL_FLOW: ApproverStepConfig[] = [];
 
-export function getStoredApproverFlow(branchId?: string | null): ApproverStepConfig[] {
+export function getStoredApproverFlow(
+  branchId?: string | null,
+  branchName?: string | null
+): ApproverStepConfig[] {
   try {
     if (branchId) {
       const buKey = `${STORAGE_KEY}_${branchId}`;
@@ -49,27 +40,71 @@ export function getStoredApproverFlow(branchId?: string | null): ApproverStepCon
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     }
+
+    if (branchName) {
+      const nameKey = `${STORAGE_KEY}_${branchName.trim().toLowerCase()}`;
+      const nameRaw = localStorage.getItem(nameKey);
+      if (nameRaw) {
+        const parsed = JSON.parse(nameRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    }
+
+    // Check global default flow key
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_APPROVAL_FLOW;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const hasFake = parsed.some((s) =>
+          s.approvers?.some((a: ApproverPerson) => a.name === "You Steven" || a.name === "Chea Rachana")
+        );
+        if (!hasFake) return parsed;
+      }
+    }
+
+    // Check any configured branch flow in localStorage
+    if (typeof localStorage !== "undefined") {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_KEY)) {
+          const buRaw = localStorage.getItem(key);
+          if (buRaw) {
+            try {
+              const parsed = JSON.parse(buRaw);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const hasFake = parsed.some((s) =>
+                  s.approvers?.some((a: ApproverPerson) => a.name === "You Steven" || a.name === "Chea Rachana")
+                );
+                if (!hasFake) return parsed;
+              }
+            } catch {}
+          }
+        }
+      }
     }
   } catch {
     // fallback
   }
-  return DEFAULT_APPROVAL_FLOW;
+  return [];
 }
 
 export function saveApproverFlow(
   steps: ApproverStepConfig[],
-  branchId?: string | null
+  branchId?: string | null,
+  branchName?: string | null
 ): boolean {
   try {
-    const key = branchId ? `${STORAGE_KEY}_${branchId}` : STORAGE_KEY;
-    localStorage.setItem(key, JSON.stringify(steps));
+    if (branchId) {
+      localStorage.setItem(`${STORAGE_KEY}_${branchId}`, JSON.stringify(steps));
+    }
+    if (branchName) {
+      localStorage.setItem(`${STORAGE_KEY}_${branchName.trim().toLowerCase()}`, JSON.stringify(steps));
+    }
+    // Always store as latest default so all views stay in sync
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(steps));
+
     window.dispatchEvent(
-      new CustomEvent("leave_approver_flow_updated", { detail: { branchId } })
+      new CustomEvent("leave_approver_flow_updated", { detail: { branchId, branchName } })
     );
     return true;
   } catch {
@@ -85,3 +120,4 @@ export function mapEmployeeToApprover(emp: Employee): ApproverPerson {
     avatar_url: emp.avatar_url || null,
   };
 }
+

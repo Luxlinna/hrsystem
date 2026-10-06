@@ -1,4 +1,5 @@
 import { memo, useState, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import { toast } from "@/components/Toast";
 import { HolidaysModalControls } from "./HolidaysModalControls";
@@ -71,32 +72,32 @@ export const HolidaysModal = memo(function HolidaysModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/50 backdrop-blur-xs overflow-y-auto no-scrollbar"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2.5 sm:p-6 pb-28 sm:pb-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto no-scrollbar"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150"
+        className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col max-h-[72vh] sm:max-h-[85vh] animate-in zoom-in-95 duration-150 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gradient-to-r from-purple-50/50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-purple-950/20 flex items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center font-bold text-lg shadow-sm shadow-purple-500/20">
+        <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-800 bg-gradient-to-r from-purple-50/50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-purple-950/20 flex items-center justify-between gap-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#253C7D] to-indigo-700 text-white flex items-center justify-center font-bold text-sm sm:text-lg shadow-2xs shrink-0">
               <i className="ri-calendar-event-fill" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-slate-100">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="text-xs sm:text-base font-extrabold text-gray-900 dark:text-slate-100 truncate">
                   Cambodia Public Holidays
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
                   Labor Law Prakas
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                Official paid public holidays under Cambodia Labor Law (Art. 161 & 139)
+              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400 mt-0.2 truncate">
+                Official paid public holidays under Cambodia Labor Law
               </p>
             </div>
           </div>
@@ -104,9 +105,9 @@ export const HolidaysModal = memo(function HolidaysModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
-            <i className="ri-close-line text-lg" />
+            <i className="ri-close-line text-base sm:text-lg" />
           </button>
         </div>
 
@@ -128,20 +129,20 @@ export const HolidaysModal = memo(function HolidaysModal({
           />
         )}
 
-        {/* Search bar & count */}
-        <div className="px-5 py-2.5 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
-          <div className="relative flex-1 max-w-xs">
-            <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+        {/* Search bar & count (Responsive stack on mobile) */}
+        <div className="px-3.5 sm:px-5 py-2 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3 text-xs">
+          <div className="relative w-full sm:max-w-xs">
+            <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
             <input
               type="text"
               placeholder="Search holiday..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-medium text-gray-900 dark:text-slate-100 focus:outline-none focus:border-purple-500"
+              className="w-full pl-7 pr-3 py-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-medium text-gray-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
             />
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-gray-500 dark:text-slate-400 font-semibold justify-between sm:justify-end">
             <span>{filteredHolidays.length} Holidays</span>
             <span className="text-gray-300 dark:text-slate-600">·</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold">Paid Off</span>
@@ -177,8 +178,8 @@ export const HolidaysModal = memo(function HolidaysModal({
         {/* Footer Notice */}
         <div className="px-6 py-3 border-t border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900 text-[11px] text-gray-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <span className="flex items-center gap-1.5">
-            <i className="ri-scales-3-line text-purple-600" />
-            Cambodia Labor Law Art. 139: Working on public holidays grants 200% wage.
+            <i className="ri-scales-3-line text-purple-600 text-sm shrink-0" />
+            <span>Cambodia Labor Law Art. 139: Working on public holidays grants 200% wage.</span>
           </span>
           <button
             type="button"
@@ -189,6 +190,7 @@ export const HolidaysModal = memo(function HolidaysModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

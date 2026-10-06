@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { LeaveFormData, LeaveTypeBalanceStats } from "../../types";
 
 interface LeaveFormDatesSectionProps {
@@ -12,6 +12,14 @@ interface LeaveFormDatesSectionProps {
   isOverBalance: boolean;
 }
 
+const COMMON_REASONS = [
+  "Personal appointment & errands",
+  "Family matter / personal obligation",
+  "Medical appointment / recovery",
+  "Annual rest & vacation",
+  "Urgent emergency leave",
+];
+
 export function LeaveFormDatesSection({
   formData,
   setFormData,
@@ -22,6 +30,8 @@ export function LeaveFormDatesSection({
   remainingAfterLeave,
   isOverBalance,
 }: LeaveFormDatesSectionProps) {
+  const [selectedQuickReason, setSelectedQuickReason] = useState("");
+
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStart = e.target.value;
     setFormData((prev) => {
@@ -35,124 +45,136 @@ export function LeaveFormDatesSection({
     });
   };
 
+  const handleQuickReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedQuickReason(val);
+    if (val && !formData.reason.includes(val)) {
+      setFormData((prev) => ({
+        ...prev,
+        reason: prev.reason ? `${val} - ${prev.reason}` : val,
+      }));
+    }
+  };
+
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300">
-          From Date <span className="text-rose-500">*</span>
-        </label>
-        <div className="md:col-span-9">
-          <input
-            type="date"
-            required
-            value={formData.start_date}
-            onChange={handleStartDateChange}
-            className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
-          />
+    <div className="space-y-2.5">
+      {/* Top Banner Notice */}
+      <div className="flex items-center gap-2 p-2 px-2.5 rounded-xl bg-[#d1fae5]/80 dark:bg-emerald-950/40 border border-[#a7f3d0] dark:border-emerald-800/60 text-[#065f46] dark:text-emerald-300 text-[9.5px] sm:text-[10.5px] font-semibold">
+        <div className="w-3.5 h-3.5 rounded-full bg-[#059669] text-white flex items-center justify-center text-[9px] shrink-0">
+          <i className="ri-check-line font-bold" />
+        </div>
+        <span>Standard Annual Leave deduction. Document upload is optional.</span>
+      </div>
+
+      {/* From Date & To Date Grid */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        {/* From Date */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            From Date <span className="text-rose-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              required
+              value={formData.start_date}
+              onChange={handleStartDateChange}
+              className="w-full px-2.5 sm:px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2563eb] shadow-2xs cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* To Date */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            To Date <span className="text-rose-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              required
+              value={formData.end_date}
+              onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
+              className="w-full px-2.5 sm:px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2563eb] shadow-2xs cursor-pointer"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300">
-          To Date <span className="text-rose-500">*</span>
-        </label>
-        <div className="md:col-span-9 flex items-center gap-3">
-          <input
-            type="date"
-            required
-            value={formData.end_date}
-            onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
-            className="flex-1 px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
-          />
-          {requestedDays > 0 && (
-            <span className="px-3 py-2 bg-blue-50 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs font-extrabold whitespace-nowrap">
-              {requestedDays} {requestedDays === 1 ? "Day" : "Days"}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300 pt-2">
+      {/* Reason Dropdown & Textarea */}
+      <div className="space-y-1.5">
+        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
           Reason <span className="text-rose-500">*</span>
         </label>
-        <div className="md:col-span-9">
+        
+        {/* Quick Reason Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedQuickReason}
+            onChange={handleQuickReasonChange}
+            className="w-full pl-3 pr-8 py-2 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 font-medium focus:outline-none focus:border-[#2563eb] cursor-pointer appearance-none shadow-2xs"
+          >
+            <option value="">Select or enter reason</option>
+            {COMMON_REASONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <i className="ri-arrow-down-s-line text-sm" />
+          </div>
+        </div>
+
+        {/* Textarea with Character Counter */}
+        <div className="relative">
           <textarea
             required
-            rows={3}
+            rows={2.5}
+            maxLength={500}
             value={formData.reason}
             onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
-            placeholder="State the reason or purpose for taking leave..."
-            className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
+            placeholder="Add more details (optional)..."
+            className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#253C7D] shadow-2xs resize-none"
           />
+          <div className="absolute right-3 bottom-2 text-[9.5px] text-slate-400 font-mono pointer-events-none">
+            {formData.reason.length}/500
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300 pt-2">
-          Remark
-        </label>
-        <div className="md:col-span-9">
-          <textarea
-            rows={2}
-            value={formData.remark}
-            onChange={(e) => setFormData((prev) => ({ ...prev, remark: e.target.value }))}
-            placeholder="Additional remarks or handover notes for manager/colleagues..."
-            className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
-          />
+      {/* Deduction Toggle Button */}
+      <button
+        type="button"
+        onClick={() => setShowDeductionPeriod((prev) => !prev)}
+        className="w-full py-2 px-3 bg-white dark:bg-slate-800 hover:bg-blue-50/50 border border-[#253C7D]/60 text-[#253C7D] dark:text-blue-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+      >
+        <i className="ri-calendar-event-line" />
+        <span>Show deduction period</span>
+        {requestedDays > 0 && (
+          <span className="ml-1 px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#253C7D] dark:text-blue-200 font-bold text-[10px]">
+            {requestedDays}d
+          </span>
+        )}
+      </button>
+
+      {/* Deduction Breakdown Details */}
+      {showDeductionPeriod && (
+        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] space-y-1 animate-in fade-in-50">
+          <div className="flex justify-between text-slate-600 dark:text-slate-300">
+            <span>Requested Period:</span>
+            <span className="font-bold text-slate-900 dark:text-white">
+              {requestedDays} {requestedDays === 1 ? "day" : "days"}
+            </span>
+          </div>
+          <div className="flex justify-between font-bold border-t border-slate-200 dark:border-slate-700 pt-1">
+            <span className="text-slate-800 dark:text-slate-200">Balance After Leave:</span>
+            <span className={isOverBalance ? "text-rose-600" : "text-emerald-600"}>
+              {remainingAfterLeave} days
+            </span>
+          </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-        <div className="md:col-span-3"></div>
-        <div className="md:col-span-9 space-y-3">
-          <button
-            type="button"
-            onClick={() => setShowDeductionPeriod((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs active:scale-98"
-          >
-            <i className="ri-information-line text-sm" />
-            {showDeductionPeriod ? "Hide deduction period" : "Show deduction period"}
-          </button>
-
-          {showDeductionPeriod && (
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 rounded-2xl space-y-2.5 animate-in fade-in-50">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500 dark:text-slate-400">Period Duration:</span>
-                <strong className="text-gray-900 dark:text-slate-100">
-                  {formData.start_date && formData.end_date
-                    ? `${formData.start_date} → ${formData.end_date} (${requestedDays} day${requestedDays === 1 ? "" : "s"})`
-                    : "Please select start and end dates"}
-                </strong>
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500 dark:text-slate-400">Current Available Balance:</span>
-                <strong className="text-emerald-700 dark:text-emerald-400">{currentStats.available} days</strong>
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500 dark:text-slate-400">Days to Deduct:</span>
-                <strong className="text-amber-700 dark:text-amber-400">-{requestedDays} days</strong>
-              </div>
-
-              <div className="pt-2 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between text-xs font-bold">
-                <span className="text-gray-700 dark:text-slate-300">Remaining Balance After Approval:</span>
-                <span className={`text-sm ${isOverBalance ? "text-rose-600 dark:text-rose-400" : "text-[#253C7D] dark:text-sky-400"}`}>
-                  {remainingAfterLeave} days
-                </span>
-              </div>
-
-              {isOverBalance && (
-                <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl text-rose-700 dark:text-rose-300 text-[11px] font-bold flex items-center gap-1.5">
-                  <i className="ri-error-warning-fill text-sm" />
-                  Warning: Requested days exceed the employee's available balance!
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 }
