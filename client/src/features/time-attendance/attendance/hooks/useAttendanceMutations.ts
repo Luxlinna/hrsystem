@@ -6,6 +6,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import type { AttendanceRecord, Employee, NewRecordForm } from "../types";
+import { attendanceCache } from "../services/attendanceCacheService";
 
 interface UseAttendanceMutationsProps {
   employees: Employee[];
@@ -72,6 +73,7 @@ export function useAttendanceMutations({
       description: `Logged attendance for employee on ${newRecord.date} (${newRecord.status})`,
       branchId: targetBranch,
     });
+    attendanceCache.invalidateAttendance(targetBranch);
     fetchData();
     return true;
   }, [employees, saving, actorName, role?.name, targetBranch, fetchData]);
@@ -123,6 +125,7 @@ export function useAttendanceMutations({
       if (selectedRecord && selectedRecord.id === editingRecord.id) {
         setSelectedRecord(data as unknown as AttendanceRecord);
       }
+      attendanceCache.invalidateAttendance(targetBranch);
       fetchData();
       return true;
     }
@@ -162,6 +165,7 @@ export function useAttendanceMutations({
     if (selectedRecord && selectedRecord.id === editingRecord.id) {
       setSelectedRecord(editingRecord);
     }
+    attendanceCache.invalidateAttendance(targetBranch);
     fetchData();
     return true;
   }, [saving, employees, selectedRecord, actorName, role?.name, targetBranch, setEditingRecord, setSelectedRecord, fetchData]);
@@ -218,6 +222,7 @@ export function useAttendanceMutations({
     });
     setSelectedRecord(null);
     setEditingRecord(null);
+    attendanceCache.invalidateAttendance(targetBranch);
     fetchData();
   }, [actorName, role?.name, targetBranch, setSelectedRecord, setEditingRecord, fetchData, records, selectedRecord, todayYMD]);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { todayYMD } from "@/lib/date";
@@ -12,9 +12,26 @@ export function useSelfServiceData() {
   const { user } = useAuth();
   const { loading: permsLoading, can } = usePermissions();
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "attendance");
+  const [activeTab, setActiveTabState] = useState(searchParams.get("tab") || "attendance");
+
+  const setActiveTab = useCallback(
+    (tab: string) => {
+      setActiveTabState(tab);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === "attendance") {
+          next.delete("tab");
+        } else {
+          next.set("tab", tab);
+        }
+        return next;
+      });
+    },
+    [setSearchParams]
+  );
+
   const quickCheckIn = searchParams.get("quickCheckIn") === "1";
   const quickCheckOut = searchParams.get("quickCheckOut") === "1";
   const [loading, setLoading] = useState(true);
@@ -29,8 +46,8 @@ export function useSelfServiceData() {
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t) setActiveTab(t);
-  }, [searchParams]);
+    if (t && t !== activeTab) setActiveTabState(t);
+  }, [searchParams, activeTab]);
 
   useEffect(() => {
     if (permsLoading) return;

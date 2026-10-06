@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { Employee, AccountStatus, VisibleColumns, SortField, SortDirection, ViewMode, EmployeeStats } from "../types";
 import { INITIAL_VISIBLE_COLUMNS, COLUMN_WIDTHS, getJobStatusBadge } from "../constants";
 import { exportEmployeesCSV } from "../exportUtils";
@@ -159,7 +160,31 @@ export function useEmployeesFilters({
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsedPage = parseInt(searchParams.get("page") || "1", 10);
+  const [page, setPageState] = useState<number>(!isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1);
+
+  const setPage = useCallback(
+    (newPageOrFn: number | ((prev: number) => number)) => {
+      setPageState((prev) => {
+        const resolved = typeof newPageOrFn === "function" ? newPageOrFn(prev) : newPageOrFn;
+        const validPage = Math.max(1, resolved);
+        setSearchParams((sp) => {
+          const next = new URLSearchParams(sp);
+          if (validPage > 1) {
+            next.set("page", String(validPage));
+          } else {
+            next.delete("page");
+          }
+          return next;
+        });
+        return validPage;
+      });
+    },
+    [setSearchParams]
+  );
+
+  const isInitialMountRef = useRef(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(INITIAL_VISIBLE_COLUMNS);
@@ -404,8 +429,12 @@ export function useEmployeesFilters({
   }, [filtered]);
 
   useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
     setPage(1);
-  }, [search, filterDept, filterStatus, filterJobStatus, filterRole, filterEmployeeType, filterEmployeeLevel, filterDateOption, filterContractType, filterBranch, filterWorkLocation, filterAccount]);
+  }, [search, filterDept, filterStatus, filterJobStatus, filterRole, filterEmployeeType, filterEmployeeLevel, filterDateOption, filterContractType, filterBranch, filterWorkLocation, filterAccount, setPage]);
 
   return {
     search, setSearch,

@@ -1,3 +1,5 @@
+import { redisService } from './redis.service.js';
+
 interface CacheItem<T> {
   data: T;
   expiry: number;
@@ -8,7 +10,7 @@ export class CacheService {
   private timers = new Map<string, NodeJS.Timeout>();
 
   /**
-   * Get an item from cache
+   * Fast L1 (In-Memory) synchronous retrieval
    */
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
@@ -23,10 +25,44 @@ export class CacheService {
   }
 
   /**
-   * Set an item in cache with TTL in seconds (default: 60s)
+   * Multi-Tier (L1 Memory -> L2 Redis) asynchronous retrieval
+   */
+  async getAsync<T>(key: string): Promise<T | null> {
+    // 1. Check L1 Memory (0ms)
+    const memCached = this.get<T>(key);
+    if (memCached !== null) {
+      return memCached;
+    }
+
+    // 2. Check L2 Redis (<2ms)
+    if (redisService.isAvailable) {
+      const redisCached = await redisService.get<T>(key);
+      if (redisCached !== null) {
+        // Populate L1 cache for sub-millisecond future hits
+        this.setMemoryOnly(key, redisCached, 60);
+        return redisCached;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Set an item in cache with TTL in seconds (writes to both L1 and L2 Redis)
    */
   set<T>(key: string, data: T, ttlSeconds = 60): void {
-    // Clear existing timer if any
+    this.setMemoryOnly(key, data, ttlSeconds);
+
+    // Asynchronously write to Redis L2
+    if (redisService.isAvailable) {
+      redisService.set(key, data, ttlSeconds).catch(() => {});
+    }
+  }
+
+  /**
+   * Write only to L1 memory
+   */
+  private setMemoryOnly<T>(key: string, data: T, ttlSeconds = 60): void {
     if (this.timers.has(key)) {
       clearTimeout(this.timers.get(key));
     }
@@ -36,19 +72,18 @@ export class CacheService {
       expiry: Date.now() + ttlSeconds * 1000,
     });
 
-    // Schedule auto-cleanup
     const timer = setTimeout(() => {
-      this.delete(key);
+      this.deleteMemoryOnly(key);
     }, ttlSeconds * 1000);
 
     this.timers.set(key, timer);
   }
 
   /**
-   * Wrap an async function with automatic caching
+   * Wrap an async function with automatic multi-tier caching
    */
   async getOrSet<T>(key: string, fetchFn: () => Promise<T>, ttlSeconds = 60): Promise<T> {
-    const cached = this.get<T>(key);
+    const cached = await this.getAsync<T>(key);
     if (cached !== null) {
       return cached;
     }
@@ -59,9 +94,16 @@ export class CacheService {
   }
 
   /**
-   * Invalidate by key or key prefix (e.g. invalidatePrefix('http:'))
+   * Invalidate specific key across L1 Memory and L2 Redis
    */
   delete(key: string): void {
+    this.deleteMemoryOnly(key);
+    if (redisService.isAvailable) {
+      redisService.del(key).catch(() => {});
+    }
+  }
+
+  private deleteMemoryOnly(key: string): void {
     if (this.timers.has(key)) {
       clearTimeout(this.timers.get(key));
       this.timers.delete(key);
@@ -69,11 +111,18 @@ export class CacheService {
     this.cache.delete(key);
   }
 
+  /**
+   * Invalidate by key prefix across both L1 Memory and L2 Redis (e.g. "attendance:", "http:")
+   */
   invalidatePrefix(prefix: string): void {
     for (const key of this.cache.keys()) {
       if (key.startsWith(prefix)) {
-        this.delete(key);
+        this.deleteMemoryOnly(key);
       }
+    }
+
+    if (redisService.isAvailable) {
+      redisService.delByPattern(`${prefix}*`).catch(() => {});
     }
   }
 
@@ -83,6 +132,10 @@ export class CacheService {
     }
     this.timers.clear();
     this.cache.clear();
+
+    if (redisService.isAvailable) {
+      redisService.delByPattern('*').catch(() => {});
+    }
   }
 }
 

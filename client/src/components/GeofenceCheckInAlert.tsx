@@ -6,6 +6,7 @@ import { todayYMD, zonedParts, zonedDayOfWeek, zonedTimeToInstant } from "@/lib/
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows, computeHoursWorked } from "@/lib/workSchedule";
 import { useAuth } from "@/context/AuthContext";
 import { notifyGeofenceEvent } from "@/lib/attendanceNotify";
+import { sendPushNotificationSafe } from "@/lib/pushNotify";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 import { syncMultiDayOutsideWorkAttendance } from "@/features/operations/tasks/hooks/taskAttendanceSync";
 
@@ -269,9 +270,11 @@ export default function GeofenceCheckInAlert() {
             n.onclick = () => { window.focus(); navigate(link); };
           }
 
-          supabase.functions.invoke("send-push-notification", {
-            body: { title: checkoutTitle, body, data: { link } },
-          }).catch(() => {});
+          sendPushNotificationSafe({
+            title: checkoutTitle,
+            body: checkoutMsg,
+            data: { link },
+          });
         }
       }
 
@@ -306,9 +309,11 @@ export default function GeofenceCheckInAlert() {
                   n.onclick = () => { window.focus(); navigate(link); };
                 }
 
-                supabase.functions.invoke("send-push-notification", {
-                  body: { title: checkinTitle, body: checkinMsg, data: { link } },
-                }).catch(() => {});
+                sendPushNotificationSafe({
+                  title: checkinTitle,
+                  body: checkinMsg,
+                  data: { link },
+                });
               }
             }
           }

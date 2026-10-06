@@ -24,7 +24,26 @@ export function useLeaveFilters(
 
   // Pagination
   const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
+  const parsedPage = parseInt(searchParams.get("page") || "1", 10);
+  const [page, setPageState] = useState<number>(!isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1);
+
+  const [, setSearchParams] = useSearchParams();
+  const setPage = (newPageOrFn: number | ((prev: number) => number)) => {
+    setPageState((prev) => {
+      const resolved = typeof newPageOrFn === "function" ? newPageOrFn(prev) : newPageOrFn;
+      const validPage = Math.max(1, resolved);
+      setSearchParams((sp) => {
+        const next = new URLSearchParams(sp);
+        if (validPage > 1) {
+          next.set("page", String(validPage));
+        } else {
+          next.delete("page");
+        }
+        return next;
+      });
+      return validPage;
+    });
+  };
 
   // Deep link highlight
   const highlightId = searchParams.get("highlight");

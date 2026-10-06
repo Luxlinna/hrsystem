@@ -7,6 +7,7 @@ import { biometricRoutes } from './biometric.routes.js';
 import { healthRoutes } from './health.routes.js';
 import { settingsRoutes } from './settings.routes.js';
 import { publicRoutes } from './public.routes.js';
+import { referenceRoutes } from './reference.routes.js';
 import { generalApiLimiter } from '../middleware/rate-limit.middleware.js';
 
 const apiRouter = Router();
@@ -22,6 +23,9 @@ apiRouter.use('/public', publicRoutes);
 
 // Auth & Access Management
 apiRouter.use('/auth', authRoutes);
+
+// Master & Reference Data (Cached)
+apiRouter.use('/reference', referenceRoutes);
 
 // Domain REST API v1 routes
 apiRouter.use('/employees', employeeRoutes);

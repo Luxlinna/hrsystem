@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toYMD } from "@/lib/date";
 import type { AttendanceRecord, AttendanceTabKey, DatePreset, Employee, ViewMode } from "../types";
 import { computeDateRangeBounds } from "./attendanceDateRangeUtils";
@@ -7,7 +8,31 @@ import { exportAttendanceToCSV } from "./attendanceExportCSV";
 import { expandRecordsToCalendarDays } from "./attendanceCalendarExpansion";
 
 export function useAttendanceFilters(records: AttendanceRecord[], employees: Employee[], todayYMD: string) {
-  const [activeTab, setActiveTab] = useState<AttendanceTabKey>("records");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlSubTab = searchParams.get("subTab") as AttendanceTabKey | null;
+  const [activeTab, setActiveTabState] = useState<AttendanceTabKey>(
+    urlSubTab === "records" || urlSubTab === "live" || urlSubTab === "matrix" || urlSubTab === "summary"
+      ? urlSubTab
+      : "records"
+  );
+
+  const setActiveTab = useCallback(
+    (tab: AttendanceTabKey) => {
+      setActiveTabState(tab);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === "records") {
+          next.delete("subTab");
+        } else {
+          next.set("subTab", tab);
+        }
+        return next;
+      });
+    },
+    [setSearchParams]
+  );
+
   const [viewModeState, setViewModeState] = useState<ViewMode>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("hrm_attendance_view_mode");
@@ -29,7 +54,32 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterWorkLocation, setFilterWorkLocation] = useState("all");
   const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
+
+  const parsedPage = parseInt(searchParams.get("page") || "1", 10);
+  const [page, setPageState] = useState<number>(!isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1);
+
+  const setPage = useCallback(
+    (newPageOrFn: number | ((prev: number) => number)) => {
+      setPageState((prev) => {
+        const resolved = typeof newPageOrFn === "function" ? newPageOrFn(prev) : newPageOrFn;
+        const validPage = Math.max(1, resolved);
+        setSearchParams((sp) => {
+          const next = new URLSearchParams(sp);
+          if (validPage > 1) {
+            next.set("page", String(validPage));
+          } else {
+            next.delete("page");
+          }
+          return next;
+        });
+        return validPage;
+      });
+    },
+    [setSearchParams]
+  );
+
+  const isInitialMountRef = useRef(true);
+
   const [filterDatePreset, setFilterDatePreset] = useState<DatePreset>("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -97,8 +147,12 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   );
 
   useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
     setPage(1);
-  }, [searchQuery, filterDepartment, filterRole, filterEmploymentType, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
+  }, [searchQuery, filterDepartment, filterRole, filterEmploymentType, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize, setPage]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);

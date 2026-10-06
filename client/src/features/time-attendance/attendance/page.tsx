@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAttendance } from "./hooks/useAttendance";
 import { AttendanceHeader } from "./components/AttendanceHeader";
@@ -9,6 +9,19 @@ import { AttendanceTabsRouter } from "./components/AttendanceTabsRouter";
 import { AttendanceFullViewOverlay } from "./components/AttendanceFullViewOverlay";
 import { useAttendanceLogNavigation } from "./hooks/useAttendanceLogNavigation";
 
+const MAIN_TAB_ORDER: Array<"attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours"> = [
+  "attendance",
+  "attendance-schedule",
+  "schedule-templates",
+  "shifts",
+  "working-hours",
+];
+
+function getMainTabIndex(tab: string): number {
+  const idx = MAIN_TAB_ORDER.indexOf(tab as any);
+  return idx >= 0 ? idx : 0;
+}
+
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
@@ -16,6 +29,19 @@ export default function AttendancePage() {
     rawTab === "attendance-schedule" || rawTab === "schedule-templates" || rawTab === "shifts" || rawTab === "working-hours"
       ? rawTab
       : "attendance";
+
+  const tabIdx = getMainTabIndex(activeMainTab);
+  const prevTabIdxRef = useRef(tabIdx);
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
+
+  useEffect(() => {
+    if (tabIdx > prevTabIdxRef.current) {
+      setSlideDirection("next");
+    } else if (tabIdx < prevTabIdxRef.current) {
+      setSlideDirection("prev");
+    }
+    prevTabIdxRef.current = tabIdx;
+  }, [tabIdx]);
 
   const [showTimeLogForm, setShowTimeLogForm] = useState(false);
   const [timeLogInitialEmployeeId, setTimeLogInitialEmployeeId] = useState<string | undefined>(undefined);
@@ -122,6 +148,7 @@ export default function AttendancePage() {
         scheduleTemplates={scheduleTemplates}
         shiftsManager={shiftsManager}
         onViewAttendanceLog={handleViewAttendanceLog}
+        slideDirection={slideDirection}
         logsProps={{
           myEmployee: data.myEmployee,
           myTodayRecord,

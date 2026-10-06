@@ -53,8 +53,7 @@ export function useAttendance() {
   const canViewAll = isLeader;
   const todayYMD = todayYMDLib();
 
-  const data = useAttendanceData(isLeader, canViewAllBranches, currentEmp as unknown as Employee, isLineManager);
-  const { fetchData } = data;
+  const data = useAttendanceData(isLeader, canViewAllBranches, currentEmp as unknown as Employee, isLineManager, permsLoading);
 
   const isManager = useMemo(() => {
     const rName = (role?.name || "").trim().toLowerCase();
@@ -106,11 +105,6 @@ export function useAttendance() {
       /admin|ceo|director|head|hr\s*manager|chief|president/i.test(roleName)
     );
   }, [isSuperAdmin, isAdmin, isBranchAdmin, roleName]);
-
-  useEffect(() => {
-    if (permsLoading) return;
-    fetchData();
-  }, [permsLoading, fetchData]);
 
   // Strict client-side guarantee: if not a leader/manager, employee sees ONLY their own records
   const visibleRecords = useMemo(() => {

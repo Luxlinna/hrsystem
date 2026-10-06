@@ -12,6 +12,7 @@ interface Props {
   shiftsManager: any;
   logsProps: ComponentProps<typeof AttendanceLogsTabView>;
   onViewAttendanceLog?: (target: any) => void;
+  slideDirection?: "next" | "prev";
 }
 
 export const AttendanceTabsRouter = memo(function AttendanceTabsRouter({
@@ -21,19 +22,20 @@ export const AttendanceTabsRouter = memo(function AttendanceTabsRouter({
   shiftsManager,
   logsProps,
   onViewAttendanceLog,
+  slideDirection = "next",
 }: Props) {
+  let content = null;
+
   if (activeMainTab === "attendance-schedule") {
-    return (
+    content = (
       <AttendanceScheduleMatrixView
         onNavigateToTemplates={() => onTabChange("schedule-templates")}
         onNavigateToShifts={() => onTabChange("shifts")}
         onViewAttendanceLog={onViewAttendanceLog}
       />
     );
-  }
-
-  if (activeMainTab === "schedule-templates") {
-    return (
+  } else if (activeMainTab === "schedule-templates") {
+    content = (
       <ScheduleTemplatesView
         templates={scheduleTemplates.templates}
         onCreateNew={() => scheduleTemplates.setActiveFormTemplate("new")}
@@ -45,10 +47,8 @@ export const AttendanceTabsRouter = memo(function AttendanceTabsRouter({
         onNavigateToLateEarly={() => onTabChange("shifts")}
       />
     );
-  }
-
-  if (activeMainTab === "shifts") {
-    return (
+  } else if (activeMainTab === "shifts") {
+    content = (
       <ShiftsListView
         shifts={shiftsManager.shifts}
         onCreateNew={() => shiftsManager.setActiveFormShift("new")}
@@ -59,11 +59,20 @@ export const AttendanceTabsRouter = memo(function AttendanceTabsRouter({
         onNavigateToLateEarly={() => {}}
       />
     );
+  } else if (activeMainTab === "working-hours") {
+    content = <StandardWorkingHoursTabView canManage={logsProps.canManage} />;
+  } else {
+    content = <AttendanceLogsTabView {...logsProps} />;
   }
 
-  if (activeMainTab === "working-hours") {
-    return <StandardWorkingHoursTabView canManage={logsProps.canManage} />;
-  }
-
-  return <AttendanceLogsTabView {...logsProps} />;
+  return (
+    <div
+      key={activeMainTab}
+      className={`w-full max-w-full overflow-x-hidden ${
+        slideDirection === "prev" ? "animate-cover-slide-left" : "animate-cover-slide-right"
+      }`}
+    >
+      {content}
+    </div>
+  );
 });

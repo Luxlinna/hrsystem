@@ -319,12 +319,12 @@
 }
 
 .animate-cover-next {
-  animation: powerpointCoverNext 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: powerpointCoverNext 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform, opacity;
 }
 
 .animate-cover-prev {
-  animation: powerpointCoverPrev 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: powerpointCoverPrev 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform, opacity;
 }
 

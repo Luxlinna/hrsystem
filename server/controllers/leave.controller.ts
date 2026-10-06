@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BaseController } from './base.controller.js';
 import { LeaveService, leaveService } from '../services/leave.service.js';
+import { cacheService } from '../services/cache.service.js';
 import { UnauthorizedError } from '../utils/http-error.js';
 
 export class LeaveController extends BaseController {
@@ -14,6 +15,9 @@ export class LeaveController extends BaseController {
       if (!employeeId) throw new UnauthorizedError();
 
       const result = await this.service.applyLeave(employeeId, req.body);
+      cacheService.invalidatePrefix('leaves:');
+      cacheService.invalidatePrefix('attendance:');
+      cacheService.invalidatePrefix('http:');
       return this.created(res, result, 'Leave request submitted successfully');
     } catch (err) {
       next(err);
@@ -26,6 +30,9 @@ export class LeaveController extends BaseController {
       if (!approverId) throw new UnauthorizedError();
 
       const result = await this.service.approveLeave(req.params.id, approverId);
+      cacheService.invalidatePrefix('leaves:');
+      cacheService.invalidatePrefix('attendance:');
+      cacheService.invalidatePrefix('http:');
       return this.ok(res, result, 'Leave request approved successfully');
     } catch (err) {
       next(err);

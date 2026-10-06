@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BaseController } from './base.controller.js';
 import { AttendanceService, attendanceService } from '../services/attendance.service.js';
+import { cacheService } from '../services/cache.service.js';
 import { UnauthorizedError } from '../utils/http-error.js';
 
 export class AttendanceController extends BaseController {
@@ -14,6 +15,8 @@ export class AttendanceController extends BaseController {
       if (!employeeId) throw new UnauthorizedError();
 
       const result = await this.service.checkIn(employeeId, req.body);
+      cacheService.invalidatePrefix('attendance:');
+      cacheService.invalidatePrefix('http:');
       return this.ok(res, result, 'Checked in successfully');
     } catch (err) {
       next(err);
@@ -26,6 +29,8 @@ export class AttendanceController extends BaseController {
       if (!employeeId) throw new UnauthorizedError();
 
       const result = await this.service.checkOut(employeeId, req.body);
+      cacheService.invalidatePrefix('attendance:');
+      cacheService.invalidatePrefix('http:');
       return this.ok(res, result, 'Checked out successfully');
     } catch (err) {
       next(err);
