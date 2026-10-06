@@ -1,14 +1,12 @@
-import { Redis } from 'ioredis';
-
 class RedisService {
-  private client: Redis | null = null;
+  private client: any = null;
   private isConnected = false;
 
   constructor() {
     this.init();
   }
 
-  private init(): void {
+  private async init(): Promise<void> {
     const redisUrl = process.env.REDIS_URL;
     const redisHost = process.env.REDIS_HOST;
 
@@ -18,20 +16,28 @@ class RedisService {
     }
 
     try {
+      // Dynamically load ioredis if installed in environment
+      // @ts-ignore
+      const ioredisModule = await import('ioredis').catch(() => null);
+      if (!ioredisModule) {
+        return;
+      }
+
+      const RedisConstructor: any = ioredisModule.default || ioredisModule.Redis || ioredisModule;
       if (redisUrl) {
-        this.client = new Redis(redisUrl, {
+        this.client = new RedisConstructor(redisUrl, {
           lazyConnect: true,
-          retryStrategy: (times) => Math.min(times * 100, 3000),
+          retryStrategy: (times: number) => Math.min(times * 100, 3000),
           maxRetriesPerRequest: 2,
           enableOfflineQueue: false,
         });
       } else {
-        this.client = new Redis({
+        this.client = new RedisConstructor({
           host: redisHost,
           port: parseInt(process.env.REDIS_PORT || '6379', 10),
           password: process.env.REDIS_PASSWORD || undefined,
           lazyConnect: true,
-          retryStrategy: (times) => Math.min(times * 100, 3000),
+          retryStrategy: (times: number) => Math.min(times * 100, 3000),
           maxRetriesPerRequest: 2,
           enableOfflineQueue: false,
         });
@@ -46,9 +52,8 @@ class RedisService {
         this.isConnected = true;
       });
 
-      this.client.on('error', (err) => {
+      this.client.on('error', (err: any) => {
         this.isConnected = false;
-        // Suppress unhandled crash - log warning
         console.warn(`⚠️ [Redis] Connection warning: ${err.message}`);
       });
 
@@ -56,10 +61,9 @@ class RedisService {
         this.isConnected = false;
       });
 
-      // Connect asynchronously
-      this.client.connect().catch((err) => {
+      this.client.connect().catch((err: any) => {
         this.isConnected = false;
-        console.warn(`⚠️ [Redis] Initial connection attempt skipped: ${err.message}`);
+        console.warn(`⚠️ [Redis] Initial connection skipped: ${err.message}`);
       });
     } catch (err: any) {
       this.isConnected = false;
@@ -71,9 +75,6 @@ class RedisService {
     return this.isConnected && this.client !== null;
   }
 
-  /**
-   * Get value from Redis
-   */
   async get<T>(key: string): Promise<T | null> {
     if (!this.isAvailable || !this.client) return null;
     try {
@@ -85,9 +86,6 @@ class RedisService {
     }
   }
 
-  /**
-   * Set value in Redis with TTL in seconds
-   */
   async set<T>(key: string, data: T, ttlSeconds = 60): Promise<void> {
     if (!this.isAvailable || !this.client) return;
     try {
@@ -102,9 +100,6 @@ class RedisService {
     }
   }
 
-  /**
-   * Delete specific key from Redis
-   */
   async del(key: string): Promise<void> {
     if (!this.isAvailable || !this.client) return;
     try {
@@ -114,9 +109,6 @@ class RedisService {
     }
   }
 
-  /**
-   * Invalidate all keys matching a pattern (e.g. "attendance:*")
-   */
   async delByPattern(pattern: string): Promise<void> {
     if (!this.isAvailable || !this.client) return;
     try {
@@ -128,7 +120,7 @@ class RedisService {
       stream.on('data', async (keys: string[]) => {
         if (keys.length > 0 && this.client) {
           const pipeline = this.client.pipeline();
-          keys.forEach((k) => pipeline.del(k));
+          keys.forEach((k: string) => pipeline.del(k));
           await pipeline.exec();
         }
       });
@@ -137,9 +129,6 @@ class RedisService {
     }
   }
 
-  /**
-   * Disconnect Redis client cleanly
-   */
   async disconnect(): Promise<void> {
     if (this.client) {
       await this.client.quit().catch(() => {});
