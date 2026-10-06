@@ -51,7 +51,7 @@ Please tap the link below to activate your account and set up your password:
 👉 ${inviteLink}
 
 📱 Phone: ${formattedPhone}
-⏱ This setup link is valid for 24 hours.
+⏱ This setup link is valid for 24 hours and can only be used once.
 
 After setting your password, you can sign in directly with your phone number and password.`;
 }
