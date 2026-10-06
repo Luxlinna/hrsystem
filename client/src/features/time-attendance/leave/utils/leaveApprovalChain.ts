@@ -1,4 +1,5 @@
-import type { Employee, LeaveRequest } from "../types";
+import type { LeaveRequest } from "../types";
+import { getStoredApproverFlow } from "../services/leaveApprovalFlowService";
 
 export type ApplicantTier = "bu_admin" | "manager" | "employee";
 
@@ -92,7 +93,7 @@ export interface CanUserActOptions {
 
 export interface CanUserActResult {
   canAct: boolean;
-  actionLabel: "Endorse" | "BU Admin Endorse" | "HR Approve" | "";
+  actionLabel: "Approve" | "Endorse" | "BU Admin Endorse" | "HR Approve" | "";
 }
 
 export function canUserActOnRequest(opts: CanUserActOptions): CanUserActResult {
@@ -123,6 +124,7 @@ export function canUserActOnRequest(opts: CanUserActOptions): CanUserActResult {
 
   const isSuper = Boolean(
     isSuperAdmin ||
+    isAdmin ||
     roleLower.includes("super admin") ||
     roleLower.includes("superadmin")
   );
@@ -140,13 +142,13 @@ export function canUserActOnRequest(opts: CanUserActOptions): CanUserActResult {
 
   const isBuAdmin = Boolean(
     isSuper ||
-    isAdmin ||
     isBranchAdmin ||
     hasBuAdminEndorseAccess ||
     roleLower.includes("bu admin") ||
     roleLower.includes("be admin") ||
     roleLower.includes("branch admin") ||
-    roleLower.includes("branch ceo")
+    roleLower.includes("branch ceo") ||
+    roleLower.includes("ceo")
   );
 
   const isDirectManager = Boolean(
@@ -154,40 +156,44 @@ export function canUserActOnRequest(opts: CanUserActOptions): CanUserActResult {
     hasManagerEndorseAccess
   );
 
-  const tier = getRequestTier(request);
+  // Check if current user is an explicitly configured approver in the BU flow
+  const branchId = request.employees?.branch_id;
+  const buFlow = getStoredApproverFlow(branchId);
+  const isExplicitBUApprover = Boolean(
+    myEmployeeId &&
+    buFlow.some((step) => step.approvers.some((a) => a.id === myEmployeeId))
+  );
+
+  const hasMultiSteps = buFlow.length > 1;
   const reasonText = request.reason || "";
   const hasStep1Endorsed =
     reasonText.includes("[Stage: BU Admin Endorsed") ||
-    reasonText.includes("[Stage: Manager Endorsed");
+    reasonText.includes("[Stage: Manager Endorsed") ||
+    reasonText.includes("[Stage: Step 1 Endorsed");
 
-  // Tier 1: BU Admin applicant -> Direct 1-step to HR Division Team only
-  if (tier === "bu_admin") {
-    if (isHr) return { canAct: true, actionLabel: "HR Approve" };
-    return { canAct: false, actionLabel: "" };
-  }
-
-  // Tier 2: Manager applicant -> Step 1 (BU Admin) -> Step 2 (HR Division Team)
-  if (tier === "manager") {
-    if (!hasStep1Endorsed) {
-      if (isBuAdmin || isHr) return { canAct: true, actionLabel: "BU Admin Endorse" };
-      return { canAct: false, actionLabel: "" };
+  // If the BU flow only has 1 step (standard), any authorized approver can directly grant final Approval
+  if (!hasMultiSteps) {
+    if (isExplicitBUApprover || isDirectManager || isBuAdmin || isHr) {
+      return { canAct: true, actionLabel: "Approve" };
     }
-    // Step 2: ONLY HR Division Team
-    if (isHr) return { canAct: true, actionLabel: "HR Approve" };
     return { canAct: false, actionLabel: "" };
   }
 
-  // Tier 3: Employee applicant -> Step 1 (Line Manager) -> Step 2 (HR Division Team)
+  // Multi-step BU flow: Step 1 -> Step 2
   if (!hasStep1Endorsed) {
-    if (isDirectManager || isBuAdmin || isHr) {
+    const isStep1Approver = buFlow[0]?.approvers.some((a) => a.id === myEmployeeId);
+    if (isStep1Approver || isDirectManager || isBuAdmin || isHr) {
       return { canAct: true, actionLabel: "Endorse" };
     }
     return { canAct: false, actionLabel: "" };
   }
 
-  // Step 2: ONLY HR Division Team can approve or reject.
-  // The line manager who endorsed in Step 1 has NO approval rights here.
-  if (isHr) return { canAct: true, actionLabel: "HR Approve" };
+  // Step 2 in multi-step flow
+  const isStep2Approver = buFlow[1]?.approvers.some((a) => a.id === myEmployeeId);
+  if (isStep2Approver || isBuAdmin || isHr) {
+    return { canAct: true, actionLabel: "Approve" };
+  }
+
   return { canAct: false, actionLabel: "" };
 }
 

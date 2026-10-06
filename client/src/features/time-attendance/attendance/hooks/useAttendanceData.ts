@@ -275,7 +275,7 @@ export function useAttendanceData(
         }
       }
     },
-    [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee, cacheKey, permsLoading]
+    [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee, cacheKey, permsLoading, records.length]
   );
 
   useEffect(() => {

@@ -88,18 +88,14 @@ export function useLeaveApprovalDecision({
         finalStatus = "rejected";
         stageTag = `\n\n[Stage: Rejected by ${actorName} (${actorRole})]${approvalNote ? `\n[Reject Reason: ${approvalNote}]` : ""}`;
         toastMessage = `Leave request rejected by ${actorName}`;
-      } else if (actionLabel === "Endorse") {
+      } else if (actionLabel === "Endorse" || actionLabel === "BU Admin Endorse") {
         finalStatus = "pending";
-        stageTag = `\n\n[Stage: Manager Endorsed by ${actorName} (${actorRole})]${approvalNote ? `\n[Manager Note: ${approvalNote}]` : ""}`;
-        toastMessage = "Step 1: Endorsed by Manager. Forwarded to HR Division for final approval.";
-      } else if (actionLabel === "BU Admin Endorse") {
-        finalStatus = "pending";
-        stageTag = `\n\n[Stage: BU Admin Endorsed by ${actorName} (${actorRole})]${approvalNote ? `\n[BU Admin Note: ${approvalNote}]` : ""}`;
-        toastMessage = "Step 1: Endorsed by BU Admin. Forwarded to HR Division for final approval.";
+        stageTag = `\n\n[Stage: Step 1 Endorsed by ${actorName} (${actorRole})]${approvalNote ? `\n[Note: ${approvalNote}]` : ""}`;
+        toastMessage = "Step 1: Endorsed. Forwarded to next step for final authorization.";
       } else {
         finalStatus = "approved";
-        stageTag = `\n\n[Stage: Final Approved by HR Division (${actorName}, ${actorRole})]${approvalNote ? `\n[Approval Note: ${approvalNote}]` : ""}`;
-        toastMessage = "Final approval granted by HR Division team.";
+        stageTag = `\n\n[Stage: Approved by ${actorName} (${actorRole})]${approvalNote ? `\n[Approval Note: ${approvalNote}]` : ""}`;
+        toastMessage = `Leave request approved by ${actorName}.`;
       }
 
       const { error } = await supabase

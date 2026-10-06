@@ -156,7 +156,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+  }, [page, totalPages, setPage]);
 
   const changeRosterDate = useCallback((offsetDays: number) => {
     const d = new Date(`${rosterDate}T00:00:00`);

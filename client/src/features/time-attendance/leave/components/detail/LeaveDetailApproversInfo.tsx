@@ -109,7 +109,7 @@ export const LeaveDetailApproversInfo = memo(function LeaveDetailApproversInfo({
     } finally {
       setLoading(false);
     }
-  }, [r.employees?.branch_id, (r.employees as any)?.reports_to, r.employee_id]);
+  }, [r.employee_id, r.employees]);
 
   useEffect(() => {
     loadFlow();

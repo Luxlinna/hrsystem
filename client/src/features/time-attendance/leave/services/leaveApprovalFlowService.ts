@@ -77,13 +77,15 @@ export function getStoredApproverFlow(
                 );
                 if (!hasFake) return parsed;
               }
-            } catch {}
+            } catch {
+              // ignore malformed JSON in localStorage
+            }
           }
         }
       }
     }
   } catch {
-    // fallback
+    // fallback if localStorage is inaccessible
   }
   return [];
 }

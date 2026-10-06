@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import type { LeaveRequest, Employee } from "../types";
@@ -28,7 +28,7 @@ export function useLeaveFilters(
   const [page, setPageState] = useState<number>(!isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1);
 
   const [, setSearchParams] = useSearchParams();
-  const setPage = (newPageOrFn: number | ((prev: number) => number)) => {
+  const setPage = useCallback((newPageOrFn: number | ((prev: number) => number)) => {
     setPageState((prev) => {
       const resolved = typeof newPageOrFn === "function" ? newPageOrFn(prev) : newPageOrFn;
       const validPage = Math.max(1, resolved);
@@ -43,7 +43,7 @@ export function useLeaveFilters(
       });
       return validPage;
     });
-  };
+  }, [setSearchParams]);
 
   // Deep link highlight
   const highlightId = searchParams.get("highlight");
@@ -101,7 +101,7 @@ export function useLeaveFilters(
           onInspectRequest?.(normalized);
         }
       });
-  }, [highlightId, searchParams, requests, pageSize, onInspectRequest]);
+  }, [highlightId, searchParams, requests, pageSize, onInspectRequest, setPage]);
 
   const departments = useMemo(() => {
     const set = new Set<string>();
@@ -145,7 +145,7 @@ export function useLeaveFilters(
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+  }, [page, totalPages, setPage]);
 
   return {
     activeTab,
