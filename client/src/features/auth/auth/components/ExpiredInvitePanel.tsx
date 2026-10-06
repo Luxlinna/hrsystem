@@ -84,7 +84,7 @@ export function ExpiredInvitePanel() {
               required
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Phone number (e.g. 088 244 6786) or work email"
+              placeholder="Work email or phone number"
               className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 bg-white focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all font-sans"
             />
           </div>
