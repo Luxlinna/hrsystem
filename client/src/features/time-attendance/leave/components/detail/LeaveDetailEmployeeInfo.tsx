@@ -16,11 +16,12 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
     contract_type?: string | null;
     branch_name?: string | null;
     supervisor_name?: string | null;
+    employee_code?: string | null;
   }>({});
 
   const emp = request.employees;
   const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee";
-  const empCode = emp?.employee_code || emp?.biometric_user_id || request.employee_id.slice(0, 5);
+  const effectiveCode = extraEmp.employee_code || emp?.employee_code || emp?.biometric_user_id || "";
 
   useEffect(() => {
     let active = true;
@@ -28,7 +29,7 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
       try {
         const { data } = await supabase
           .from("employees")
-          .select("join_date, branches(name, location), reports_to")
+          .select("join_date, branches(name, location, company_name), reports_to, employee_code, biometric_user_id, employment_type, contract_type")
           .eq("id", request.employee_id)
           .maybeSingle();
 
@@ -43,12 +44,19 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
             if (sup) supervisorName = `${sup.first_name} ${sup.last_name}`.trim();
           }
 
+          const rawCode = data.employee_code || data.biometric_user_id || "";
+          const branchName =
+            (data as any)?.branches?.name ||
+            (data as any)?.branches?.company_name ||
+            "OPS SOLUTIONS CO., LTD";
+
           setExtraEmp({
             join_date: data.join_date ? formatDMY(data.join_date) : "15/09/2025",
-            employment_type: "FULL-TIME",
-            contract_type: "PERMANENT (UDC)",
-            branch_name: (data as any)?.branches?.name || "KD00001",
+            employment_type: (data as any)?.employment_type || "FULL-TIME",
+            contract_type: (data as any)?.contract_type || "PERMANENT (UDC)",
+            branch_name: branchName,
             supervisor_name: supervisorName,
+            employee_code: rawCode,
           });
         }
       } catch {
@@ -86,9 +94,11 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
           <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-slate-100 truncate">
             {empName}
           </h3>
-          <p className="text-[11px] text-gray-500 dark:text-slate-400 font-mono mt-0.5">
-            {empCode}
-          </p>
+          {effectiveCode && (
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 font-mono mt-0.5">
+              {effectiveCode}
+            </p>
+          )}
         </div>
       </div>
 
@@ -106,7 +116,7 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
           <span className="truncate uppercase">{emp?.department || "TECHNOLOGY & DEVELOPMENT"}</span>
         </div>
 
-        {/* 2-Column Row 1: Supervisor & Location */}
+        {/* 2-Column Row 1: Supervisor & BU Location with Employee Code */}
         <div className="grid grid-cols-2 gap-2 pt-0.5">
           <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium min-w-0">
             <i className="ri-user-follow-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
@@ -114,7 +124,9 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
           </div>
           <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 font-medium min-w-0">
             <i className="ri-global-line text-gray-400 dark:text-slate-500 text-sm shrink-0" />
-            <span className="truncate">{extraEmp.branch_name || "Unknown"}</span>
+            <span className="truncate font-medium">
+              {extraEmp.branch_name || "OPS SOLUTIONS CO., LTD"}{effectiveCode ? ` ${effectiveCode}` : ""}
+            </span>
           </div>
         </div>
 
