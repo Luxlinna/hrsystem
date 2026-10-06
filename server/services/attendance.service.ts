@@ -25,10 +25,10 @@ export class AttendanceService {
     const branch = employee.branches;
 
     const workStartTime = site?.work_start_time ? formatTimeStr(site.work_start_time) : (branch?.work_start_time ? formatTimeStr(branch.work_start_time) : '07:30:00');
-    const breakStartTime = site?.break_start_time ? formatTimeStr(site.break_start_time) : '11:30:00';
-    const breakEndTime = site?.break_end_time ? formatTimeStr(site.break_end_time) : '13:00:00';
+    const breakStartTime = site?.break_start_time ? formatTimeStr(site.break_start_time) : (branch?.break_start_time ? formatTimeStr(branch.break_start_time) : '12:00:00');
+    const breakEndTime = site?.break_end_time ? formatTimeStr(site.break_end_time) : (branch?.break_end_time ? formatTimeStr(branch.break_end_time) : '13:00:00');
     const workEndTime = site?.work_end_time ? formatTimeStr(site.work_end_time) : (branch?.work_end_time ? formatTimeStr(branch.work_end_time) : '17:00:00');
-    const is4Punch = site?.is_four_punch_enabled ?? true;
+    const is4Punch = site?.is_four_punch_enabled ?? branch?.is_four_punch_enabled ?? true;
     const lateGraceMin = site?.late_grace_minutes ?? branch?.late_grace_minutes ?? 15;
     const earlyGraceMin = site?.early_leave_grace_minutes ?? branch?.early_leave_grace_minutes ?? 15;
 

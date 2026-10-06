@@ -14,6 +14,7 @@ import { BranchEmployeeLevelsSection } from "./BranchEmployeeLevelsSection";
 import { BranchContractTypesSection } from "./BranchContractTypesSection";
 import { BranchJobStatusesSection } from "./BranchJobStatusesSection";
 import { BranchApprovalFlowSection } from "./BranchApprovalFlowSection";
+import { BranchWorkingHoursSection } from "./BranchWorkingHoursSection";
 
 interface BranchTabContentProps {
   activeTab: BranchTabType;
@@ -171,6 +172,12 @@ export function BranchTabContent({
             branchName={currentBranch.company_name || currentBranch.name}
             canManage={canManage}
           />
+        </div>
+      )}
+
+      {activeTab === "schedule" && (
+        <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+          <BranchWorkingHoursSection branch={currentBranch} canManage={canManage} />
         </div>
       )}
     </>

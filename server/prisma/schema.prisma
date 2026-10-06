@@ -917,7 +917,10 @@ model branches {
   longitude                                                           Decimal?                    @db.Decimal(9, 6)
   geofence_radius_m                                                   Int                         @default(100)
   work_start_time                                                     DateTime?                   @db.Time(6)
+  break_start_time                                                    DateTime?                   @default(dbgenerated("'12:00:00'::time without time zone")) @db.Time(6)
+  break_end_time                                                      DateTime?                   @default(dbgenerated("'13:00:00'::time without time zone")) @db.Time(6)
   work_end_time                                                       DateTime?                   @db.Time(6)
+  is_four_punch_enabled                                               Boolean?                    @default(true)
   deleted_at                                                          DateTime?                   @db.Timestamptz(6)
   deleted_by                                                          String?
   late_grace_minutes                                                  Int?                        @default(15)

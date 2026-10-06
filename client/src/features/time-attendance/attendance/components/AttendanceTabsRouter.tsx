@@ -3,11 +3,10 @@ import { AttendanceScheduleMatrixView } from "./schedule-matrix/AttendanceSchedu
 import { ScheduleTemplatesView } from "./schedule-templates/ScheduleTemplatesView";
 import { ShiftsListView } from "./shifts-manager/ShiftsListView";
 import { AttendanceLogsTabView } from "../tabs/AttendanceLogsTabView";
-import { StandardWorkingHoursTabView } from "../tabs/StandardWorkingHoursTabView";
 
 interface Props {
-  activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours";
-  onTabChange: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours") => void;
+  activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
+  onTabChange: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => void;
   scheduleTemplates: any;
   shiftsManager: any;
   logsProps: ComponentProps<typeof AttendanceLogsTabView>;
@@ -59,8 +58,6 @@ export const AttendanceTabsRouter = memo(function AttendanceTabsRouter({
         onNavigateToLateEarly={() => {}}
       />
     );
-  } else if (activeMainTab === "working-hours") {
-    content = <StandardWorkingHoursTabView canManage={logsProps.canManage} />;
   } else {
     content = <AttendanceLogsTabView {...logsProps} />;
   }

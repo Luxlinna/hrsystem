@@ -3,6 +3,8 @@ import { memo, useState, useEffect } from "react";
 export interface FilterOptionItem {
   id: string;
   label: string;
+  fullLabel?: string;
+  isSubItem?: boolean;
 }
 
 interface AttendanceFilterFlyoutPanelProps {
@@ -56,7 +58,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
   const hasMore = items.length > displayLimit;
 
   return (
-    <div className="w-52 py-2 px-2.5 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+    <div className="w-60 py-2 px-2.5 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
       {/* Scrollable Checkbox List */}
       <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700 dark:text-slate-200">
         {/* 'All' Checkbox */}
@@ -76,7 +78,9 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
           return (
             <label
               key={item.id}
-              className="flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer select-none"
+              className={`flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer select-none ${
+                item.isSubItem ? "pl-5 text-slate-600 dark:text-slate-300" : ""
+              }`}
             >
               <input
                 type="checkbox"
@@ -84,7 +88,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
                 onChange={() => handleToggleItem(item.id)}
                 className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
-              <span className="truncate text-slate-700 dark:text-slate-200" title={item.label}>
+              <span className="truncate text-slate-700 dark:text-slate-200" title={item.fullLabel || item.label}>
                 {item.label}
               </span>
             </label>

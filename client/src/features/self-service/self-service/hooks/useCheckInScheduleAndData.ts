@@ -152,7 +152,7 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
         .from("employees")
         .select(`
           branch_id, default_work_location_id,
-          branches(id, name, location, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes),
+          branches(id, name, location, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled),
           work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled)
         `)
         .eq("id", employeeId)
@@ -188,11 +188,11 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
           geofence_radius_m: mainBranch.geofence_radius_m || 100,
           work_start_time: mainBranch.work_start_time || "08:00",
           work_end_time: mainBranch.work_end_time || "17:00",
-          break_start_time: "12:00",
-          break_end_time: "13:00",
+          break_start_time: mainBranch.break_start_time || "12:00",
+          break_end_time: mainBranch.break_end_time || "13:00",
           late_grace_minutes: mainBranch.late_grace_minutes ?? 15,
           early_leave_grace_minutes: mainBranch.early_leave_grace_minutes ?? 15,
-          is_four_punch_enabled: false,
+          is_four_punch_enabled: mainBranch.is_four_punch_enabled ?? false,
         });
       } else {
         setBranch(null);

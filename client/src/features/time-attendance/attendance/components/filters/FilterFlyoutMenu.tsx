@@ -73,9 +73,15 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   const siteOptions = useMemo<FilterOptionItem[]>(() => {
     const list: FilterOptionItem[] = [];
     branches.forEach((b) => {
-      list.push({ id: b.id, label: b.name });
-      workLocations.filter((s) => s.branch_id === b.id).forEach((s) => {
-        list.push({ id: `site:${s.id}`, label: `${b.name} - ${s.name}` });
+      const branchSites = workLocations.filter((s) => s.branch_id === b.id);
+      list.push({ id: b.id, label: b.name, fullLabel: b.name });
+      branchSites.forEach((s) => {
+        list.push({
+          id: `site:${s.id}`,
+          label: `↳ ${s.name}`,
+          fullLabel: `${b.name} - ${s.name}`,
+          isSubItem: true,
+        });
       });
     });
     return list;

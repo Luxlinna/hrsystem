@@ -1,8 +1,8 @@
 import { memo } from "react";
 
 interface Props {
-  activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours";
-  setActiveMainTab: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours") => void;
+  activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
+  setActiveMainTab: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => void;
 }
 
 export const AttendanceMainTabs = memo(function AttendanceMainTabs({
@@ -10,7 +10,7 @@ export const AttendanceMainTabs = memo(function AttendanceMainTabs({
   setActiveMainTab,
 }: Props) {
   const tabs: Array<{
-    id: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours";
+    id: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
     label: string;
     icon: string;
   }> = [
@@ -18,7 +18,6 @@ export const AttendanceMainTabs = memo(function AttendanceMainTabs({
     { id: "attendance-schedule", label: "Monthly Attendance & Schedule", icon: "ri-calendar-todo-line" },
     { id: "schedule-templates", label: "Schedule Templates", icon: "ri-calendar-schedule-line" },
     { id: "shifts", label: "Shifts", icon: "ri-time-line" },
-    { id: "working-hours", label: "Standard working hours", icon: "ri-settings-4-line" },
   ];
 
   return (

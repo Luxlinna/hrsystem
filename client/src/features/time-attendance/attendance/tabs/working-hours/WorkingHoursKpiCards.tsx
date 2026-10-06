@@ -8,11 +8,13 @@ interface Props {
 export const WorkingHoursKpiCards = memo(function WorkingHoursKpiCards({ branch }: Props) {
   const startTime = branch.work_start_time ? branch.work_start_time.slice(0, 5) : "08:00";
   const endTime = branch.work_end_time ? branch.work_end_time.slice(0, 5) : "17:00";
+  const breakStart = branch.break_start_time ? branch.break_start_time.slice(0, 5) : "12:00";
+  const breakEnd = branch.break_end_time ? branch.break_end_time.slice(0, 5) : "13:00";
   const lateGrace = branch.late_grace_minutes ?? 15;
   const earlyGrace = branch.early_leave_grace_minutes ?? 15;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* 1. Standard Schedule */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between">
         <div>
@@ -34,7 +36,35 @@ export const WorkingHoursKpiCards = memo(function WorkingHoursKpiCards({ branch 
         </div>
       </div>
 
-      {/* 2. Late Grace */}
+      {/* 2. Lunch Break */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between">
+        <div>
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">
+            Lunch Break
+          </span>
+          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+            <span className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono tracking-tight">
+              {breakStart} – {breakEnd}
+            </span>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
+                branch.is_four_punch_enabled
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60"
+                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60"
+              }`}
+            >
+              {branch.is_four_punch_enabled ? "4-Punch Scans" : "2-Punch Auto-Deduct"}
+            </span>
+          </div>
+        </div>
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+          {branch.is_four_punch_enabled
+            ? "Employees punch out & back in for midday break"
+            : "Midday break auto-deducted from shift hours (no scans required)"}
+        </div>
+      </div>
+
+      {/* 3. Late Grace */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between">
         <div>
           <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">
@@ -50,11 +80,11 @@ export const WorkingHoursKpiCards = memo(function WorkingHoursKpiCards({ branch 
           </div>
         </div>
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-          Entries up to <span className="font-semibold text-slate-800 dark:text-slate-200">08:{String(lateGrace).padStart(2, "0")}</span> count as on-time
+          Entries up to <span className="font-semibold text-slate-800 dark:text-slate-200">{startTime.slice(0, 2)}:{String(lateGrace).padStart(2, "0")}</span> count as on-time
         </div>
       </div>
 
-      {/* 3. Early Departure Grace */}
+      {/* 4. Early Departure Grace */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between">
         <div>
           <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">
@@ -70,7 +100,7 @@ export const WorkingHoursKpiCards = memo(function WorkingHoursKpiCards({ branch 
           </div>
         </div>
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-          Checkouts after <span className="font-semibold text-slate-800 dark:text-slate-200">16:45</span> avoid penalty
+          Checkouts within {earlyGrace}m of {endTime} avoid penalty
         </div>
       </div>
     </div>

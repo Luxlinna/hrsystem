@@ -25,8 +25,8 @@ function getMainTabIndex(tab: string): number {
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
-  const activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours" =
-    rawTab === "attendance-schedule" || rawTab === "schedule-templates" || rawTab === "shifts" || rawTab === "working-hours"
+  const activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" =
+    rawTab === "attendance-schedule" || rawTab === "schedule-templates" || rawTab === "shifts"
       ? rawTab
       : "attendance";
 
@@ -68,7 +68,7 @@ export default function AttendancePage() {
     if (searchParams.get("action") === "new-log") handleOpenTimeLog();
   }, [searchParams, handleOpenTimeLog]);
 
-  const handleTabChange = useCallback((tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours") => {
+  const handleTabChange = useCallback((tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (tab === "attendance") {

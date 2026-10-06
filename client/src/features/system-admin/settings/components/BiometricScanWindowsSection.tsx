@@ -52,6 +52,7 @@ export const BiometricScanWindowsSection = memo(function BiometricScanWindowsSec
           { key: `bu_four_punch_${activeTarget.id}`, value: String(checked), updated_at: new Date().toISOString() },
           { onConflict: "key" }
         );
+        await supabase.from("branches").update({ is_four_punch_enabled: checked }).eq("id", activeTarget.id);
         const { data: locs } = await supabase.from("work_locations").select("id").eq("branch_id", activeTarget.id).is("deleted_at", null);
         if (locs && locs.length > 0) {
           await supabase.from("work_locations").update({ is_four_punch_enabled: checked }).eq("branch_id", activeTarget.id);
