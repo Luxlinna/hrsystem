@@ -52,7 +52,7 @@ export function useAddEmployeeModalData(
 
     Promise.all([
       supabase.from("branches").select("id, name, location").is("deleted_at", null).order("name"),
-      supabase.from("work_locations").select("id, name, description, branch_id").is("deleted_at", null).order("name"),
+      supabase.from("work_locations").select("id, name, description, branch_id, status, is_default, city, province, address").is("deleted_at", null).order("is_default", { ascending: false }).order("name"),
       supabase.from("employees").select("id, first_name, last_name, email, phone, department, role, position, branch_id, bu_full_name, code_bu, branches(id, name)").is("deleted_at", null).order("first_name"),
       supabase.from("user_role_assignments").select("id, user_id, email, display_name, role_id, deleted_at, app_roles(id, name, is_admin, branch_id)").is("deleted_at", null),
       supabase.from("divisions").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
@@ -61,7 +61,7 @@ export function useAddEmployeeModalData(
       supabase.from("contract_types").select("id, name, term, branch_id, status").is("deleted_at", null).order("name"),
     ]).then(([bRes, wRes, eRes, uRes, divRes, dRes, pRes, cRes]) => {
       if (bRes.data) setDbBranches(bRes.data);
-      if (wRes.data) setDbWorkLocations(wRes.data);
+      if (wRes.data) setDbWorkLocations((wRes.data as any[]).filter((w) => !w.status || w.status !== "disabled"));
       if (divRes.data) setDbDivisions(divRes.data.filter((d) => !d.status || d.status !== "disabled"));
       if (dRes.data) setDbDepartments(dRes.data.filter((d) => !d.status || d.status !== "disabled"));
       if (pRes.data) setDbPositions(pRes.data.filter((p) => !p.status || p.status !== "disabled"));
@@ -101,17 +101,23 @@ export function useAddEmployeeModalData(
   const currentBranchName = currentBranch?.name || form.bu_full_name || cleanBranches[0]?.name || "";
 
   const workSites = useMemo(() => {
-    if (!currentBranch) return dbWorkLocations;
-    return dbWorkLocations.filter((w) => w.branch_id === currentBranch.id);
+    const activeSites = dbWorkLocations.filter((w: any) => !w.status || w.status !== "disabled");
+    if (!currentBranch) return activeSites;
+    return [...activeSites].sort((a, b) => {
+      const aMatch = a.branch_id === currentBranch.id ? -1 : 1;
+      const bMatch = b.branch_id === currentBranch.id ? -1 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return (a.name || "").localeCompare(b.name || "");
+    });
   }, [dbWorkLocations, currentBranch]);
 
   const currentSiteSelectValue = useMemo(() => {
-    if (!form.site) return "";
-    const lower = form.site.toLowerCase().trim();
-    if (lower === "headquarters" || lower.startsWith("main office")) return "";
-    const matched = workSites.find((w) => w.name.toLowerCase().trim() === lower || w.id === form.site);
+    if (!form.site && !form.default_work_location_id) return "";
+    const matched = workSites.find(
+      (w) => w.id === form.default_work_location_id || w.name.toLowerCase().trim() === (form.site || "").toLowerCase().trim()
+    );
     return matched ? matched.id : "";
-  }, [workSites, form.site]);
+  }, [workSites, form.site, form.default_work_location_id]);
 
   const divisions = useMemo(() => {
     const list = dbDivisions.map((d) => d.name?.trim()).filter(Boolean);

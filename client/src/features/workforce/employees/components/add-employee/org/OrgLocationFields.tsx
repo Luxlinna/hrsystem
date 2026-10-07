@@ -25,16 +25,11 @@ export const OrgLocationFields = memo(function OrgLocationFields({
     sublabel: b.location || undefined,
   }));
 
-  const siteOptions = [
-    ...(form.branch_id && currentBranchName
-      ? [{ value: "", label: `Main Office (${currentBranchName})` }]
-      : []),
-    ...workSites.map((site) => ({
-      value: site.id,
-      label: site.name,
-      sublabel: site.description || undefined,
-    })),
-  ];
+  const siteOptions = workSites.map((site) => ({
+    value: site.id,
+    label: site.name,
+    sublabel: site.description || undefined,
+  }));
 
   return (
     <>
@@ -67,9 +62,9 @@ export const OrgLocationFields = memo(function OrgLocationFields({
           <div className="flex-1">
             <SearchableSelect
               options={siteOptions}
-              value={form.default_work_location_id || ""}
+              value={form.default_work_location_id || form.site || ""}
               onChange={(val) => onSelectSite(val)}
-              placeholder={form.branch_id && currentBranchName ? `Main Office (${currentBranchName})` : "Select Site"}
+              placeholder="Select Site"
               searchPlaceholder="Search site..."
               showClear
             />
