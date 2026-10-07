@@ -1,6 +1,7 @@
 import { memo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { BasicInfoOrgProps } from "./types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields({
   employee,
@@ -50,28 +51,23 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
           Business Unit (BU)
         </label>
         {editing && branches && branches.length > 0 ? (
-          <select
+          <SearchableSelect
+            options={branches.map((b) => ({ value: b.id, label: b.name }))}
             value={form.branch_id || employee.branch_id || ""}
-            onChange={(e) => {
-              const bId = e.target.value || null;
+            onChange={(bId) => {
               const selectedBranch = branches.find((b) => b.id === bId);
               setForm({
                 ...form,
-                branch_id: bId,
+                branch_id: bId || null,
                 bu_full_name: selectedBranch?.name || null,
                 reports_to: null,
                 line_manager: null,
               });
             }}
-            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
-          >
-            <option value="">-- Select Business Unit --</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Select Business Unit"
+            searchPlaceholder="Search BU..."
+            showClear
+          />
         ) : (
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs font-black text-[#253C7D]">
@@ -95,18 +91,14 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
           Division
         </label>
         {editing ? (
-          <select
+          <SearchableSelect
+            options={allDivisionOptions}
             value={form.division || employee.division || ""}
-            onChange={(e) => setForm({ ...form, division: e.target.value })}
-            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer"
-          >
-            <option value="">-- Select Division --</option>
-            {allDivisionOptions.map((div) => (
-              <option key={div} value={div}>
-                {div}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setForm({ ...form, division: val })}
+            placeholder="Select Division"
+            searchPlaceholder="Search division..."
+            showClear
+          />
         ) : (
           <p className="text-xs text-gray-900 font-bold">{employee.division || "—"}</p>
         )}
@@ -159,26 +151,25 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
           )}
         </div>
         {editing ? (
-          <select
+          <SearchableSelect
+            options={allEmployees.map((e) => ({
+              value: e.id,
+              label: `${e.first_name} ${e.last_name}`,
+              sublabel: e.role || e.department || "",
+            }))}
             value={form.reports_to || ""}
-            onChange={(e) => {
-              const val = e.target.value || null;
+            onChange={(val) => {
               const matched = allEmployees.find((m) => m.id === val);
               setForm({
                 ...form,
-                reports_to: val,
+                reports_to: val || null,
                 line_manager: matched ? `${matched.first_name} ${matched.last_name}`.trim() : null,
               });
             }}
-            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
-          >
-            <option value="">No manager</option>
-            {allEmployees.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.first_name} {e.last_name} — {e.role}
-              </option>
-            ))}
-          </select>
+            placeholder="Select Line Manager"
+            searchPlaceholder="Search manager..."
+            showClear
+          />
         ) : (
           <div className="flex items-center gap-1.5">
             <i className="ri-user-star-line text-[#253C7D] text-xs" />

@@ -3,6 +3,7 @@ import type { EmployeeFormState } from "../../../types";
 import type { ModalManagerEmployee } from "../types";
 import { OrgLocationFields } from "./OrgLocationFields";
 import { OrgCompensationFields } from "./OrgCompensationFields";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface OrgJoiningInfoSectionProps {
   form: EmployeeFormState;
@@ -41,6 +42,11 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
     ...(currentDiv ? [currentDiv] : []),
     ...divisions,
   ]));
+  const currentDept = form.department || "";
+  const allDepartments = Array.from(new Set([
+    ...(currentDept ? [currentDept] : []),
+    ...departments,
+  ]));
 
   return (
     <div className="space-y-4">
@@ -68,16 +74,14 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             Division
           </label>
           <div className="sm:col-span-2">
-            <select
+            <SearchableSelect
+              options={allDivisions}
               value={form.division || ""}
-              onChange={(e) => onChange("division", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-            >
-              <option value="">Select Division</option>
-              {allDivisions.map((div) => (
-                <option key={div} value={div}>{div}</option>
-              ))}
-            </select>
+              onChange={(val) => onChange("division", val)}
+              placeholder="Select Division"
+              searchPlaceholder="Search division..."
+              showClear
+            />
           </div>
         </div>
 
@@ -87,16 +91,15 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             Department <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <select
+            <SearchableSelect
+              options={allDepartments}
               value={form.department || ""}
-              onChange={(e) => onChange("department", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-            >
-              <option value="">Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
+              onChange={(val) => onChange("department", val)}
+              placeholder="Select Department"
+              searchPlaceholder="Search department..."
+              required
+              showClear
+            />
           </div>
         </div>
 
@@ -116,19 +119,18 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             Position <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <select
+            <SearchableSelect
+              options={allPositions}
               value={currentPos}
-              onChange={(e) => {
-                onChange("position", e.target.value);
-                onChange("role", e.target.value);
+              onChange={(val) => {
+                onChange("position", val);
+                onChange("role", val);
               }}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-            >
-              <option value="">Select Position</option>
-              {allPositions.map((pos) => (
-                <option key={pos} value={pos}>{pos}</option>
-              ))}
-            </select>
+              placeholder="Select Position"
+              searchPlaceholder="Search position..."
+              required
+              showClear
+            />
           </div>
         </div>
 
@@ -138,52 +140,37 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             Employee Type <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <select
+            <SearchableSelect
+              options={employeeTypes}
               value={form.employment_type || "Full-Time"}
-              onChange={(e) => onChange("employment_type", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-            >
-              {employeeTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
+              onChange={(val) => onChange("employment_type", val)}
+              placeholder="Select Employee Type"
+              searchPlaceholder="Search employee type..."
+              required
+            />
           </div>
         </div>
 
         {/* 8. Supervisor Name */}
         <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">Supervisor Name</label>
-          <div className="sm:col-span-2 relative flex items-center">
-            <select
-              value={form.reports_to || ""}
-              onChange={(e) => {
-                const selectedId = e.target.value;
-                const matched = buManagers.find((m) => m.id === selectedId);
-                onChange("reports_to", selectedId || "");
-                onChange("line_manager", matched ? `${matched.first_name} ${matched.last_name}`.trim() : "");
+          <div className="sm:col-span-2">
+            <SearchableSelect
+              options={buManagers.map((m) => ({
+                value: m.id,
+                label: `${m.first_name} ${m.last_name}`.trim(),
+                sublabel: m.realRole || m.role || m.position || m.department || "Staff",
+              }))}
+              value={form.reports_to || form.line_manager || ""}
+              onChange={(val) => {
+                const matched = buManagers.find((m) => m.id === val || `${m.first_name} ${m.last_name}`.trim() === val);
+                onChange("reports_to", matched?.id || val || "");
+                onChange("line_manager", matched ? `${matched.first_name} ${matched.last_name}`.trim() : val || "");
               }}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer pr-8"
-            >
-              <option value="">Search / Select Supervisor (Line Manager)...</option>
-              {buManagers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.first_name} {m.last_name} ({m.role || "Manager"})
-                </option>
-              ))}
-            </select>
-            {(form.reports_to || form.line_manager) && (
-              <button
-                type="button"
-                onClick={() => {
-                  onChange("reports_to", "");
-                  onChange("line_manager", "");
-                }}
-                className="absolute right-6 text-slate-400 hover:text-slate-600 cursor-pointer"
-                title="Clear Supervisor"
-              >
-                <i className="ri-close-line text-xs" />
-              </button>
-            )}
+              placeholder="Search / Select Supervisor (Line Manager)..."
+              searchPlaceholder="Type name or role to search..."
+              showClear
+            />
           </div>
         </div>
 

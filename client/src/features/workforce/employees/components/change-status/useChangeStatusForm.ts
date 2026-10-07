@@ -10,6 +10,8 @@ interface UseChangeStatusFormParams {
   employees: any[];
   branches?: BranchOption[];
   divisions?: string[];
+  departments?: string[];
+  positions?: string[];
   preselectedEmployeeId?: string;
   onSuccess?: () => void;
   onClose: () => void;
@@ -20,6 +22,8 @@ export function useChangeStatusForm({
   employees,
   branches = [],
   divisions = [],
+  departments = [],
+  positions = [],
   preselectedEmployeeId,
   onSuccess,
   onClose,
@@ -46,6 +50,8 @@ export function useChangeStatusForm({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [buList, setBuList] = useState<BranchOption[]>(branches);
   const [dbDivisions, setDbDivisions] = useState<string[]>([]);
+  const [dbDepartments, setDbDepartments] = useState<string[]>([]);
+  const [dbPositions, setDbPositions] = useState<string[]>([]);
   const [dbWorkLocations, setDbWorkLocations] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
 
   const empDropdownRef = useRef<HTMLDivElement>(null);
@@ -67,6 +73,36 @@ export function useChangeStatusForm({
               .filter(Boolean)
           ));
           setDbDivisions(list);
+        }
+      });
+  }, []);
+
+  const reloadDepartments = useCallback(() => {
+    supabase.from("departments").select("name, status").is("deleted_at", null).order("name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const list = Array.from(new Set(
+            data
+              .filter((d: any) => !d.status || d.status !== "disabled")
+              .map((d: any) => d.name?.trim())
+              .filter(Boolean)
+          ));
+          setDbDepartments(list);
+        }
+      });
+  }, []);
+
+  const reloadPositions = useCallback(() => {
+    supabase.from("positions").select("name, status").is("deleted_at", null).order("name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const list = Array.from(new Set(
+            data
+              .filter((d: any) => !d.status || d.status !== "disabled")
+              .map((d: any) => d.name?.trim())
+              .filter(Boolean)
+          ));
+          setDbPositions(list);
         }
       });
   }, []);
@@ -93,8 +129,10 @@ export function useChangeStatusForm({
     if (branches && branches.length > 0) setBuList(branches);
     reloadBranches();
     reloadDivisions();
+    reloadDepartments();
+    reloadPositions();
     reloadWorkLocations();
-  }, [branches, reloadBranches, reloadDivisions, reloadWorkLocations]);
+  }, [branches, reloadBranches, reloadDivisions, reloadDepartments, reloadPositions, reloadWorkLocations]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -256,6 +294,32 @@ export function useChangeStatusForm({
     }
   };
 
+  const allDepartmentOptions = useMemo(() => {
+    const set = new Set<string>();
+    (departments || []).forEach((d) => d && set.add(d.trim()));
+    dbDepartments.forEach((d) => d && set.add(d.trim()));
+    employees.forEach((e) => {
+      if (e.department) set.add(e.department.trim());
+    });
+    if (selectedEmployee?.department) set.add(selectedEmployee.department.trim());
+    if (department) set.add(department.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [departments, dbDepartments, employees, selectedEmployee, department]);
+
+  const allPositionOptions = useMemo(() => {
+    const set = new Set<string>();
+    (positions || []).forEach((p) => p && set.add(p.trim()));
+    dbPositions.forEach((p) => p && set.add(p.trim()));
+    employees.forEach((e) => {
+      const pos = e.position || e.role;
+      if (pos) set.add(pos.trim());
+    });
+    if (selectedEmployee?.position) set.add(selectedEmployee.position.trim());
+    if (selectedEmployee?.role) set.add(selectedEmployee.role.trim());
+    if (position) set.add(position.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [positions, dbPositions, employees, selectedEmployee, position]);
+
   return {
     selectedEmpId, setSelectedEmpId,
     empSearchQuery, setEmpSearchQuery,
@@ -278,7 +342,7 @@ export function useChangeStatusForm({
     attachmentFile, setAttachmentFile,
     submitting, errorMsg,
     selectedEmployee, filteredEmployees, supervisorOptions,
-    allBuOptions, allDivisionOptions, siteOptions, reloadBranches, reloadDivisions, reloadWorkLocations,
+    allBuOptions, allDivisionOptions, allDepartmentOptions, allPositionOptions, siteOptions, reloadBranches, reloadDivisions, reloadDepartments, reloadPositions, reloadWorkLocations,
     handleSubmit,
   };
 }

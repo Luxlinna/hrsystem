@@ -1,5 +1,27 @@
 import { memo } from "react";
 import type { PersonalSectionProps } from "./types";
+import { SearchableSelect } from "@/components/SearchableSelect";
+
+const BLOOD_GROUP_OPTIONS = [
+  "None",
+  "A+",
+  "A-",
+  "B+",
+  "B-",
+  "AB+",
+  "AB-",
+  "O+",
+  "O-",
+];
+
+const RELIGION_OPTIONS = [
+  "None",
+  "Buddhism",
+  "Christianity",
+  "Islam",
+  "Hinduism",
+  "Other",
+];
 
 export const PersonalTaxAndIdFields = memo(function PersonalTaxAndIdFields({
   form,
@@ -13,21 +35,12 @@ export const PersonalTaxAndIdFields = memo(function PersonalTaxAndIdFields({
           Blood Group
         </label>
         <div className="sm:col-span-2">
-          <select
+          <SearchableSelect
+            options={BLOOD_GROUP_OPTIONS}
             value={form.blood_group || "None"}
-            onChange={(e) => onChange("blood_group", e.target.value)}
-            className="w-full px-3 py-1.5 rounded bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="None">None</option>
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
-          </select>
+            onChange={(val) => onChange("blood_group", val)}
+            placeholder="Select Blood Group"
+          />
         </div>
       </div>
 
@@ -37,18 +50,13 @@ export const PersonalTaxAndIdFields = memo(function PersonalTaxAndIdFields({
           Religion
         </label>
         <div className="sm:col-span-2">
-          <select
+          <SearchableSelect
+            options={RELIGION_OPTIONS}
             value={form.religion || "None"}
-            onChange={(e) => onChange("religion", e.target.value)}
-            className="w-full px-3 py-1.5 rounded bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="None">None</option>
-            <option value="Buddhism">Buddhism</option>
-            <option value="Christianity">Christianity</option>
-            <option value="Islam">Islam</option>
-            <option value="Hinduism">Hinduism</option>
-            <option value="Other">Other</option>
-          </select>
+            onChange={(val) => onChange("religion", val)}
+            placeholder="Select Religion"
+            searchPlaceholder="Search religion..."
+          />
         </div>
       </div>
 

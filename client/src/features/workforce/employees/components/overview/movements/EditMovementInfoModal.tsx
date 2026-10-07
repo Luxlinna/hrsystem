@@ -209,6 +209,41 @@ export const EditMovementInfoModal: React.FC<Props> = ({
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [buList, employee]);
 
+  const allDivisionOptions = useMemo(() => {
+    const set = new Set<string>();
+    dbDivisions.forEach((d) => d && set.add(d.trim()));
+    allEmployees.forEach((e) => {
+      if (e.division) set.add(e.division.trim());
+    });
+    if (employee.division) set.add(employee.division.trim());
+    if (division) set.add(division.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [dbDivisions, allEmployees, employee, division]);
+
+  const allDepartmentOptions = useMemo(() => {
+    const set = new Set<string>();
+    dbDepartments.forEach((d) => d && set.add(d.trim()));
+    allEmployees.forEach((e) => {
+      if (e.department) set.add(e.department.trim());
+    });
+    if (employee.department) set.add(employee.department.trim());
+    if (department) set.add(department.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [dbDepartments, allEmployees, employee, department]);
+
+  const allPositionOptions = useMemo(() => {
+    const set = new Set<string>();
+    dbPositions.forEach((p) => p && set.add(p.trim()));
+    allEmployees.forEach((e) => {
+      const pos = e.position || e.role;
+      if (pos) set.add(pos.trim());
+    });
+    if (employee.position) set.add(employee.position.trim());
+    if (employee.role) set.add(employee.role.trim());
+    if (position) set.add(position.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [dbPositions, allEmployees, employee, position]);
+
   const siteOptions = useMemo(() => {
     const selectedBranchObj = buList.find(
       (b) => b.name.toLowerCase().trim() === bu.toLowerCase().trim() || b.id === bu
@@ -363,9 +398,9 @@ export const EditMovementInfoModal: React.FC<Props> = ({
             setRemark={setRemark}
             buOptions={allBuOptions}
             siteOptions={siteOptions}
-            divisions={dbDivisions}
-            departments={dbDepartments}
-            positions={dbPositions}
+            divisions={allDivisionOptions}
+            departments={allDepartmentOptions}
+            positions={allPositionOptions}
             supervisorOptions={supervisorOptions}
             onReloadBranches={reloadBranches}
             onReloadSites={reloadWorkLocations}

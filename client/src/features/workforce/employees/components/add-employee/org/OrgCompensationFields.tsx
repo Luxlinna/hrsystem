@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface OrgCompensationFieldsProps {
   form: EmployeeFormState;
@@ -56,14 +57,12 @@ export const OrgCompensationFields = memo(function OrgCompensationFields({
           Salary Type <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
-          <select
+          <SearchableSelect
+            options={["Gross", "Net"]}
             value={form.payroll_structure || "Gross"}
-            onChange={(e) => onChange("payroll_structure", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="Gross">Gross</option>
-            <option value="Net">Net</option>
-          </select>
+            onChange={(val) => onChange("payroll_structure", val)}
+            placeholder="Select Salary Type"
+          />
         </div>
       </div>
     </>

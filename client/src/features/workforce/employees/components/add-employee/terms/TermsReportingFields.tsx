@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { EmployeeFormState } from "../../../types";
 import type { ModalManagerEmployee } from "../types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface TermsReportingFieldsProps {
   form: EmployeeFormState;
@@ -8,6 +9,14 @@ interface TermsReportingFieldsProps {
   buManagers: ModalManagerEmployee[];
   buCeos: ModalManagerEmployee[];
 }
+
+const HIRING_STATUS_OPTIONS = [
+  { value: "probation", label: "Probation" },
+  { value: "intern", label: "Intern" },
+  { value: "confirmed", label: "Confirmed / Active" },
+  { value: "contractor", label: "Contractor" },
+  { value: "apprentice", label: "Apprentice" },
+];
 
 export const TermsReportingFields = memo(function TermsReportingFields({
   form,
@@ -26,6 +35,29 @@ export const TermsReportingFields = memo(function TermsReportingFields({
       return name.toLowerCase() === (form.line_manager || "").toLowerCase();
     });
 
+  const managerOptions = useMemo(() => {
+    const list: Array<{ value: string; label: string; sublabel?: string; badge?: string }> = [];
+    buManagers.forEach((m) => {
+      const name = `${m.first_name} ${m.last_name}`.trim();
+      list.push({
+        value: name,
+        label: name,
+        sublabel: m.realRole || m.department || "Manager",
+        badge: "Manager",
+      });
+    });
+    buCeos.forEach((c) => {
+      const name = `${c.first_name} ${c.last_name}`.trim();
+      list.push({
+        value: name,
+        label: name,
+        sublabel: c.realRole || "Executive",
+        badge: "Executive",
+      });
+    });
+    return list;
+  }, [buManagers, buCeos]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Line Manager (Reporting Line) */}
@@ -38,55 +70,20 @@ export const TermsReportingFields = memo(function TermsReportingFields({
             {buManagers.length + buCeos.length} in this BU
           </span>
         </div>
-        <select
-          value={isCustomManager ? "__CUSTOM__" : form.line_manager}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === "__CUSTOM__") {
-              onChange("line_manager", "");
-              onChange("reports_to", "");
-            } else {
-              onChange("line_manager", val);
-              const matched = [...buManagers, ...buCeos].find(
-                (m) => `${m.first_name} ${m.last_name}`.trim().toLowerCase() === val.toLowerCase()
-              );
-              onChange("reports_to", matched?.id || "");
-            }
+        <SearchableSelect
+          options={managerOptions}
+          value={form.line_manager || ""}
+          onChange={(val) => {
+            onChange("line_manager", val);
+            const matched = [...buManagers, ...buCeos].find(
+              (m) => `${m.first_name} ${m.last_name}`.trim().toLowerCase() === val.toLowerCase()
+            );
+            onChange("reports_to", matched?.id || "");
           }}
-          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-        >
-          <option value="">-- Select Line Manager --</option>
-          {buManagers.length > 0 && (
-            <optgroup label={`${form.bu_full_name || "BU"} Leadership & Managers`}>
-              {buManagers.map((m) => {
-                const name = `${m.first_name} ${m.last_name}`.trim();
-                return (
-                  <option key={m.id} value={name}>
-                    👤 {name} ({m.realRole || m.department || "Manager"})
-                  </option>
-                );
-              })}
-            </optgroup>
-          )}
-          {buCeos.length > 0 && (
-            <optgroup label="Executive &amp; Directors">
-              {buCeos.map((c) => {
-                const name = `${c.first_name} ${c.last_name}`.trim();
-                return (
-                  <option key={c.id} value={name}>
-                    ⭐ {name} ({c.realRole || "Executive"})
-                  </option>
-                );
-              })}
-            </optgroup>
-          )}
-          {buManagers.length === 0 && buCeos.length === 0 && (
-            <option value="" disabled>
-              No managers found in this BU (use Custom Manager below)
-            </option>
-          )}
-          <option value="__CUSTOM__">✍ Custom / External Manager...</option>
-        </select>
+          placeholder="Select Line Manager"
+          searchPlaceholder="Search manager..."
+          showClear
+        />
 
         {isCustomManager && (
           <div className="mt-2">
@@ -106,10 +103,10 @@ export const TermsReportingFields = memo(function TermsReportingFields({
         <label className="block text-xs font-extrabold text-slate-700 mb-1">
           Hiring Status
         </label>
-        <select
-          value={form.hiring_status}
-          onChange={(e) => {
-            const val = e.target.value;
+        <SearchableSelect
+          options={HIRING_STATUS_OPTIONS}
+          value={form.hiring_status || "probation"}
+          onChange={(val) => {
             onChange("hiring_status", val);
             if (val === "probation" || val === "intern") {
               onChange("status", "onboarding");
@@ -117,14 +114,9 @@ export const TermsReportingFields = memo(function TermsReportingFields({
               onChange("status", "active");
             }
           }}
-          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-        >
-          <option value="probation">Probation</option>
-          <option value="intern">Intern</option>
-          <option value="confirmed">Confirmed / Active</option>
-          <option value="contractor">Contractor</option>
-          <option value="apprentice">Apprentice</option>
-        </select>
+          placeholder="Select Hiring Status"
+          searchPlaceholder="Search status..."
+        />
       </div>
     </div>
   );
