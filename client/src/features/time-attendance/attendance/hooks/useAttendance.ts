@@ -9,6 +9,7 @@ import { useAttendanceFilters } from "./useAttendanceFilters";
 import { useAttendanceMetrics } from "./useAttendanceMetrics";
 import { useAttendanceMutations } from "./useAttendanceMutations";
 import { useHolidays } from "@/hooks/useHolidays";
+import { attendanceCache } from "../services/attendanceCacheService";
 
 export function useAttendance() {
   const { role, isAdmin, loading: permsLoading, can, isLineManager, canEdit: permsCanEdit, isReadOnly } = usePermissions();
