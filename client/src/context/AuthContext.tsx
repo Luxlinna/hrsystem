@@ -117,6 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let accessToken = "";
     let refreshToken = "";
+    let authUserEmail = "";
+    let employeeEmail = "";
+    let employeePhone = "";
 
     try {
       // 1. Call Express Backend first (checks brute-force rate limiter & credentials)
@@ -126,6 +129,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       accessToken = res.accessToken;
       refreshToken = res.refreshToken;
+      authUserEmail = res.user?.email || "";
+      employeeEmail = res.employee?.email || "";
+      employeePhone = res.employee?.phone || "";
     } catch (apiErr: any) {
       if (apiErr?.status === 401 || apiErr?.message?.includes('Invalid') || apiErr?.message?.includes('password')) {
         const errMsg = apiErr?.message || 'Invalid login credentials';
@@ -141,9 +147,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       accessToken = data.session.access_token;
       refreshToken = data.session.refresh_token;
+      authUserEmail = data.user?.email || "";
     }
 
-    if (checkDeviceRemembered(resolvedEmail) || checkDeviceRemembered(identifier)) {
+    const isTrusted =
+      checkDeviceRemembered(resolvedEmail) ||
+      checkDeviceRemembered(identifier) ||
+      (authUserEmail ? checkDeviceRemembered(authUserEmail) : false) ||
+      (employeeEmail ? checkDeviceRemembered(employeeEmail) : false) ||
+      (employeePhone ? checkDeviceRemembered(employeePhone) : false);
+
+    if (isTrusted) {
       // Device is trusted: set Supabase session in browser immediately
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
@@ -170,26 +184,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verifyOTP = useCallback(async (identifier: string, otp: string, password: string, rememberDevice: boolean) => {
     const resolvedEmail = await verifyOTPService(identifier, otp);
 
-    // Call Backend to verify and get new session tokens
-    const res = await api.post<BackendLoginResponse>('/auth/login', {
-      email: resolvedEmail,
-      password,
-    });
+    let accessToken = "";
+    let refreshToken = "";
+    let authUserEmail = "";
+    let employeeEmail = "";
+    let employeePhone = "";
+
+    try {
+      // Call Backend to verify and get new session tokens
+      const res = await api.post<BackendLoginResponse>('/auth/login', {
+        email: resolvedEmail,
+        password,
+      });
+      accessToken = res.accessToken;
+      refreshToken = res.refreshToken;
+      authUserEmail = res.user?.email || "";
+      employeeEmail = res.employee?.email || "";
+      employeePhone = res.employee?.phone || "";
+    } catch {
+      // Fallback directly to Supabase signInWithPassword for resilience
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: resolvedEmail,
+        password,
+      });
+      if (error || !data.session) {
+        throw new Error(error?.message || 'Failed to authenticate session');
+      }
+      accessToken = data.session.access_token;
+      refreshToken = data.session.refresh_token;
+      authUserEmail = data.user?.email || "";
+    }
 
     const { error: sessionError } = await supabase.auth.setSession({
-      access_token: res.accessToken,
-      refresh_token: res.refreshToken,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
 
     if (sessionError) throw new Error(sessionError.message);
 
     recordUserActivity();
-    if (rememberDevice) {
+    if (rememberDevice !== false) {
       setDeviceRemembered(resolvedEmail);
       if (identifier) setDeviceRemembered(identifier);
+      if (authUserEmail) setDeviceRemembered(authUserEmail);
+      if (employeeEmail) setDeviceRemembered(employeeEmail);
+      if (employeePhone) setDeviceRemembered(employeePhone);
     } else {
       clearDeviceRemembered(resolvedEmail);
       if (identifier) clearDeviceRemembered(identifier);
+      if (authUserEmail) clearDeviceRemembered(authUserEmail);
+      if (employeeEmail) clearDeviceRemembered(employeeEmail);
+      if (employeePhone) clearDeviceRemembered(employeePhone);
     }
   }, []);
 

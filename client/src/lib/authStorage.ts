@@ -37,7 +37,11 @@ export function getCookie(name: string): string | null {
 
 export function deleteCookie(name: string): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+  const decoded = decodeURIComponent(name);
+  const encoded = encodeURIComponent(decoded);
+  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+  document.cookie = `${encoded}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+  document.cookie = `${decoded}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
 }
 
 // 2. Cookie + SessionStorage Adapter
@@ -139,22 +143,35 @@ export function checkDeviceRemembered(email: string): boolean {
 
     try {
       const data = JSON.parse(val);
-      if (typeof data === "object" && data?.expiresAt) {
-        // Enforce 3-day max window from OTP verification
-        if (data.verifiedAt && now - data.verifiedAt > OTP_REMEMBER_MS) {
+      if (typeof data === "object") {
+        // Determine verifiedAt timestamp:
+        // 1. If explicitly stored, use it.
+        // 2. If legacy token from before migration, compute verifiedAt from original duration.
+        let verifiedAt: number = data.verifiedAt;
+        if (!verifiedAt && typeof data.expiresAt === "number") {
+          const legacyDuration = data.isPhone ? OTP_REMEMBER_MS : THIRTY_DAYS_MS;
+          verifiedAt = data.expiresAt - legacyDuration;
+        }
+
+        if (verifiedAt) {
+          const age = now - verifiedAt;
+          // Valid if verified within the last 3 days
+          if (age >= 0 && age <= OTP_REMEMBER_MS) {
+            return true;
+          }
+          // Expired if older than 3 days
           clearDeviceKey(key);
           return false;
         }
-        if (now > data.expiresAt) {
+
+        // Generic fallback for any token with expiresAt
+        if (typeof data.expiresAt === "number") {
+          if (now <= data.expiresAt) {
+            return true;
+          }
           clearDeviceKey(key);
           return false;
         }
-        // Invalidate old tokens configured with former 30-day policy
-        if (data.expiresAt > now + OTP_REMEMBER_MS) {
-          clearDeviceKey(key);
-          return false;
-        }
-        return true;
       }
     } catch {
       // Invalidate legacy non-JSON tokens
@@ -230,9 +247,10 @@ export function clearAllAuthSessionData(): void {
     for (let i = 0; i < cookies.length; i++) {
       const cookie = cookies[i];
       const eqPos = cookie.indexOf("=");
-      const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-      if (!name.startsWith("otp_dev_")) {
-        deleteCookie(name);
+      const rawName = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+      const decodedName = decodeURIComponent(rawName);
+      if (!rawName.startsWith("otp_dev_") && !decodedName.startsWith("otp_dev_")) {
+        deleteCookie(rawName);
       }
     }
   }
