@@ -26,25 +26,19 @@ export function useContractTypes(branchId?: string) {
   const fetchContractTypes = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("contract_types")
         .select("*")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
 
-      if (branchId) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         console.warn("Contract types query error or table not yet created:", error.message);
         setContractTypes(
           SEED_CONTRACT_TYPES.map((t, index) => ({
             id: `contract-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: t.name || "",
             term: t.term || "None",
             period_months: t.period_months ?? null,
@@ -60,7 +54,7 @@ export function useContractTypes(branchId?: string) {
         setContractTypes(
           SEED_CONTRACT_TYPES.map((t, index) => ({
             id: `contract-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: t.name || "",
             term: t.term || "None",
             period_months: t.period_months ?? null,
@@ -76,7 +70,7 @@ export function useContractTypes(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchContractTypes();
@@ -110,7 +104,7 @@ export function useContractTypes(branchId?: string) {
         term: form.term,
         period_months: form.period_months ? parseInt(form.period_months, 10) : null,
         alert_days_before: form.alert_days_before ? parseInt(form.alert_days_before, 10) : 30,
-        branch_id: branchId || null,
+        branch_id: null,
         status: form.status,
       };
 

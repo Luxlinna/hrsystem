@@ -22,6 +22,9 @@ export interface WorkSite {
   afternoon_check_out_start?: string | null;
   afternoon_check_out_end?: string | null;
   is_four_punch_enabled: boolean;
+  auto_checkout_time?: string | null;
+  is_auto_checkout_enabled?: boolean | null;
+  working_hours_mode?: "inherit" | "custom" | string;
   site_type?: string | null;
   address?: string | null;
   city?: string | null;
@@ -55,7 +58,12 @@ export interface WorkSiteFormState {
   afternoon_check_out_start: string;
   afternoon_check_out_end: string;
   is_four_punch_enabled: boolean;
+  auto_checkout_time?: string;
+  is_auto_checkout_enabled?: boolean;
+  working_hours_mode?: "inherit" | "custom";
   site_type?: string;
+  branch_id?: string;
+  additional_branch_ids?: string[];
   company_name?: string;
   address?: string;
   city?: string;

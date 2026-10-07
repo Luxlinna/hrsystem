@@ -79,16 +79,16 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
     emp.position ||
     emp.employee_level ||
     emp.title ||
-    "Staff, Fresh 3";
+    "—";
   const contractTypeStr = formatContractType(m, emp);
-  const employeeType = newV.employment_type || emp.employment_type || "FULL-TIME";
-  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || "Tieth Sina";
+  const employeeType = newV.employment_type || emp.employment_type || "—";
+  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || "—";
 
-  const rawSalary = newV.new_salary ?? newV.salary ?? emp.basic_salary ?? emp.contract_rate ?? "180";
+  const rawSalary = newV.new_salary ?? newV.salary ?? emp.basic_salary ?? emp.contract_rate ?? "0";
   const salaryFreq = newV.contract_rate_frequency || emp.contract_rate_frequency || "Monthly";
 
   const rawSalaryAfter =
-    newV.salary_after_contract ?? emp.contract_rate_after ?? "200";
+    newV.salary_after_contract ?? emp.contract_rate_after ?? "0";
   const salaryAfterFreq =
     newV.contract_rate_after_frequency || emp.contract_rate_after_frequency || "Monthly";
 
@@ -108,18 +108,18 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
 
 export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] {
   if (!emp.id) return [];
-  const site = emp.site || emp.code_bu || "8887";
-  const department = emp.department || emp.division || "OPERATIONS";
-  const role = emp.position || emp.employee_level || emp.title || "Staff, Fresh 3";
-  const supervisor = emp.line_manager || "Tieth Sina";
-  const contractType = emp.contract_type || "PERMANENT (UDC)";
-  const employeeType = emp.employment_type || "FULL-TIME";
-  const rawSalary = emp.basic_salary ?? emp.contract_rate ?? "180";
-  const rawSalaryAfter = emp.contract_rate_after ?? "200";
-  const remarks = emp.contract_remark || "180$ After probation 3 months will be 200$";
+  const site = emp.site || emp.code_bu || "—";
+  const department = emp.department || emp.division || "—";
+  const role = emp.position || emp.employee_level || emp.title || "—";
+  const supervisor = emp.line_manager || "—";
+  const contractType = emp.contract_type || "UDC";
+  const employeeType = emp.employment_type || "Full Time";
+  const rawSalary = emp.basic_salary ?? emp.contract_rate ?? "0";
+  const rawSalaryAfter = emp.contract_rate_after ?? "0";
+  const remarks = emp.contract_remark || "—";
 
-  const joinDate = emp.join_date || emp.start_date || "2026-07-15";
-  const probationDate = emp.fdc_end_date || "2026-10-15";
+  const joinDate = emp.join_date || emp.start_date || new Date().toISOString().split("T")[0];
+  const probationDate = emp.fdc_end_date || emp.contract_end_date || joinDate;
 
   return [
     {
@@ -159,7 +159,7 @@ export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] 
         new_salary: rawSalary,
         salary_after_contract: rawSalaryAfter,
       },
-      remarks: emp.contract_remark || "180$ after probation 3 months 200$",
+      remarks,
       created_at: new Date().toISOString(),
     },
   ];

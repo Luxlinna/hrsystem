@@ -159,8 +159,6 @@ export function useOrgMasterCategories(selectedBranchId?: string | null): OrgMas
         let branchQuery = supabase.from("branches").select("id, name, company_name, status").is("deleted_at", null).order("name");
 
         if (selectedBranchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedBranchId)) {
-          divQuery = divQuery.or(`branch_id.eq.${selectedBranchId},branch_id.is.null`);
-          deptQuery = deptQuery.or(`branch_id.eq.${selectedBranchId},branch_id.is.null`);
           locQuery = locQuery.or(`branch_id.eq.${selectedBranchId},branch_id.is.null`);
         }
 

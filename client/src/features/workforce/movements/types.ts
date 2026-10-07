@@ -56,9 +56,13 @@ export interface MovementFormData {
 
   // Unified Information Structure fields
   title?: string;
+  bu?: string;
+  bu_full_name?: string;
   site?: string;
+  division?: string;
   department?: string;
   designation?: string;
+  position?: string;
   supervisor?: string;
   salary?: number;
   salary_freq?: string;

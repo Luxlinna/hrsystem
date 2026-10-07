@@ -46,6 +46,7 @@ export function exportAttendanceRecordsPDF(
             <div style="font-size:7px;font-family:monospace;color:#475569">${row.biometricId}</div>
           </td>
           <td style="font-size:8px;color:#334155">${row.position}</td>
+          <td style="font-size:8px;color:#334155">${row.division}</td>
           <td style="white-space:nowrap;font-size:8px">
             <div style="font-weight:600;color:#1e293b">${row.department}</div>
             <div style="font-size:7px;color:#64748b">${row.location}</div>
@@ -60,7 +61,7 @@ export function exportAttendanceRecordsPDF(
           <td style="font-size:7.5px;color:#64748b;max-width:120px">${row.notes}</td>
         </tr>`;
       }).join("")
-    : `<tr><td colspan="10" style="text-align:center;padding:16px;color:#64748b;">No attendance logs found.</td></tr>`;
+    : `<tr><td colspan="11" style="text-align:center;padding:16px;color:#64748b;">No attendance logs found.</td></tr>`;
 
   const html = `<!DOCTYPE html>
   <html>
@@ -110,6 +111,7 @@ export function exportAttendanceRecordsPDF(
           <th>Date</th>
           <th>Employee</th>
           <th>Position</th>
+          <th>Division</th>
           <th>Department &amp; Site</th>
           <th>Schedules</th>
           <th style="text-align:center">Clock In - Out</th>

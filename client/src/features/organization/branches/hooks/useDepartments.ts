@@ -42,10 +42,6 @@ export function useDepartments(branchId?: string) {
         .is("deleted_at", null)
         .order("first_name", { ascending: true });
 
-      if (branchId) {
-        query.eq("branch_id", branchId);
-      }
-
       const { data } = await query;
       if (data) {
         setEmployees(
@@ -60,21 +56,17 @@ export function useDepartments(branchId?: string) {
     } catch (err) {
       console.error("Error fetching employees for department head:", err);
     }
-  }, [branchId]);
+  }, []);
 
   const fetchDepartments = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const query = supabase
         .from("departments")
         .select("*")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
-
-      if (branchId) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
 
       const { data, error } = await query;
 
@@ -84,7 +76,7 @@ export function useDepartments(branchId?: string) {
         setDepartments(
           DEFAULT_DEPARTMENTS.map((d, index) => ({
             id: `dept-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: d.name || "",
             parent_department_id: null,
             parent_department_name: d.parent_department_name || null,
@@ -102,7 +94,7 @@ export function useDepartments(branchId?: string) {
         setDepartments(
           DEFAULT_DEPARTMENTS.map((d, index) => ({
             id: `dept-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: d.name || "",
             parent_department_id: null,
             parent_department_name: d.parent_department_name || null,
@@ -119,7 +111,7 @@ export function useDepartments(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchDepartments();
@@ -151,7 +143,7 @@ export function useDepartments(branchId?: string) {
     try {
       const payload = {
         name: form.name.trim(),
-        branch_id: branchId || null,
+        branch_id: null,
         parent_department_id: form.parent_department_id || null,
         parent_department_name: form.parent_department_name || null,
         head_of_department_id: form.head_of_department_id || null,

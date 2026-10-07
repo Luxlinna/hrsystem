@@ -3,6 +3,7 @@ export interface Employee {
   first_name: string;
   last_name: string;
   department: string;
+  division?: string | null;
   role: string;
   position?: string | null;
   avatar_url: string | null;

@@ -23,6 +23,7 @@ interface EmployeesTableViewProps {
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
   onEdit?: (e: Employee) => void;
+  onChangeStatus?: (e: Employee) => void;
   onDisable?: (e: Employee) => void;
   onDeactivate?: (e: Employee) => void;
 }
@@ -40,6 +41,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
   onSetUpPhoneAccount,
   onDelete,
   onEdit,
+  onChangeStatus,
   onDisable,
   onDeactivate,
 }: EmployeesTableViewProps) {
@@ -75,6 +77,15 @@ export const EmployeesTableView = memo(function EmployeesTableView({
             >
               <div className="flex items-center gap-1">
                 <span>Position</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th
+              onClick={() => onSort("division")}
+              className="py-2.5 px-3 min-w-[130px] cursor-pointer hover:text-[#253C7D] select-none"
+            >
+              <div className="flex items-center gap-1">
+                <span>Division</span>
                 <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
               </div>
             </th>
@@ -138,6 +149,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
               onSetUpPhoneAccount={onSetUpPhoneAccount}
               onDelete={onDelete}
               onEdit={onEdit}
+              onChangeStatus={onChangeStatus}
               onDisable={onDisable}
               onDeactivate={onDeactivate}
             />

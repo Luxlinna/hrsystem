@@ -22,24 +22,18 @@ export function useEmployeeTypes(branchId?: string) {
   const fetchEmployeeTypes = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("employee_types")
         .select("*")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
 
-      if (branchId) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         setEmployeeTypes(
           SEED_EMPLOYEE_TYPES.map((t, index) => ({
             id: `emptype-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: t.name || "",
             status: t.status || "active",
             sort_order: t.sort_order ?? index + 1,
@@ -52,7 +46,7 @@ export function useEmployeeTypes(branchId?: string) {
         setEmployeeTypes(
           SEED_EMPLOYEE_TYPES.map((t, index) => ({
             id: `emptype-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: t.name || "",
             status: t.status || "active",
             sort_order: t.sort_order ?? index + 1,
@@ -65,7 +59,7 @@ export function useEmployeeTypes(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchEmployeeTypes();
@@ -96,7 +90,7 @@ export function useEmployeeTypes(branchId?: string) {
     try {
       const payload = {
         name: form.name.trim(),
-        branch_id: branchId || null,
+        branch_id: null,
         status: form.status,
       };
 

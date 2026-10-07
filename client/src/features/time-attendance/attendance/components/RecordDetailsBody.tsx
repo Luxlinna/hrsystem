@@ -49,7 +49,9 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
               })()}
               <span className="text-xs text-gray-500 font-medium">{selectedRecord.employees.role}</span>
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">{selectedRecord.employees.department}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              {selectedRecord.employees.division ? `${selectedRecord.employees.division} • ` : ""}{selectedRecord.employees.department}
+            </p>
           </div>
         </div>
       )}

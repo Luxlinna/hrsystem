@@ -123,7 +123,15 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
       <AttendanceRowEmployeeCell record={r} employee={emp} onSelectRecord={onSelectRecord} />
 
       <td className="py-2.5 px-3 whitespace-nowrap">
-        <span className="text-gray-700 dark:text-slate-300 font-medium text-xs">{emp?.role || "Staff Member"}</span>
+        <p className="font-medium text-gray-800 dark:text-slate-200 text-xs truncate max-w-[150px]" title={emp?.position || emp?.role || "Staff Member"}>
+          {emp?.position || emp?.role || "Staff Member"}
+        </p>
+      </td>
+
+      <td className="py-2.5 px-3 whitespace-nowrap">
+        <p className="font-medium text-gray-800 dark:text-slate-200 text-xs truncate max-w-[140px]" title={emp?.division || "—"}>
+          {emp?.division || "—"}
+        </p>
       </td>
 
       <td className="py-2.5 px-3 whitespace-nowrap">

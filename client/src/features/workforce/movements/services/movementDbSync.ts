@@ -44,6 +44,8 @@ export async function persistMovementRecord(
           first_name: employee.first_name,
           last_name: employee.last_name,
           role: employeeUpdates.role || employee.role,
+          position: employeeUpdates.position || employee.position || employeeUpdates.role || employee.role,
+          division: employeeUpdates.division || employee.division,
           department: employeeUpdates.department || employee.department,
           avatar_url: employee.avatar_url,
           branches: employee.branches,

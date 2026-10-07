@@ -26,6 +26,7 @@ export const TimeLogEmployeeInfoSection = memo(function TimeLogEmployeeInfoSecti
   );
   const empCode = empBioId || empDetail?.employee_code || emp?.employee_code || "—";
   const designation = empDetail?.role || empDetail?.position || emp?.role || "Staff";
+  const division = empDetail?.division || emp?.division || "—";
   const department = (empDetail?.department || emp?.department || "OPERATIONS").toUpperCase();
   const supervisor = empDetail?.line_manager || empDetail?.supervisor || empDetail?.reports_to || "Taing Mey";
   const employeeType = (empDetail?.employment_type || emp?.employment_type || "FULL-TIME").toUpperCase();
@@ -76,6 +77,10 @@ export const TimeLogEmployeeInfoSection = memo(function TimeLogEmployeeInfoSecti
               <div className="mb-3">
                 <p className="font-bold text-gray-800 dark:text-slate-200 leading-tight">{designation}</p>
                 <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Position</p>
+              </div>
+              <div className="mb-3">
+                <p className="font-bold text-gray-800 dark:text-slate-200 leading-tight">{division}</p>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Division</p>
               </div>
               <div>
                 <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight">{department}</p>

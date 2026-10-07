@@ -138,6 +138,8 @@ export const BranchModal = memo(function BranchModal({
                 setForm={setForm}
                 uploadingLogo={uploadingLogo}
                 onUploadLogo={handleUploadLogo}
+                branchId={editingBranchId || undefined}
+                branchName={form.company_name || form.name}
               />
               <PhysicalAddressSection form={form} setForm={setForm} />
               <ContactAndTimezoneSection form={form} setForm={setForm} />

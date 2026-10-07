@@ -112,6 +112,7 @@ export function useBranchMutations({
         industry: form.industry?.trim() || null,
         currency: form.currency?.trim() || "USD",
         rounding_digit: parseInt(form.rounding_digit, 10) || 2,
+        is_biometrics_enabled: Boolean(form.is_biometrics_enabled),
 
         // 2. Physical Address Info
         physical_address: form.physical_address?.trim() || form.location.trim() || null,

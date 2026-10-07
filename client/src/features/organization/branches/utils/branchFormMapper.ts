@@ -30,6 +30,7 @@ export function branchToFormState(branch: Branch): BranchFormState {
     industry: branch.industry || "",
     currency: branch.currency || "USD",
     rounding_digit: branch.rounding_digit != null ? String(branch.rounding_digit) : "2",
+    is_biometrics_enabled: branch.is_biometrics_enabled ?? false,
 
     // 2. Physical Address Info
     physical_address: branch.physical_address || branch.location || "",

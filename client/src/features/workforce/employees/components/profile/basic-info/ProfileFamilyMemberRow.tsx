@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFamilyMemberItem } from "../../../types";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   fam: EmployeeFamilyMemberItem;
@@ -100,7 +101,7 @@ export const ProfileFamilyMemberRow = memo(function ProfileFamilyMemberRow({
       <td className="py-2.5 px-3 font-bold text-slate-900">{fam.name}</td>
       <td className="py-2.5 px-3 text-slate-600 font-semibold">{fam.relationship}</td>
       <td className="py-2.5 px-3 text-slate-600">{fam.gender}</td>
-      <td className="py-2.5 px-3 text-slate-600 font-mono">{fam.date_of_birth || "—"}</td>
+      <td className="py-2.5 px-3 text-slate-600 font-mono">{formatDMY(fam.date_of_birth)}</td>
       <td className="py-2.5 px-3 text-slate-600">{fam.nationality || "Khmer"}</td>
       <td className="py-2.5 px-3 text-center">
         <span

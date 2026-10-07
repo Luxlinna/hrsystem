@@ -1,4 +1,5 @@
 import type { Employee } from "../../types";
+import { formatDMY } from "../../dateUtils";
 
 export function renderPersonalSection(e: Employee, idStr: string): string {
   return `
@@ -7,7 +8,7 @@ export function renderPersonalSection(e: Employee, idStr: string): string {
       <div class="section-body">
         <div class="data-grid-4">
           <div class="data-item"><div class="data-label">Gender</div><div class="data-val">${e.gender || "—"}</div></div>
-          <div class="data-item"><div class="data-label">Date of Birth</div><div class="data-val">${e.date_of_birth || "—"}</div></div>
+          <div class="data-item"><div class="data-label">Date of Birth</div><div class="data-val">${formatDMY(e.date_of_birth)}</div></div>
           <div class="data-item"><div class="data-label">Marital Status</div><div class="data-val">${e.marital_status || "—"}</div></div>
           <div class="data-item"><div class="data-label">Nationality</div><div class="data-val">${e.nationality || "Cambodian"}</div></div>
           <div class="data-item"><div class="data-label">Resident Status</div><div class="data-val">${e.is_resident ? "Resident" : "Non-Resident"}</div></div>
@@ -97,7 +98,7 @@ export function renderEmergencyAndFamilySection(e: Employee): string {
     : `<tr><td colspan="4" style="padding:4px;border:1px solid #e2e8f0;color:#94a3b8;text-align:center">No emergency contacts recorded</td></tr>`;
 
   const famRows = e.family_members && e.family_members.length > 0
-    ? e.family_members.map((f, i) => `<tr><td style="padding:3px 5px;border:1px solid #e2e8f0">${i + 1}</td><td style="padding:3px 5px;border:1px solid #e2e8f0;font-weight:600">${f.name || "—"}</td><td style="padding:3px 5px;border:1px solid #e2e8f0">${f.relationship || "—"}</td><td style="padding:3px 5px;border:1px solid #e2e8f0">${f.date_of_birth || (f as any).dob || "—"}</td><td style="padding:3px 5px;border:1px solid #e2e8f0">${(f as any).occupation || f.remark || "—"}</td></tr>`).join("")
+    ? e.family_members.map((f, i) => `<tr><td style="padding:3px 5px;border:1px solid #e2e8f0">${i + 1}</td><td style="padding:3px 5px;border:1px solid #e2e8f0;font-weight:600">${f.name || "—"}</td><td style="padding:3px 5px;border:1px solid #e2e8f0">${f.relationship || "—"}</td><td style="padding:3px 5px;border:1px solid #e2e8f0">${formatDMY(f.date_of_birth || (f as any).dob)}</td><td style="padding:3px 5px;border:1px solid #e2e8f0">${(f as any).occupation || f.remark || "—"}</td></tr>`).join("")
     : `<tr><td colspan="5" style="padding:4px;border:1px solid #e2e8f0;color:#94a3b8;text-align:center">No family dependents recorded</td></tr>`;
 
   return `

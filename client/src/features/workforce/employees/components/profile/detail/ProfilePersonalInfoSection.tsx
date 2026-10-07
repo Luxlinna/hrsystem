@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import type { Employee } from "../../../types";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   employee: Employee;
@@ -64,7 +65,7 @@ export const ProfilePersonalInfoSection = memo(function ProfilePersonalInfoSecti
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1 items-center">
           <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Date of Birth</span>
           <span className="sm:col-span-9 text-slate-900 dark:text-slate-100 inline-flex items-center gap-1.5">
-            {showDob ? employee.date_of_birth || "-" : "*****"}
+            {showDob ? formatDMY(employee.date_of_birth) : "*****"}
             <button
               type="button"
               onClick={() => setShowDob((prev) => !prev)}

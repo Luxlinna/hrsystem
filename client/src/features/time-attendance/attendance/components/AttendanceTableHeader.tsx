@@ -19,43 +19,49 @@ export function AttendanceTableHeader({
           />
         </th>
         <th className="py-2.5 px-2.5 w-12 text-left font-bold text-gray-700 dark:text-slate-200">No.</th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 w-[105px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
             Date
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 min-w-[170px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
             Employee
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 min-w-[120px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
             Position
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 min-w-[110px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1">
+            Division
+            <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
+          </span>
+        </th>
+        <th className="py-2.5 px-3 min-w-[140px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
             Department
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 min-w-[180px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
             Schedules
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 min-w-[150px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
             Clock In-Out
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>
-        <th className="py-2.5 px-3 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
+        <th className="py-2.5 px-3 min-w-[100px] text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           Status
         </th>
         <th className="py-2.5 px-3 w-16 text-center font-bold text-gray-700 dark:text-slate-200"></th>

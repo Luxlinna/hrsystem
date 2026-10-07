@@ -21,24 +21,18 @@ export function useJobStatuses(branchId?: string) {
   const fetchJobStatuses = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("job_statuses")
         .select("*")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
 
-      if (branchId) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-
-      const { data, error } = await query;
-
       if (error || !data || data.length === 0) {
         setJobStatuses(
           SEED_JOB_STATUSES.map((t, index) => ({
             id: `job-status-fallback-${index + 1}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: t.name || "",
             code: t.code || "",
             color: t.color || "#3b82f6",
@@ -55,7 +49,7 @@ export function useJobStatuses(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchJobStatuses();
@@ -106,7 +100,7 @@ export function useJobStatuses(branchId?: string) {
       } else {
         const { error } = await supabase.from("job_statuses").insert([
           {
-            branch_id: branchId || null,
+            branch_id: null,
             name: form.name.trim(),
             code: form.code.trim() || form.name.toLowerCase().replace(/\s+/g, "_"),
             color: form.color || "#3b82f6",
@@ -132,7 +126,7 @@ export function useJobStatuses(branchId?: string) {
           ...prev,
           {
             id: `job-status-local-${Date.now()}`,
-            branch_id: branchId || null,
+            branch_id: null,
             name: form.name.trim(),
             code: form.code.trim() || form.name.toLowerCase().replace(/\s+/g, "_"),
             color: form.color || "#3b82f6",

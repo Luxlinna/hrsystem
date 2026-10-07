@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import type { Branch } from "../types";
-import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { WorkingHoursFormState, BranchScheduleData } from "@/features/time-attendance/attendance/tabs/working-hours/types";
 import { WorkingHoursKpiCards } from "@/features/time-attendance/attendance/tabs/working-hours/WorkingHoursKpiCards";
 import { WorkingHoursSessionWindows } from "@/features/time-attendance/attendance/tabs/working-hours/WorkingHoursSessionWindows";
 import { AdjustWorkingHoursModal } from "@/features/time-attendance/attendance/tabs/working-hours/AdjustWorkingHoursModal";
+import { fetchBranchSchedule, saveBranchSchedule } from "../services/branchWorkingHoursService";
 
 interface Props {
   branch: Branch;
@@ -31,6 +31,8 @@ export function BranchWorkingHoursSection({ branch, canManage = true }: Props) {
     afternoon_check_in_end: branch.afternoon_check_in_end || "14:30",
     afternoon_check_out_start: branch.afternoon_check_out_start || "16:00",
     afternoon_check_out_end: branch.afternoon_check_out_end || "22:00",
+    auto_checkout_time: branch.auto_checkout_time || "18:00",
+    is_auto_checkout_enabled: branch.is_auto_checkout_enabled ?? true,
   });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -52,19 +54,15 @@ export function BranchWorkingHoursSection({ branch, canManage = true }: Props) {
     afternoon_check_in_end: currentBranch.afternoon_check_in_end?.slice(0, 5) || "14:30",
     afternoon_check_out_start: currentBranch.afternoon_check_out_start?.slice(0, 5) || "16:00",
     afternoon_check_out_end: currentBranch.afternoon_check_out_end?.slice(0, 5) || "22:00",
+    auto_checkout_time: currentBranch.auto_checkout_time?.slice(0, 5) || "18:00",
+    is_auto_checkout_enabled: currentBranch.is_auto_checkout_enabled ?? true,
   });
 
-  // Re-sync whenever selected branch in Organization changes
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("branches")
-        .select("id, name, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end")
-        .eq("id", branch.id)
-        .maybeSingle();
-
+      const data = await fetchBranchSchedule(branch.id);
       if (data) {
-        setCurrentBranch(data);
+        setCurrentBranch((prev) => ({ ...prev, ...data }));
         setFormState({
           work_start_time: data.work_start_time?.slice(0, 5) || "08:00",
           work_end_time: data.work_end_time?.slice(0, 5) || "17:00",
@@ -81,6 +79,8 @@ export function BranchWorkingHoursSection({ branch, canManage = true }: Props) {
           afternoon_check_in_end: data.afternoon_check_in_end?.slice(0, 5) || "14:30",
           afternoon_check_out_start: data.afternoon_check_out_start?.slice(0, 5) || "16:00",
           afternoon_check_out_end: data.afternoon_check_out_end?.slice(0, 5) || "22:00",
+          auto_checkout_time: data.auto_checkout_time?.slice(0, 5) || "18:00",
+          is_auto_checkout_enabled: data.is_auto_checkout_enabled ?? true,
         });
       }
     })();
@@ -90,37 +90,8 @@ export function BranchWorkingHoursSection({ branch, canManage = true }: Props) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = {
-        work_start_time: formState.work_start_time,
-        work_end_time: formState.work_end_time,
-        break_start_time: formState.break_start_time,
-        break_end_time: formState.break_end_time,
-        is_four_punch_enabled: formState.is_four_punch_enabled,
-        late_grace_minutes: parseInt(String(formState.late_grace_minutes), 10) || 0,
-        early_leave_grace_minutes: parseInt(String(formState.early_leave_grace_minutes), 10) || 0,
-        morning_check_in_start: formState.morning_check_in_start,
-        morning_check_in_end: formState.morning_check_in_end,
-        morning_check_out_start: formState.morning_check_out_start,
-        morning_check_out_end: formState.morning_check_out_end,
-        afternoon_check_in_start: formState.afternoon_check_in_start,
-        afternoon_check_in_end: formState.afternoon_check_in_end,
-        afternoon_check_out_start: formState.afternoon_check_out_start,
-        afternoon_check_out_end: formState.afternoon_check_out_end,
-      };
-
-      const { error } = await supabase.from("branches").update(payload).eq("id", currentBranch.id);
-      if (error) throw new Error(error.message);
-
-      // Sync to all sites of this BU
-      await supabase.from("work_locations").update(payload).eq("branch_id", currentBranch.id);
-
-      // Sync system settings
-      await supabase.from("system_settings").upsert(
-        { key: `bu_four_punch_${currentBranch.id}`, value: String(formState.is_four_punch_enabled), updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
-
-      setCurrentBranch((prev) => ({ ...prev, ...payload }));
+      await saveBranchSchedule(currentBranch.id, formState);
+      setCurrentBranch((prev) => ({ ...prev, ...formState }));
       toast(`Working hours & policy updated for ${currentBranch.name}`, "success");
       setIsEditModalOpen(false);
     } catch (err) {

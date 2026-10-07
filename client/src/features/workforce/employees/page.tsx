@@ -1,4 +1,3 @@
-import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { EmployeesHeader } from "./components/EmployeesHeader";
 import { EmployeesFilterBar } from "./components/EmployeesFilterBar";
@@ -6,94 +5,35 @@ import { SelectedActionsBar } from "./components/SelectedActionsBar";
 import { EmployeesTableView } from "./components/EmployeesTableView";
 import { EmployeesGridView } from "./components/EmployeesGridView";
 import { Pagination } from "./components/Pagination";
-import { AddEmployeeModal } from "./components/AddEmployeeModal";
-import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
-import { ImportEmployeesModal } from "./components/ImportEmployeesModal";
-import { PrivacyPinModal } from "@/components/PrivacyPinModal";
-import { isPrivacyPinEnabled } from "@/lib/privacyPin";
+import { EmployeesModals } from "./components/EmployeesModals";
 import { useAuth } from "@/context/AuthContext";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
 import { useEmployeePermission } from "./hooks/useEmployeePermission";
-import { INITIAL_EMPLOYEE_FORM, getBranchCode, deriveBuHandle } from "./constants";
+import { useEmployeesPageState } from "./hooks/useEmployeesPageState";
 
 export default function EmployeesPage() {
-  const {
-    canManage, isSuperAdmin, isPartnerBranchBlocked, userBranchId, userBranchName,
-    targetBranch, branches, workSites, contractTypes, jobStatuses, biometricDevices, selectedBranchId, visibleBranches, search, setSearch,
-    filterDept, setFilterDept, filterStatus, setFilterStatus, filterJobStatus, setFilterJobStatus,
-    filterRole, setFilterRole, filterEmployeeType, setFilterEmployeeType, filterEmployeeLevel, setFilterEmployeeLevel,
-    filterBranch, setFilterBranch,
-    filterWorkLocation, setFilterWorkLocation, employeeLocations = [],
-    filterAccount, setFilterAccount, filterDateOption, setFilterDateOption,
-    filterContractType, setFilterContractType, sortField, sortDirection, selectedIds, selectAll,
-    pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal,
-    editingEmployeeId, setEditingEmployeeId, handleOpenEditModal, handleCloseModal,
-    form, setForm,
-    submitting, accountStatus, invitingId, deletingId, showFilters, setShowFilters,
-    showColumnMenu, setShowColumnMenu, visibleColumns, setVisibleColumns, viewMode,
-    setViewMode, depts, positions, employeeTypes, employeeLevels, branchCount, managers, stats, filtered, empTotalPages,
-    empPageStart, empPageEnd, pagedEmployees, tableGridStyle, handleSort, handleSelectAll,
-    handleSelectOne, bulkInvite, bulkDelete, handleAddEmployee,
-    inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
-    deleteEmployee, disableEmployee, deactivateEmployee, roles,
-    loadEmployees, actorName, roleName,
-  } = useEmployees();
-
+  const emp = useEmployees();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { canManageEmployeeSettings } = useEmployeePermission();
-  const [showSalary, setShowSalary] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
 
-  const handleToggleSalary = useCallback(() => {
-    if (showSalary) {
-      setShowSalary(false);
-      return;
-    }
-    // If turning on and privacy PIN is configured:
-    if (isPrivacyPinEnabled(user?.email)) {
-      setShowPinModal(true);
-    } else {
-      setShowSalary(true);
-    }
-  }, [showSalary, user?.email]);
+  const pageState = useEmployeesPageState({
+    isSuperAdmin: emp.isSuperAdmin,
+    userBranchId: emp.userBranchId,
+    targetBranch: emp.targetBranch,
+    branches: emp.branches,
+    setForm: emp.setForm,
+    setShowAddModal: emp.setShowAddModal,
+    setEditingEmployeeId: emp.setEditingEmployeeId,
+    inviteUser: emp.inviteUser,
+  });
 
-  const handleOpenAddModal = useCallback(() => {
-    setEditingEmployeeId(null);
-    const effectiveBranchId = !isSuperAdmin ? (userBranchId || targetBranch || "") : "";
-    const branch = branches.find((b) => b.id === effectiveBranchId);
-    const branchName = branch?.name || "";
-    const code = branchName ? getBranchCode(branchName) : "";
-    const handle = branchName ? deriveBuHandle(branchName, code) : "";
-
-    setForm({
-      ...INITIAL_EMPLOYEE_FORM,
-      branch_id: effectiveBranchId,
-      code_bu: code,
-      bu_full_name: branchName,
-      handle_bu: handle,
-      site: effectiveBranchId && branchName ? `Main Office (${branchName})` : "",
-      working_location: branch?.location || "",
-      default_work_location_id: "",
-      department: "",
-      role: "",
-      position: "",
-    });
-    setShowAddModal(true);
-  }, [isSuperAdmin, userBranchId, targetBranch, branches, setForm, setShowAddModal, setEditingEmployeeId]);
-
-  const handleInviteEmployee = useCallback(
-    (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role),
-    [inviteUser]
-  );
-
-  if (isPartnerBranchBlocked) {
+  if (emp.isPartnerBranchBlocked) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
         <EmployeesHeader
-          branchCount={branchCount}
+          branchCount={emp.branchCount}
           canManage={false}
           onOpenAddModal={() => {}}
           canManageSettings={canManageEmployeeSettings}
@@ -101,8 +41,8 @@ export default function EmployeesPage() {
         />
         <PartnerBranchPrivacyShield
           moduleName="Employee Directory"
-          userBranchName={userBranchName}
-          hasNoBranch={!userBranchId}
+          userBranchName={emp.userBranchName}
+          hasNoBranch={!emp.userBranchId}
         />
       </div>
     );
@@ -111,111 +51,93 @@ export default function EmployeesPage() {
   return (
     <div className="min-h-screen bg-white p-4 sm:p-6 font-sans">
       <EmployeesHeader
-        branchCount={branchCount}
-        canManage={canManage}
-        onOpenAddModal={handleOpenAddModal}
+        branchCount={emp.branchCount}
+        canManage={emp.canManage}
+        onOpenAddModal={pageState.handleOpenAddModal}
+        onOpenChangeStatus={pageState.handleOpenChangeStatus}
         canManageSettings={canManageEmployeeSettings}
         onOpenSettings={() => navigate("/employees/settings")}
       />
 
       <EmployeesFilterBar
-        search={search}
-        setSearch={setSearch}
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-        showColumnMenu={showColumnMenu}
-        setShowColumnMenu={setShowColumnMenu}
-        filterDept={filterDept}
-        setFilterDept={setFilterDept}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterJobStatus={filterJobStatus}
-        setFilterJobStatus={setFilterJobStatus}
-        filterRole={filterRole}
-        setFilterRole={setFilterRole}
-        filterEmployeeType={filterEmployeeType}
-        setFilterEmployeeType={setFilterEmployeeType}
-        filterEmployeeLevel={filterEmployeeLevel}
-        setFilterEmployeeLevel={setFilterEmployeeLevel}
-        filterBranch={filterBranch}
-        setFilterBranch={setFilterBranch}
-        filterAccount={filterAccount}
-        setFilterAccount={setFilterAccount}
-        filterDateOption={filterDateOption}
-        setFilterDateOption={setFilterDateOption}
-        filterContractType={filterContractType}
-        setFilterContractType={setFilterContractType}
-        contractTypes={contractTypes}
-        jobStatuses={jobStatuses}
-        depts={depts}
-        positions={positions}
-        employeeTypes={employeeTypes}
-        employeeLevels={employeeLevels}
-        branches={branches}
-        workSites={workSites}
-        visibleColumns={visibleColumns}
-        setVisibleColumns={setVisibleColumns}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        employees={filtered}
-        accountStatus={accountStatus}
-        onOpenImport={() => setShowImportModal(true)}
-        showSalary={showSalary}
-        setShowSalary={handleToggleSalary}
+        search={emp.search} setSearch={emp.setSearch}
+        showFilters={emp.showFilters} setShowFilters={emp.setShowFilters}
+        showColumnMenu={emp.showColumnMenu} setShowColumnMenu={emp.setShowColumnMenu}
+        filterDept={emp.filterDept} setFilterDept={emp.setFilterDept}
+        filterStatus={emp.filterStatus} setFilterStatus={emp.setFilterStatus}
+        filterJobStatus={emp.filterJobStatus} setFilterJobStatus={emp.setFilterJobStatus}
+        filterRole={emp.filterRole} setFilterRole={emp.setFilterRole}
+        filterEmployeeType={emp.filterEmployeeType} setFilterEmployeeType={emp.setFilterEmployeeType}
+        filterEmployeeLevel={emp.filterEmployeeLevel} setFilterEmployeeLevel={emp.setFilterEmployeeLevel}
+        filterBranch={emp.filterBranch} setFilterBranch={emp.setFilterBranch}
+        filterAccount={emp.filterAccount} setFilterAccount={emp.setFilterAccount}
+        filterDateOption={emp.filterDateOption} setFilterDateOption={emp.setFilterDateOption}
+        filterContractType={emp.filterContractType} setFilterContractType={emp.setFilterContractType}
+        contractTypes={emp.contractTypes} jobStatuses={emp.jobStatuses}
+        depts={emp.depts} positions={emp.positions}
+        employeeTypes={emp.employeeTypes} employeeLevels={emp.employeeLevels}
+        branches={emp.branches} workSites={emp.workSites}
+        visibleColumns={emp.visibleColumns} setVisibleColumns={emp.setVisibleColumns}
+        viewMode={emp.viewMode} setViewMode={emp.setViewMode}
+        employees={emp.filtered} accountStatus={emp.accountStatus}
+        onOpenImport={() => pageState.setShowImportModal(true)}
+        showSalary={pageState.showSalary}
+        setShowSalary={pageState.handleToggleSalary}
       />
 
       <SelectedActionsBar
-        selectedCount={selectedIds.size}
-        canManage={canManage}
-        onBulkInvite={bulkInvite}
-        onBulkDelete={bulkDelete}
-        onClearSelection={handleSelectAll}
+        selectedCount={emp.selectedIds.size}
+        canManage={emp.canManage}
+        onBulkInvite={emp.bulkInvite}
+        onBulkDelete={emp.bulkDelete}
+        onClearSelection={emp.handleSelectAll}
       />
 
       <div className="bg-white border-t border-slate-100 overflow-hidden">
-        {viewMode === "table" ? (
+        {emp.viewMode === "table" ? (
           <EmployeesTableView
-            employees={pagedEmployees}
-            accountStatus={accountStatus}
-            biometricDevices={biometricDevices}
-            selectedIds={selectedIds}
-            selectAll={selectAll}
-            visibleColumns={visibleColumns}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            canManage={canManage}
-            invitingId={invitingId}
-            deletingId={deletingId}
-            tableGridStyle={tableGridStyle}
-            showSalary={showSalary}
-            onSelectAll={handleSelectAll}
-            onSelectOne={handleSelectOne}
-            onSort={handleSort}
-            onInvite={handleInviteEmployee}
-            onSetUpPhoneAccount={setPhoneAccountEmployee}
-            onDelete={deleteEmployee}
-            onEdit={handleOpenEditModal}
-            onDisable={disableEmployee}
-            onDeactivate={deactivateEmployee}
+            employees={emp.pagedEmployees}
+            accountStatus={emp.accountStatus}
+            biometricDevices={emp.biometricDevices}
+            selectedIds={emp.selectedIds}
+            selectAll={emp.selectAll}
+            visibleColumns={emp.visibleColumns}
+            sortField={emp.sortField}
+            sortDirection={emp.sortDirection}
+            canManage={emp.canManage}
+            invitingId={emp.invitingId}
+            deletingId={emp.deletingId}
+            tableGridStyle={emp.tableGridStyle}
+            showSalary={pageState.showSalary}
+            onSelectAll={emp.handleSelectAll}
+            onSelectOne={emp.handleSelectOne}
+            onSort={emp.handleSort}
+            onInvite={pageState.handleInviteEmployee}
+            onSetUpPhoneAccount={emp.setPhoneAccountEmployee}
+            onDelete={emp.deleteEmployee}
+            onEdit={emp.handleOpenEditModal}
+            onChangeStatus={pageState.handleOpenChangeStatus}
+            onDisable={emp.disableEmployee}
+            onDeactivate={emp.deactivateEmployee}
           />
         ) : (
           <EmployeesGridView
-            employees={pagedEmployees}
-            accountStatus={accountStatus}
-            biometricDevices={biometricDevices}
-            selectedIds={selectedIds}
-            visibleColumns={visibleColumns}
-            canManage={canManage}
-            invitingId={invitingId}
-            deletingId={deletingId}
-            onSelectOne={handleSelectOne}
-            onInvite={handleInviteEmployee}
-            onSetUpPhoneAccount={setPhoneAccountEmployee}
-            onDelete={deleteEmployee}
+            employees={emp.pagedEmployees}
+            accountStatus={emp.accountStatus}
+            biometricDevices={emp.biometricDevices}
+            selectedIds={emp.selectedIds}
+            visibleColumns={emp.visibleColumns}
+            canManage={emp.canManage}
+            invitingId={emp.invitingId}
+            deletingId={emp.deletingId}
+            onSelectOne={emp.handleSelectOne}
+            onInvite={pageState.handleInviteEmployee}
+            onSetUpPhoneAccount={emp.setPhoneAccountEmployee}
+            onDelete={emp.deleteEmployee}
           />
         )}
 
-        {filtered.length === 0 && (
+        {emp.filtered.length === 0 && (
           <div className="text-center py-16 text-slate-400">
             <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
               <i className="ri-team-line text-2xl text-slate-400" />
@@ -227,53 +149,50 @@ export default function EmployeesPage() {
       </div>
 
       <Pagination
-        totalCount={filtered.length}
-        pageSize={pageSize}
-        setPageSize={setPageSize}
-        page={page}
-        setPage={setPage}
-        totalPages={empTotalPages}
-        pageStart={empPageStart}
-        pageEnd={empPageEnd}
+        totalCount={emp.filtered.length}
+        pageSize={emp.pageSize}
+        setPageSize={emp.setPageSize}
+        page={emp.page}
+        setPage={emp.setPage}
+        totalPages={emp.empTotalPages}
+        pageStart={emp.empPageStart}
+        pageEnd={emp.empPageEnd}
       />
 
-      <AddEmployeeModal
-        isOpen={showAddModal}
-        isEdit={Boolean(editingEmployeeId)}
-        form={form}
-        setForm={setForm}
-        branches={branches}
-        managers={managers}
-        submitting={submitting}
-        isSuperAdmin={isSuperAdmin}
-        onClose={handleCloseModal}
-        onSubmit={handleAddEmployee}
-      />
-
-      <SetUpPhoneAccountModal
-        employee={phoneAccountEmployee}
-        roles={roles}
-        isOpen={Boolean(phoneAccountEmployee)}
-        onClose={() => setPhoneAccountEmployee(null)}
-        onSubmit={setUpPhoneUser}
-      />
-
-      <ImportEmployeesModal
-        isOpen={showImportModal}
-        branches={branches}
-        actorName={actorName}
-        roleName={roleName}
-        onClose={() => setShowImportModal(false)}
-        onSuccess={loadEmployees}
-      />
-
-      <PrivacyPinModal
-        isOpen={showPinModal}
-        onClose={() => setShowPinModal(false)}
-        onSuccess={() => setShowSalary(true)}
+      <EmployeesModals
+        showAddModal={emp.showAddModal}
+        editingEmployeeId={emp.editingEmployeeId}
+        form={emp.form}
+        setForm={emp.setForm}
+        branches={emp.branches}
+        managers={emp.managers}
+        submitting={emp.submitting}
+        isSuperAdmin={emp.isSuperAdmin}
+        onCloseAddModal={emp.handleCloseModal}
+        onAddEmployee={emp.handleAddEmployee}
+        showChangeStatusModal={pageState.showChangeStatusModal}
+        changeStatusEmployeeId={pageState.changeStatusEmployeeId}
+        onCloseChangeStatus={() => {
+          pageState.setShowChangeStatusModal(false);
+          pageState.setChangeStatusEmployeeId("");
+        }}
+        employees={emp.allEmployees && emp.allEmployees.length > 0 ? emp.allEmployees : emp.filtered}
+        depts={emp.depts}
+        divisions={emp.divisions}
+        positions={emp.positions}
+        onLoadEmployees={emp.loadEmployees}
+        phoneAccountEmployee={emp.phoneAccountEmployee}
+        roles={emp.roles}
+        onClosePhoneAccount={() => emp.setPhoneAccountEmployee(null)}
+        onSetUpPhoneUser={emp.setUpPhoneUser}
+        showImportModal={pageState.showImportModal}
+        actorName={emp.actorName}
+        roleName={emp.roleName}
+        onCloseImport={() => pageState.setShowImportModal(false)}
+        showPinModal={pageState.showPinModal}
+        onClosePinModal={() => pageState.setShowPinModal(false)}
+        onPinSuccess={() => pageState.setShowSalary(true)}
         userEmail={user?.email}
-        title="Privacy PIN Required"
-        description="Enter your Privacy PIN code to reveal masked employee salaries."
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import type { Employee } from "../../../types";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   employee: Employee;
@@ -110,7 +111,7 @@ export const ProfileEmergencyAndFamilySection = memo(function ProfileEmergencyAn
                     <td className="py-2 px-3">{f.name || "-"}</td>
                     <td className="py-2 px-3">{f.relationship || "-"}</td>
                     <td className="py-2 px-3">
-                      {showFamilyPrivacy ? f.date_of_birth || "-" : "*****"}
+                      {showFamilyPrivacy ? formatDMY(f.date_of_birth) : "*****"}
                     </td>
                     <td className="py-2 px-3">{f.gender || "-"}</td>
                     <td className="py-2 px-3">{f.nationality || "-"}</td>

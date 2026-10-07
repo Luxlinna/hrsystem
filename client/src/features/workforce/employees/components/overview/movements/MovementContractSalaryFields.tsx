@@ -41,7 +41,7 @@ export const MovementContractSalaryFields: React.FC<Props> = ({ values, onChange
         </div>
       </div>
 
-      {/* Salary & Salary After Contract */}
+      {/* Salary & Salary After Probation */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div>
           <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Salary ($)</label>
@@ -66,7 +66,7 @@ export const MovementContractSalaryFields: React.FC<Props> = ({ values, onChange
           </div>
         </div>
         <div>
-          <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Salary After Contract ($)</label>
+          <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Salary After Probation ($)</label>
           <div className="flex gap-2">
             <input
               type="number"

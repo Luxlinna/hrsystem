@@ -111,6 +111,20 @@ export function ProfileViewRows({
           <ProfileRow label="Industry" value={branch.industry} />
           <ProfileRow label="Currency" value={branch.currency || "USD"} />
           <ProfileRow label="Rounding Digit" value={branch.rounding_digit ?? 2} />
+          <ProfileRow
+            label="Biometric Machines"
+            value={
+              branch.is_biometrics_enabled ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <i className="ri-fingerprint-line text-xs" /> Enabled (ZKTeco Active)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                  <i className="ri-fingerprint-line text-xs" /> Disabled (Not configured)
+                </span>
+              )
+            }
+          />
         </div>
       </div>
 

@@ -5,16 +5,14 @@ import { MovementsHeader } from "./components/MovementsHeader";
 import { MovementsStatsRow } from "./components/MovementsStatsRow";
 import { MovementsFilterBar } from "./components/MovementsFilterBar";
 import { MovementsTableView } from "./components/MovementsTableView";
-import { MovementModal } from "./components/MovementModal";
+import { CreateChangeStatusModal } from "@/features/workforce/employees/components/CreateChangeStatusModal";
 import { MovementDetailModal } from "./components/MovementDetailModal";
-import { recordEmployeeMovement } from "./services/movementService";
 import { useMovementsData } from "./hooks/useMovementsData";
-import type { EmployeeMovement, MovementType, MovementFormData } from "./types";
+import type { EmployeeMovement, MovementType } from "./types";
 
 export default function MovementsPage() {
-  const { user } = useAuth();
   const { selectedBranchId, targetBranch } = useBranchScope();
-  const { movements, employees, branches, workLocations, loading, loadData } = useMovementsData();
+  const { movements, employees, branches, loading, loadData } = useMovementsData();
 
   // Filters
   const [search, setSearch] = useState<string>("");
@@ -53,24 +51,6 @@ export default function MovementsPage() {
     });
   }, [movements, search, selectedType, selectedBranch]);
 
-  const handleSaveMovement = async (form: MovementFormData, employee: any) => {
-    await recordEmployeeMovement({
-      form,
-      employee,
-      currentUser: {
-        id: user?.id,
-        email: user?.email,
-        displayName: user?.user_metadata?.display_name || user?.email?.split("@")[0],
-      },
-    });
-    await loadData();
-  };
-
-  const defaultBranchScope =
-    selectedBranch ||
-    (selectedBranchId && !selectedBranchId.startsWith("site:") ? selectedBranchId : targetBranch) ||
-    "";
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 animate-in fade-in-50">
       <MovementsHeader
@@ -103,14 +83,12 @@ export default function MovementsPage() {
         />
       )}
 
-      <MovementModal
-        open={showRecordModal}
+      <CreateChangeStatusModal
+        isOpen={showRecordModal}
         onClose={() => setShowRecordModal(false)}
         employees={employees}
         branches={branches}
-        workLocations={workLocations}
-        onSave={handleSaveMovement}
-        defaultBranchId={defaultBranchScope}
+        onSuccess={loadData}
       />
 
       <MovementDetailModal

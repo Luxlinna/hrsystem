@@ -77,11 +77,40 @@ export function useEmployeesMutations({
         contract_type: emp.contract_type || "PERMANENT (UDC)",
         contract_effective_date: emp.contract_effective_date || "",
         contract_end_date: emp.contract_end_date || "",
-        contract_rate: emp.contract_rate || (emp.basic_salary ? String(emp.basic_salary) : ""),
-        contract_rate_after: emp.contract_rate_after || "",
+        contract_rate:
+          emp.contract_rate != null && String(emp.contract_rate).trim() !== ""
+            ? String(emp.contract_rate)
+            : emp.basic_salary != null && String(emp.basic_salary).trim() !== ""
+            ? String(emp.basic_salary)
+            : "",
+        contract_rate_after:
+          emp.contract_rate_after != null && String(emp.contract_rate_after).trim() !== ""
+            ? String(emp.contract_rate_after)
+            : "",
         contract_rate_currency: emp.contract_rate_currency || "USD",
         contract_rate_frequency: emp.tax_salary_frequency || "Monthly",
-        basic_salary: emp.basic_salary ? String(emp.basic_salary) : "",
+        contract_rate_after_currency: emp.contract_rate_after_currency || "USD",
+        contract_rate_after_frequency: emp.contract_rate_after_frequency || "Monthly",
+        contract_remark: emp.contract_remark || "",
+        basic_salary:
+          emp.basic_salary != null && String(emp.basic_salary).trim() !== ""
+            ? String(emp.basic_salary)
+            : "",
+        tax_salary:
+          emp.tax_salary != null && String(emp.tax_salary).trim() !== ""
+            ? String(emp.tax_salary)
+            : "",
+        tax_salary_currency: emp.tax_salary_currency || "USD",
+        tax_salary_frequency: emp.tax_salary_frequency || "Monthly",
+        allowance: emp.allowance || "",
+        working_hour: emp.working_hour || "",
+        total_working_days: emp.total_working_days || "",
+        line_manager: emp.line_manager || "",
+        fdc_end_date: emp.fdc_end_date || "",
+        nssf_info: emp.nssf_info || (emp as any)?.hiring_info?.nssf_info || null,
+        payroll_structure: emp.payroll_structure || "Standard Monthly",
+        apply_day_in_month: Boolean(emp.apply_day_in_month),
+        apply_working_hours_per_day: Boolean(emp.apply_working_hours_per_day),
         bank_name: emp.bank_name || "",
         bank_account_number: emp.bank_account_number || "",
         nssf_number: emp.nssf_number || "",
@@ -411,17 +440,26 @@ export function useEmployeesMutations({
           fdc_end_date: form.fdc_end_date || null,
           contract_effective_date: form.contract_effective_date || null,
           contract_end_date: form.contract_end_date || null,
-          contract_rate: form.contract_rate ? parseFloat(String(form.contract_rate)) : null,
+          contract_rate:
+            form.contract_rate !== undefined && form.contract_rate !== null && String(form.contract_rate).trim() !== ""
+              ? parseFloat(String(form.contract_rate))
+              : null,
           contract_rate_currency: form.contract_rate_currency || "USD",
           contract_rate_frequency: form.contract_rate_frequency || "Monthly",
-          contract_rate_after: form.contract_rate_after ? parseFloat(String(form.contract_rate_after)) : null,
+          contract_rate_after:
+            form.contract_rate_after !== undefined && form.contract_rate_after !== null && String(form.contract_rate_after).trim() !== ""
+              ? parseFloat(String(form.contract_rate_after))
+              : null,
           contract_rate_after_currency: form.contract_rate_after_currency || "USD",
           contract_rate_after_frequency: form.contract_rate_after_frequency || "Monthly",
           contract_remark: form.contract_remark?.trim() || null,
           hiring_status: form.hiring_status || "probation",
           status: form.status || "onboarding",
 
-          basic_salary: form.basic_salary ? parseFloat(String(form.basic_salary)) : null,
+          basic_salary:
+            form.basic_salary !== undefined && form.basic_salary !== null && String(form.basic_salary).trim() !== ""
+              ? parseFloat(String(form.basic_salary))
+              : null,
           tax_method: form.tax_method || "Resident",
           allowance: form.allowance?.trim() || null,
           bank_account_number: form.bank_account_number?.trim() || null,
@@ -434,7 +472,10 @@ export function useEmployeesMutations({
           payroll_structure: form.payroll_structure || "Standard Monthly",
           apply_day_in_month: Boolean(form.apply_day_in_month),
           apply_working_hours_per_day: Boolean(form.apply_working_hours_per_day),
-          tax_salary: form.tax_salary ? parseFloat(String(form.tax_salary)) : null,
+          tax_salary:
+            form.tax_salary !== undefined && form.tax_salary !== null && String(form.tax_salary).trim() !== ""
+              ? parseFloat(String(form.tax_salary))
+              : null,
           tax_salary_currency: form.tax_salary_currency || "USD",
           tax_salary_frequency: form.tax_salary_frequency || "Monthly",
           rate_items: form.rate_items || [],

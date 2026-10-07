@@ -101,7 +101,7 @@ export function useAttendanceMutations({
           notes: editingRecord.notes ? editingRecord.notes.trim() : null,
           work_location_id: workLocationId,
         })
-        .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
+        .select("*, employees(id, first_name, last_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
         .single();
 
       setSaving(false);

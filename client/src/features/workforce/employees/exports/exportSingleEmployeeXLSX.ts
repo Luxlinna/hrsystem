@@ -1,5 +1,6 @@
 import type { Employee } from "../types";
 import { supabase } from "@/lib/supabase";
+import { formatDMY } from "../dateUtils";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -53,7 +54,7 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
     "Last Name": e.last_name || "—",
     "Khmer Name": e.kh_name || "—",
     "Gender": e.gender || "—",
-    "Date of Birth": e.date_of_birth || "—",
+    "Date of Birth": formatDMY(e.date_of_birth),
     "Marital Status": e.marital_status || "—",
     "Nationality": e.nationality || "Cambodian",
     "Resident Status": e.is_resident ? "Resident" : "Non-Resident",
@@ -106,7 +107,7 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
     ["--- PERSONAL INFORMATION ---"],
     ["Employee Code", empCode, "Full Name (EN)", fullName],
     ["Khmer Name", e.kh_name || "—", "Gender", e.gender || "—"],
-    ["Date of Birth", e.date_of_birth || "—", "Nationality", e.nationality || "Cambodian"],
+    ["Date of Birth", formatDMY(e.date_of_birth), "Nationality", e.nationality || "Cambodian"],
     ["Resident Status", e.is_resident ? "Resident" : "Non-Resident", "Marital Status", e.marital_status || "—"],
     ["Blood Group", e.blood_group || "—", "Religion", e.religion || "—"],
     ["Tax Number", e.employee_tax_number || "—", "National ID / Passport", e.national_id_number || "—"],
@@ -148,7 +149,7 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
   dossierRows.push(["No.", "Full Name", "Relationship", "Date of Birth", "Occupation / Remark"]);
   if (e.family_members && e.family_members.length > 0) {
     e.family_members.forEach((f, idx) => {
-      dossierRows.push([idx + 1, f.name || "—", f.relationship || "—", f.date_of_birth || (f as any).dob || "—", (f as any).occupation || f.remark || "—"]);
+      dossierRows.push([idx + 1, f.name || "—", f.relationship || "—", formatDMY(f.date_of_birth || (f as any).dob), (f as any).occupation || f.remark || "—"]);
     });
   } else {
     dossierRows.push(["—", "No family members recorded", "—", "—", "—"]);

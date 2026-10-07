@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { BasicInfoSectionProps } from "./types";
+import { formatDMY } from "../../../dateUtils";
 
 export const ProfileDemographicFields = memo(function ProfileDemographicFields({
   employee,
@@ -41,7 +42,7 @@ export const ProfileDemographicFields = memo(function ProfileDemographicFields({
           />
         ) : (
           <p className="text-xs text-gray-900 font-mono font-bold">
-            {employee.date_of_birth || "—"}
+            {formatDMY(employee.date_of_birth)}
           </p>
         )}
       </div>
