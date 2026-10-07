@@ -1,24 +1,10 @@
 import { memo, useState } from "react";
 import type { Employee, ReportEntry } from "../../../types";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   employee: Employee;
   manager?: ReportEntry | null;
-}
-
-function formatDMY(dateStr?: string | null): string {
-  if (!dateStr) return "-";
-  if (dateStr.toLowerCase() === "never") return "Never";
-  const parts = dateStr.split("T")[0].split("-");
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  }
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
 }
 
 export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
@@ -29,20 +15,35 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
   const [showContractRate, setShowContractRate] = useState(false);
   const [showAfterRate, setShowAfterRate] = useState(false);
 
-  const site = employee.site || employee.work_locations?.name || "8887";
-  const department = employee.department || employee.division || "OPERATIONS";
-  const designation = employee.position || employee.employee_level || employee.title || "Staff, Fresh 3";
+  const site = employee.site || employee.work_locations?.name || employee.branches?.name || "—";
+  const department = employee.department || employee.division || "—";
+  const designation = employee.position || employee.employee_level || employee.title || "—";
   const supervisorName = manager
-    ? `${manager.first_name || ""} ${manager.last_name || ""}`.trim() || employee.line_manager || "Tieth Sina"
-    : employee.line_manager || "Tieth Sina";
+    ? `${manager.first_name || ""} ${manager.last_name || ""}`.trim() || employee.line_manager || "—"
+    : employee.line_manager || "—";
 
-  const joinDate = formatDMY(employee.join_date || employee.start_date || "2026-07-15");
-  const effectiveDate = formatDMY(employee.contract_effective_date || employee.join_date || employee.start_date || "2026-07-15");
+  const joinDate = formatDMY(employee.join_date || employee.start_date);
+  const effectiveDate = formatDMY(employee.contract_effective_date || employee.join_date || employee.start_date);
   const endDate = employee.contract_end_date ? formatDMY(employee.contract_end_date) : "Never";
 
-  const joinRateVal = employee.basic_salary || employee.contract_rate || "180";
-  const contractRateVal = employee.contract_rate || employee.basic_salary || "180";
-  const afterRateVal = employee.contract_rate_after || "200";
+  const joinRateVal =
+    employee.basic_salary != null && String(employee.basic_salary).trim() !== ""
+      ? String(employee.basic_salary)
+      : employee.contract_rate != null && String(employee.contract_rate).trim() !== ""
+      ? String(employee.contract_rate)
+      : "0";
+
+  const contractRateVal =
+    employee.contract_rate != null && String(employee.contract_rate).trim() !== ""
+      ? String(employee.contract_rate)
+      : employee.basic_salary != null && String(employee.basic_salary).trim() !== ""
+      ? String(employee.basic_salary)
+      : "0";
+
+  const afterRateVal =
+    employee.contract_rate_after != null && String(employee.contract_rate_after).trim() !== ""
+      ? String(employee.contract_rate_after)
+      : "0";
 
   return (
     <div className="space-y-6">
@@ -176,7 +177,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
             <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Remark</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">
-              {employee.contract_remark || "180$ after probation 3 months 200$"}
+              {employee.contract_remark || "—"}
             </span>
           </div>
         </div>

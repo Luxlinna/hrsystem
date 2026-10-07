@@ -12,7 +12,7 @@ interface UseEmployeesDataProps {
 }
 
 const EMPLOYEE_SELECT_FIELDS =
-  "id, first_name, last_name, kh_name, full_name, employee_code, nssf_number, email, phone, role, position, department, branch_id, status, join_date, start_date, reports_to, avatar_url, default_work_location_id, biometric_user_id, contract_type, contract_effective_date, contract_end_date, basic_salary, contract_rate, employment_type, code_bu, tax_salary_frequency, payroll_structure, branches(name), work_locations:default_work_location_id(id, name)";
+  "*, branches(name), work_locations:default_work_location_id(id, name)";
 
 export function useEmployeesData({
   isPartnerBranchBlocked,
@@ -24,6 +24,7 @@ export function useEmployeesData({
   const [contractTypes, setContractTypes] = useState<string[]>([]);
   const [jobStatuses, setJobStatuses] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
+  const [divisions, setDivisions] = useState<string[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
   const [employeeTypes, setEmployeeTypes] = useState<string[]>(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
   const [employeeLevels, setEmployeeLevels] = useState<string[]>(["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
@@ -101,6 +102,7 @@ export function useEmployeesData({
     };
 
     loadRealTable("departments", setDepartments);
+    loadRealTable("divisions", setDivisions);
     loadRealTable("positions", setPositions);
     setEmployeeTypes(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
     loadRealTable("employee_levels", setEmployeeLevels, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
@@ -154,7 +156,7 @@ export function useEmployeesData({
   }, [employees]);
 
   return {
-    employees, setEmployees, branches, workSites, departments, positions,
+    employees, setEmployees, branches, workSites, departments, divisions, positions,
     employeeTypes, employeeLevels, roles, contractTypes, jobStatuses,
     managerEmails, accountStatus, biometricDevices, loading, loadEmployees,
   };

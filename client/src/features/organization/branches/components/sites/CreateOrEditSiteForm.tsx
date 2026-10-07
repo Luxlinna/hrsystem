@@ -9,6 +9,7 @@ interface CreateOrEditSiteFormProps {
   branchId: string;
   companyName: string;
   editingSite: WorkSite | null;
+  branches?: Array<{ id: string; name: string; company_name?: string | null }>;
   isReadOnly?: boolean;
   saving: boolean;
   onBack: () => void;
@@ -20,6 +21,7 @@ export function CreateOrEditSiteForm({
   branchId,
   companyName,
   editingSite,
+  branches = [],
   isReadOnly = false,
   saving,
   onBack,
@@ -51,6 +53,7 @@ export function CreateOrEditSiteForm({
     is_auto_checkout_enabled: editingSite?.is_auto_checkout_enabled ?? true,
     working_hours_mode: (editingSite?.working_hours_mode as "inherit" | "custom") || "inherit",
     site_type: editingSite?.site_type || "Head Office",
+    branch_id: editingSite?.branch_id || branchId,
     company_name: companyName,
     address: editingSite?.address || editingSite?.description || "",
     city: editingSite?.city || "Phnom Penh",
@@ -70,6 +73,7 @@ export function CreateOrEditSiteForm({
         name: editingSite.name,
         description: editingSite.description || "",
         site_type: editingSite.site_type || "Head Office",
+        branch_id: editingSite.branch_id || branchId,
         address: editingSite.address || editingSite.description || "",
         city: editingSite.city || "Phnom Penh",
         province: editingSite.province || "",
@@ -84,7 +88,7 @@ export function CreateOrEditSiteForm({
         is_auto_checkout_enabled: editingSite.is_auto_checkout_enabled ?? true,
       }));
     }
-  }, [editingSite]);
+  }, [editingSite, branchId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,9 +125,9 @@ export function CreateOrEditSiteForm({
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
-        <SiteInfoFields form={form} setForm={setForm} companyName={companyName} isReadOnly={isReadOnly} />
+        <SiteInfoFields form={form} setForm={setForm} companyName={companyName} branches={branches} isReadOnly={isReadOnly} />
         <SiteAddressFields form={form} setForm={setForm} isReadOnly={isReadOnly} />
-        <SiteWorkingPlaceSection form={form} setForm={setForm} branchId={branchId} isReadOnly={isReadOnly} />
+        <SiteWorkingPlaceSection form={form} setForm={setForm} branchId={form.branch_id || branchId} isReadOnly={isReadOnly} />
         <SiteContactFields form={form} setForm={setForm} isReadOnly={isReadOnly} />
 
         {!isReadOnly ? (

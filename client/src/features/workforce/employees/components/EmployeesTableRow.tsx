@@ -15,6 +15,7 @@ interface EmployeesTableRowProps {
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
   onEdit?: (e: Employee) => void;
+  onChangeStatus?: (e: Employee) => void;
   onDisable?: (e: Employee) => void;
   onDeactivate?: (e: Employee) => void;
 }
@@ -42,6 +43,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
   onSetUpPhoneAccount,
   onDelete,
   onEdit,
+  onChangeStatus,
   onDisable,
   onDeactivate,
 }: EmployeesTableRowProps) {
@@ -92,6 +94,13 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
         </span>
       </td>
 
+      {/* Division */}
+      <td className="py-2.5 px-3">
+        <p className="font-medium text-slate-800 dark:text-slate-200 truncate text-[11px]">
+          {e.division || "—"}
+        </p>
+      </td>
+
       {/* Department with Building Site Badge */}
       <DepartmentLocationCell department={department} siteName={siteName} />
 
@@ -109,7 +118,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       {/* Salary */}
       <td className="py-2.5 px-3">
         <p className="font-mono text-slate-700 dark:text-slate-200 font-semibold text-xs">
-          {showSalary ? `${e.basic_salary || e.contract_rate || 0} USD` : "*****"}
+          {showSalary ? `${e.basic_salary ?? e.contract_rate ?? 0} USD` : "*****"}
         </p>
         <div className="flex items-center gap-1 mt-1">
           <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-[2px] bg-[#5b9bd5] dark:bg-blue-600 text-white leading-tight whitespace-nowrap">
@@ -139,6 +148,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
           employee={e}
           canManage={canManage}
           onEdit={onEdit}
+          onChangeStatus={onChangeStatus}
           onSetUpPhoneAccount={onSetUpPhoneAccount}
           onDelete={onDelete}
           onDisable={onDisable}

@@ -8,12 +8,14 @@ export type { WorkSite } from "../hooks/useWorkSites";
 interface BranchWorkSitesSectionProps {
   branchId: string;
   branchName?: string;
+  branches?: Array<{ id: string; name: string; company_name?: string | null }>;
   canManage: boolean;
 }
 
 export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
   branchId,
   branchName = "Business Unit",
+  branches = [],
   canManage,
 }: BranchWorkSitesSectionProps) {
   const {
@@ -37,6 +39,7 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
         branchId={branchId}
         companyName={branchName}
         editingSite={selectedSite}
+        branches={branches}
         isReadOnly={currentView === "view"}
         saving={savingSite}
         onBack={closeForm}

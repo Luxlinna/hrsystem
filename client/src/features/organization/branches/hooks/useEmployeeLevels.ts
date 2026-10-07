@@ -14,10 +14,10 @@ const SEED_EMPLOYEE_LEVELS: Partial<EmployeeLevel>[] = [
   { name: "Executive", sort_order: 8, status: "active" },
 ];
 
-function makeSeedLevels(branchId?: string): EmployeeLevel[] {
+function makeSeedLevels(): EmployeeLevel[] {
   return SEED_EMPLOYEE_LEVELS.map((l, index) => ({
     id: `emploevel-fallback-${index + 1}`,
-    branch_id: branchId || null,
+    branch_id: null,
     name: l.name || "",
     remark: null,
     status: l.status || "active",
@@ -38,35 +38,29 @@ export function useEmployeeLevels(branchId?: string) {
   const fetchEmployeeLevels = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("employee_levels")
         .select("*")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
 
-      if (branchId) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         console.warn("Employee levels query error or table not yet created:", error.message);
-        setEmployeeLevels(makeSeedLevels(branchId));
+        setEmployeeLevels(makeSeedLevels());
       } else if (data && data.length > 0) {
         setEmployeeLevels(data as EmployeeLevel[]);
       } else {
         // Table exists but empty — show seed defaults so BU page is never blank
-        setEmployeeLevels(makeSeedLevels(branchId));
+        setEmployeeLevels(makeSeedLevels());
       }
     } catch (err) {
       console.error("Error fetching employee levels:", err);
-      setEmployeeLevels(makeSeedLevels(branchId));
+      setEmployeeLevels(makeSeedLevels());
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchEmployeeLevels();
@@ -83,7 +77,7 @@ export function useEmployeeLevels(branchId?: string) {
       const payload = {
         name: form.name.trim(),
         remark: form.remark ? form.remark.trim() : null,
-        branch_id: branchId || null,
+        branch_id: null,
         status: form.status,
       };
 

@@ -108,13 +108,13 @@ export default function Branches() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-slate-200">
             <div>
               <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                <span>WORKSPACE</span><span className="text-slate-300">/</span><span className="text-slate-600">BUSINESS UNIT (BU)</span>
+                <span>WORKSPACE</span><span className="text-slate-300">/</span><span className="text-slate-600">{activeTab === "sites" ? "SITES" : "BUSINESS UNIT (BU)"}</span>
               </div>
               <div className="flex items-center gap-2.5 mt-1 sm:mt-1.5 flex-wrap">
                 <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  {activeTab === "all" ? "Business Unit Management" : currentBranch?.company_name || currentBranch?.name || "Company Profile"}
+                  {activeTab === "all" ? "Business Unit Management" : activeTab === "sites" ? "Sites Management" : currentBranch?.company_name || currentBranch?.name || "Company Profile"}
                 </h1>
-                {activeTab !== "all" && currentBranch && (
+                {activeTab !== "all" && activeTab !== "sites" && currentBranch && (
                   <span className={`inline-flex items-center gap-1 text-[10.5px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full border ${currentBranch.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${currentBranch.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />
                     {currentBranch.status === "active" ? "Active" : "Inactive"}
@@ -122,7 +122,7 @@ export default function Branches() {
                 )}
               </div>
             </div>
-            {canCreateBranch && (
+            {canCreateBranch && activeTab !== "sites" && (
               <button type="button" onClick={openAddModal} className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#0088cc] hover:bg-[#0077b3] text-white text-[12.5px] sm:text-[13px] font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer w-full sm:w-auto">
                 <i className="ri-add-line text-base" />New Business Unit
               </button>

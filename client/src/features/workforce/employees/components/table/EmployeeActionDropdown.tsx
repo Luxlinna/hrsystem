@@ -7,6 +7,7 @@ interface EmployeeActionDropdownProps {
   employee: Employee;
   canManage: boolean;
   onEdit?: (e: Employee) => void;
+  onChangeStatus?: (e: Employee) => void;
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
   onDisable?: (e: Employee) => void;
@@ -17,6 +18,7 @@ export const EmployeeActionDropdown = memo(function EmployeeActionDropdown({
   employee: e,
   canManage,
   onEdit,
+  onChangeStatus,
   onSetUpPhoneAccount,
   onDelete,
   onDisable,
@@ -75,6 +77,12 @@ export const EmployeeActionDropdown = memo(function EmployeeActionDropdown({
                 <button type="button" onClick={() => { setShowMenu(false); onEdit?.(e); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer">
                   <i className="ri-edit-line text-slate-400" /> Edit Employee
                 </button>
+
+                {onChangeStatus && (
+                  <button type="button" onClick={() => { setShowMenu(false); onChangeStatus(e); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer">
+                    <i className="ri-route-line text-[#253C7D] dark:text-indigo-400" /> Change Status
+                  </button>
+                )}
 
                 <button type="button" onClick={() => { setShowMenu(false); onSetUpPhoneAccount?.(e); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer">
                   <i className="ri-smartphone-line text-blue-500" /> Update User Account

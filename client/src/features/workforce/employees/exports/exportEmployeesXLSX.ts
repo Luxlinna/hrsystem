@@ -1,5 +1,6 @@
 import type { Employee, AccountStatus } from "../types";
 import { supabase } from "@/lib/supabase";
+import { formatDMY } from "../dateUtils";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -65,7 +66,7 @@ export async function exportEmployeesXLSX(
           "Last Name": e.last_name || "—",
           "Khmer Name": e.kh_name || "—",
           "Gender": e.gender || "—",
-          "Date of Birth": e.date_of_birth || "—",
+          "Date of Birth": formatDMY(e.date_of_birth),
           "Marital Status": e.marital_status || "—",
           "Nationality": e.nationality || "Cambodian",
           "Resident Status": e.is_resident ? "Resident" : "Non-Resident",

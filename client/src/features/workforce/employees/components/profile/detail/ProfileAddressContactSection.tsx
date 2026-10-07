@@ -10,9 +10,48 @@ export const ProfileAddressContactSection = memo(function ProfileAddressContactS
 }: Props) {
   const [showPhone, setShowPhone] = useState(false);
 
+  const currentAddress =
+    employee.current_address ||
+    (employee.same_as_present_address !== false ? employee.permanent_address : "") ||
+    "-";
+
   return (
     <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-      {/* 1. Permanent Address Info */}
+      {/* 1. Current Address Info */}
+      <div className="space-y-3">
+        <h3 className="text-[13px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
+          CURRENT ADDRESS INFO
+        </h3>
+
+        <div className="space-y-1.5 text-[13px]">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Address</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{currentAddress}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">City</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employee.permanent_city || ""}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Province</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employee.permanent_province || "-"}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Postal Code</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employee.permanent_postal_code || ""}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Country</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employee.permanent_country || "Cambodia"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Permanent Address Info */}
       <div className="space-y-3">
         <h3 className="text-[13px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
           PERMANENT ADDRESS INFO
@@ -55,7 +94,7 @@ export const ProfileAddressContactSection = memo(function ProfileAddressContactS
         </div>
       </div>
 
-      {/* 2. Contact Info */}
+      {/* 3. Contact Info */}
       <div className="space-y-3">
         <h3 className="text-[13px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
           CONTACT INFO

@@ -403,6 +403,7 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
 export const INITIAL_VISIBLE_COLUMNS: VisibleColumns = {
   employee: true,
   role: true,
+  division: true,
   department: true,
   branch: true,
   status: true,

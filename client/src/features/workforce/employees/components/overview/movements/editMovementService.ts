@@ -7,18 +7,22 @@ import { saveLocalMovement } from "@/features/workforce/movements/services/movem
 export interface MovementEditPayload {
   title: string;
   effectiveDate: string;
+  bu?: string;
   site: string;
+  division?: string;
   department: string;
-  designation: string;
-  contractType: string;
-  contractStartDate: string;
-  contractEndDate: string;
+  position?: string;
+  designation?: string;
+  contractType?: string;
+  contractStartDate?: string;
+  contractEndDate?: string;
   employeeType: string;
   supervisor: string;
+  salaryType?: string;
   salary: number | null;
-  salaryFreq: string;
-  salaryAfter: number | null;
-  salaryAfterFreq: string;
+  salaryFreq?: string;
+  salaryAfter?: number | null;
+  salaryAfterFreq?: string;
   remarks: string;
   file?: File | null;
 }
@@ -52,20 +56,28 @@ export async function saveMovementInfo(
     }
   }
 
+  const newPos = payload.position || payload.designation || "";
   const newValues = {
     ...(movement?.new_values || {}),
+    branch_name: payload.bu || movement?.new_values?.branch_name,
+    bu: payload.bu || movement?.new_values?.bu,
     site: payload.site,
+    division: payload.division || movement?.new_values?.division,
     department: payload.department,
-    role: payload.designation,
-    contract_type: payload.contractType,
-    contract_start_date: payload.contractStartDate,
-    contract_end_date: payload.contractEndDate,
+    position: newPos,
+    role: newPos,
+    contract_type: payload.contractType || movement?.new_values?.contract_type,
+    contract_start_date: payload.contractStartDate || movement?.new_values?.contract_start_date,
+    contract_end_date: payload.contractEndDate || movement?.new_values?.contract_end_date,
     employment_type: payload.employeeType,
+    employee_type: payload.employeeType,
     supervisor: payload.supervisor,
+    salary_type: payload.salaryType || movement?.new_values?.salary_type || "Gross",
     new_salary: payload.salary,
-    contract_rate_frequency: payload.salaryFreq,
+    basic_salary: payload.salary,
+    contract_rate_frequency: payload.salaryFreq || "Monthly",
     salary_after_contract: payload.salaryAfter,
-    contract_rate_after_frequency: payload.salaryAfterFreq,
+    contract_rate_after_frequency: payload.salaryAfterFreq || "Monthly",
   };
 
   const isInitialMock = !movement?.id || movement.id.startsWith("initial-");
@@ -103,23 +115,28 @@ export async function saveMovementInfo(
   }
 
   try {
-    await supabase.from("employees").update({
-      site: payload.site,
-      department: payload.department,
-      role: payload.designation,
-      position: payload.designation,
-      contract_type: payload.contractType,
-      contract_effective_date: payload.contractStartDate || null,
-      contract_end_date: payload.contractEndDate || null,
-      employment_type: payload.employeeType,
-      line_manager: payload.supervisor,
-      basic_salary: payload.salary,
-      contract_rate: payload.salary,
-      contract_rate_frequency: payload.salaryFreq,
-      contract_rate_after: payload.salaryAfter,
-      contract_rate_after_frequency: payload.salaryAfterFreq,
-      contract_remark: payload.remarks,
-    }).eq("id", employee.id);
+    const empUpdatePayload: any = {
+      site: payload.site || undefined,
+      department: payload.department || undefined,
+      role: newPos || undefined,
+      position: newPos || undefined,
+      employment_type: payload.employeeType || undefined,
+      line_manager: payload.supervisor || undefined,
+      contract_remark: payload.remarks || undefined,
+    };
+    if (payload.division) empUpdatePayload.division = payload.division;
+    if (payload.bu) {
+      empUpdatePayload.company = payload.bu;
+      empUpdatePayload.bu_full_name = payload.bu;
+    }
+    if (payload.salary !== null && payload.salary !== undefined) {
+      empUpdatePayload.basic_salary = payload.salary;
+      empUpdatePayload.contract_rate = payload.salary;
+    }
+    if (payload.salaryType) {
+      empUpdatePayload.contract_rate_type = payload.salaryType;
+    }
+    await supabase.from("employees").update(empUpdatePayload).eq("id", employee.id);
   } catch (err) {
     console.warn("Could not sync employee profile fields:", err);
   }

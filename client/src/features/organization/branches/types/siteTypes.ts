@@ -62,6 +62,8 @@ export interface WorkSiteFormState {
   is_auto_checkout_enabled?: boolean;
   working_hours_mode?: "inherit" | "custom";
   site_type?: string;
+  branch_id?: string;
+  additional_branch_ids?: string[];
   company_name?: string;
   address?: string;
   city?: string;

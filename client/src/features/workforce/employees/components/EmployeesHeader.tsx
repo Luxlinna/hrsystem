@@ -1,10 +1,11 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
 interface EmployeesHeaderProps {
   branchCount: number;
   canManage: boolean;
   onOpenAddModal: () => void;
+  onOpenChangeStatus?: () => void;
   canManageSettings?: boolean;
   onOpenSettings?: () => void;
 }
@@ -12,10 +13,24 @@ interface EmployeesHeaderProps {
 export const EmployeesHeader = memo(function EmployeesHeader({
   canManage,
   onOpenAddModal,
+  onOpenChangeStatus,
   canManageSettings,
   onOpenSettings,
 }: EmployeesHeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDropdown]);
 
   return (
     <div className="flex items-center justify-between pt-1 pb-3">
@@ -25,7 +40,7 @@ export const EmployeesHeader = memo(function EmployeesHeader({
       </h1>
 
       {/* Top Right Action Button matching ERP */}
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <button
           type="button"
           onClick={() => setShowDropdown(!showDropdown)}
@@ -51,6 +66,19 @@ export const EmployeesHeader = memo(function EmployeesHeader({
               >
                 <i className="ri-user-add-line text-sm text-[#253C7D]" />
                 <span>Add Employee</span>
+              </button>
+            )}
+            {canManage && onOpenChangeStatus && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDropdown(false);
+                  onOpenChangeStatus();
+                }}
+                className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+              >
+                <i className="ri-route-line text-sm text-[#253C7D]" />
+                <span>Change Status</span>
               </button>
             )}
             <Link

@@ -4,7 +4,6 @@ import { fetchMovementsByEmployeeId } from "@/features/workforce/movements/servi
 import type { EmployeeMovement } from "@/features/workforce/movements/types";
 import { EmployeeMovementCard } from "./movements/EmployeeMovementCard";
 import { EmployeeMovementAttachmentSection } from "./movements/EmployeeMovementAttachmentSection";
-import { buildInitialEmploymentRecord } from "./movements/movementDisplayUtils";
 import { EditMovementInfoModal } from "./movements/EditMovementInfoModal";
 
 interface MovementInfoCardProps {
@@ -49,10 +48,7 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
     loadEmployeeMovements();
   };
 
-  const displayMovements = useMemo(() => {
-    if (movements.length > 0) return movements;
-    return buildInitialEmploymentRecord(employee);
-  }, [movements, employee]);
+  const displayMovements = movements;
 
   const totalCount = displayMovements.length;
   const pagedList = displayMovements.slice(0, visibleCount);
@@ -67,17 +63,19 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
         </h3>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEditingMovement(displayMovements[0] || null);
-              setShowEditModal(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded border border-sky-400 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-xs transition-colors cursor-pointer"
-          >
-            <i className="ri-edit-box-line text-xs" />
-            <span>Edit Movement</span>
-          </button>
+          {displayMovements.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingMovement(displayMovements[0] || null);
+                setShowEditModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded border border-sky-400 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-xs transition-colors cursor-pointer"
+            >
+              <i className="ri-edit-box-line text-xs" />
+              <span>Edit Movement</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -93,8 +91,12 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
       {loading && movements.length === 0 ? (
         <div className="py-8 text-center text-xs text-gray-400">Loading movements...</div>
       ) : displayMovements.length === 0 ? (
-        <div className="text-center py-6 bg-gray-50/50 dark:bg-slate-800/40 rounded border border-slate-200 dark:border-slate-700 text-xs text-slate-500">
-          No movements recorded for this employee
+        <div className="text-center py-10 bg-slate-50/50 dark:bg-slate-800/30 rounded border border-dashed border-slate-200 dark:border-slate-700 text-xs text-slate-500">
+          <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <i className="ri-history-line text-lg" />
+          </div>
+          <p className="font-semibold text-slate-700 dark:text-slate-300">No movements recorded</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Status change history will appear here once recorded</p>
         </div>
       ) : (
         <div className="space-y-4">

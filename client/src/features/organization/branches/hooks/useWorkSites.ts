@@ -10,7 +10,7 @@ const formatTimeSec = (t?: string, def = "08:00:00") => {
   return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
 };
 
-export function useWorkSites(branchId: string) {
+export function useWorkSites(branchId?: string) {
   const [sites, setSites] = useState<WorkSite[]>([]);
   const [sitesLoading, setSitesLoading] = useState(false);
   const [currentView, setCurrentView] = useState<"table" | "create" | "edit" | "view">("table");
@@ -34,16 +34,13 @@ export function useWorkSites(branchId: string) {
         site_type, address, city, province, postal_code, country,
         phone_number, email, website, status
       `)
-      .eq("branch_id", branchId)
       .is("deleted_at", null)
       .order("is_default", { ascending: false })
       .order("name");
 
-    if (!error && data) {
-      setSites(data as WorkSite[]);
-    }
+    if (!error && data) setSites(data as WorkSite[]);
     setSitesLoading(false);
-  }, [branchId]);
+  }, []);
 
   useEffect(() => { fetchSites(); }, [fetchSites]);
 
@@ -54,9 +51,10 @@ export function useWorkSites(branchId: string) {
 
   const handleSubmitSite = async (formData: WorkSiteFormState) => {
     setSavingSite(true);
+    const targetBranchId = formData.branch_id || branchId || null;
 
     const basePayload = {
-      branch_id: branchId,
+      branch_id: targetBranchId,
       name: formData.name.trim(),
       description: formData.address?.trim() || formData.description?.trim() || null,
       site_type: formData.site_type || "Store",
@@ -98,23 +96,28 @@ export function useWorkSites(branchId: string) {
     let targetSiteId = selectedSite?.id;
     if (selectedSite && (currentView === "edit" || currentView === "create")) {
       let res = await supabase.from("work_locations").update(fullPayload).eq("id", selectedSite.id);
-      if (res.error) {
-        // Fallback without extended column
-        res = await supabase.from("work_locations").update(basePayload).eq("id", selectedSite.id);
-      }
+      if (res.error) res = await supabase.from("work_locations").update(basePayload).eq("id", selectedSite.id);
       setSavingSite(false);
       if (res.error) return toast("Error", res.error.message || "Could not update site", "error");
       toast("Saved", `"${formData.name}" updated successfully`, "success");
     } else {
       const isFirst = sites.length === 0;
       let res = await supabase.from("work_locations").insert({ ...fullPayload, is_default: isFirst }).select("id").single();
-      if (res.error) {
-        res = await supabase.from("work_locations").insert({ ...basePayload, is_default: isFirst }).select("id").single();
-      }
+      if (res.error) res = await supabase.from("work_locations").insert({ ...basePayload, is_default: isFirst }).select("id").single();
       setSavingSite(false);
       if (res.error) return toast("Error", res.error.message || "Could not create site", "error");
       targetSiteId = res.data?.id;
       toast("Created", `"${formData.name}" created successfully`, "success");
+    }
+
+    if (formData.additional_branch_ids && formData.additional_branch_ids.length > 0) {
+      for (const addBranchId of formData.additional_branch_ids) {
+        if (addBranchId !== targetBranchId) {
+          const addPayload = { ...fullPayload, branch_id: addBranchId, is_default: false };
+          let r = await supabase.from("work_locations").insert(addPayload);
+          if (r.error) await supabase.from("work_locations").insert({ ...basePayload, branch_id: addBranchId, is_default: false });
+        }
+      }
     }
 
     if (targetSiteId) {
@@ -138,14 +141,14 @@ export function useWorkSites(branchId: string) {
 
   const handleSetDefault = async (site: WorkSite) => {
     if (site.is_default) return;
-    await supabase.from("work_locations").update({ is_default: false }).eq("branch_id", branchId);
+    await supabase.from("work_locations").update({ is_default: false }).is("deleted_at", null);
     await supabase.from("work_locations").update({ is_default: true }).eq("id", site.id);
     toast("Updated", `"${site.name}" is now the default site`, "success");
     fetchSites();
   };
 
   const handleDeleteSite = async (site: WorkSite) => {
-    if (!confirm(`Delete site "${site.name}" from this branch?`)) return;
+    if (!confirm(`Delete site "${site.name}"?`)) return;
     const { error } = await supabase.from("work_locations").update({ deleted_at: new Date().toISOString() }).eq("id", site.id);
     if (error) return toast("Error", error.message || "Could not delete site", "error");
     toast("Deleted", `"${site.name}" has been deleted`, "success");

@@ -5,6 +5,8 @@ export interface MovementEmployeeInput {
   first_name: string;
   last_name: string;
   role?: string | null;
+  position?: string | null;
+  division?: string | null;
   department?: string | null;
   branch_id?: string | null;
   default_work_location_id?: string | null;
@@ -96,12 +98,34 @@ export function buildMovementChanges(
   }
 
   // Apply unified structure fields
-  if (form.site) { next.site = form.site; employeeUpdates.site = form.site; }
+  if (form.target_branch_id) {
+    next.branch_id = form.target_branch_id;
+    employeeUpdates.branch_id = form.target_branch_id;
+  }
+  if (form.bu || form.bu_full_name) {
+    const buName = form.bu_full_name || form.bu;
+    next.bu_full_name = buName;
+    employeeUpdates.bu_full_name = buName;
+  }
+  if (form.site) {
+    next.site = form.site;
+    employeeUpdates.site = form.site;
+  }
+  if (form.target_work_location_id) {
+    next.default_work_location_id = form.target_work_location_id;
+    employeeUpdates.default_work_location_id = form.target_work_location_id;
+  }
+  if (form.division) {
+    next.division = form.division;
+    employeeUpdates.division = form.division;
+  }
   if (form.department) { next.department = form.department; employeeUpdates.department = form.department; }
-  if (form.designation) {
-    next.role = form.designation;
-    employeeUpdates.role = form.designation;
-    employeeUpdates.position = form.designation;
+  if (form.position || form.designation) {
+    const posVal = form.position || form.designation;
+    next.role = posVal;
+    next.position = posVal;
+    employeeUpdates.role = posVal;
+    employeeUpdates.position = posVal;
   }
   if (form.contract_type) { next.contract_type = form.contract_type; employeeUpdates.contract_type = form.contract_type; }
   if (form.contract_start_date) { next.contract_start_date = form.contract_start_date; employeeUpdates.contract_effective_date = form.contract_start_date; }

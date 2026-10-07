@@ -409,6 +409,7 @@ export interface ReportEntry {
 export interface VisibleColumns {
   employee: boolean;
   role: boolean;
+  division?: boolean;
   department: boolean;
   branch: boolean;
   status: boolean;
@@ -422,6 +423,7 @@ export type SortField =
   | "last_name"
   | "email"
   | "role"
+  | "division"
   | "department"
   | "branch"
   | "status"

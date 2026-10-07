@@ -57,15 +57,11 @@ export function useDivisions(branchId?: string) {
   const fetchDivisions = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("divisions")
         .select("*")
         .is("deleted_at", null)
         .order("name", { ascending: true });
-      if (branchId && UUID_REGEX.test(branchId)) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-      const { data, error } = await query;
       if (!error && data && data.length > 0) {
         setDivisions(data as Division[]);
         saveCachedDivisions(data as Division[]);
@@ -80,7 +76,7 @@ export function useDivisions(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchDivisions();
@@ -102,7 +98,7 @@ export function useDivisions(branchId?: string) {
       const payload = {
         name: form.name.trim(),
         code: form.code?.trim() || null,
-        branch_id: branchId && UUID_REGEX.test(branchId) ? branchId : null,
+        branch_id: null,
         head_of_division_id: validHeadId,
         head_of_division_name: form.head_of_division_name?.trim() || null,
         status: form.status,

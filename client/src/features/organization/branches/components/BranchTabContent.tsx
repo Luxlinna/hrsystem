@@ -96,15 +96,22 @@ export function BranchTabContent({
   return (
     <>
       {activeTab === "profile" && (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          <BranchCompanyProfileSection
-            branch={currentBranch}
-            canManage={canManage}
-            onOpenEditModal={(b) => onOpenEditModal(b, "profile")}
-            allowedBranches={allowedBranches}
-            onSelectBranchId={onSelectBranchId}
-            hideHeader={false}
-          />
+        <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            <BranchCompanyProfileSection
+              branch={currentBranch}
+              canManage={canManage}
+              onOpenEditModal={(b) => onOpenEditModal(b, "profile")}
+              allowedBranches={allowedBranches}
+              onSelectBranchId={onSelectBranchId}
+              hideHeader={false}
+            />
+          </div>
+          {currentBranch.is_biometrics_enabled && (
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+              <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
+            </div>
+          )}
         </div>
       )}
 
@@ -114,14 +121,10 @@ export function BranchTabContent({
             <BranchWorkSitesSection
               branchId={currentBranch.id}
               branchName={currentBranch.company_name || currentBranch.name}
+              branches={branches}
               canManage={canManage}
             />
           </div>
-          {currentBranch.is_biometrics_enabled && (
-            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-              <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
-            </div>
-          )}
         </div>
       )}
 

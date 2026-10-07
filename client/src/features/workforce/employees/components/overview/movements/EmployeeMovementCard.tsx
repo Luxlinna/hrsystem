@@ -149,7 +149,7 @@ export const EmployeeMovementCard = memo(function EmployeeMovementCard({
             </span>
           </div>
           <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
-            Salary After Contract
+            Salary After Probation
           </p>
         </div>
       </div>

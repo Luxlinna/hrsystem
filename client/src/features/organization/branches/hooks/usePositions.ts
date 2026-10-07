@@ -68,18 +68,20 @@ export function usePositions(branchId?: string) {
     setLoading(true);
     const delSet = getDeletedSet();
     try {
-      let query = supabase.from("positions").select("*").is("deleted_at", null).order("sort_order", { ascending: true }).order("name", { ascending: true });
-      if (branchId && isUUID(branchId)) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from("positions")
+        .select("*")
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+
       if (error || !data || data.length === 0) {
         const cached = getCachedPositions();
         if (cached.length > 0) {
           setPositions(cached.filter((p) => !delSet.has(p.id) && !delSet.has(p.name)));
         } else {
           const fallbacks = SEED_POSITIONS
-            .map((p, i) => ({ id: `pos-fallback-${i + 1}`, branch_id: branchId || null, name: p.name || "", tax_position: p.tax_position || null, status: p.status || "active", sort_order: p.sort_order ?? i + 1, created_at: new Date().toISOString() }))
+            .map((p, i) => ({ id: `pos-fallback-${i + 1}`, branch_id: null, name: p.name || "", tax_position: p.tax_position || null, status: p.status || "active", sort_order: p.sort_order ?? i + 1, created_at: new Date().toISOString() }))
             .filter((p) => !delSet.has(p.id) && !delSet.has(p.name));
           setPositions(fallbacks);
           saveCachedPositions(fallbacks as Position[]);
@@ -94,7 +96,7 @@ export function usePositions(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => { fetchPositions(); }, [fetchPositions]);
 
@@ -106,7 +108,7 @@ export function usePositions(branchId?: string) {
   const handleSavePosition = async (form: PositionFormState) => {
     setSaving(true);
     try {
-      const payload = { name: form.name.trim(), branch_id: branchId || null, tax_position: form.tax_position ? form.tax_position.trim() : null, status: form.status };
+      const payload = { name: form.name.trim(), branch_id: null, tax_position: form.tax_position ? form.tax_position.trim() : null, status: form.status };
       if (selectedPosition && (currentView === "edit" || currentView === "create") && isUUID(selectedPosition.id)) {
         const { error } = await supabase.from("positions").update(payload).eq("id", selectedPosition.id);
         if (error) setPositions((prev) => prev.map((p) => (p.id === selectedPosition.id ? { ...p, ...payload } : p)));
@@ -165,7 +167,7 @@ export function usePositions(branchId?: string) {
     if (!items?.length) return false;
     setSaving(true);
     try {
-      const payloads = items.map((item, idx) => ({ name: item.name.trim(), branch_id: branchId || null, tax_position: item.tax_position ? item.tax_position.trim() : null, status: item.status === "disabled" ? "disabled" : "active", sort_order: item.sort_order ?? (positions.length + idx + 1) }));
+      const payloads = items.map((item, idx) => ({ name: item.name.trim(), branch_id: null, tax_position: item.tax_position ? item.tax_position.trim() : null, status: item.status === "disabled" ? "disabled" : "active", sort_order: item.sort_order ?? (positions.length + idx + 1) }));
       const { data, error } = await supabase.from("positions").insert(payloads).select();
       if (error || !data) {
         const newPos = payloads.map((p, idx) => ({ id: `pos-imported-${Date.now()}-${idx}`, ...p, created_at: new Date().toISOString() }));
