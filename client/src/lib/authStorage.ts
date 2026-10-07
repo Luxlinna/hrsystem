@@ -3,8 +3,9 @@ import { isPhoneIdentifier, isPhoneSyntheticEmail, phoneToSyntheticEmail, normal
 const THIRTY_DAYS_DAYS = 30;
 const THIRTY_DAYS_MS = THIRTY_DAYS_DAYS * 24 * 60 * 60 * 1000;
 
-const THREE_DAYS_DAYS = 3;
-const THREE_DAYS_MS = THREE_DAYS_DAYS * 24 * 60 * 60 * 1000;
+// OTP Trusted Device Window: Exactly 3 days for both email and phone number
+const OTP_REMEMBER_DAYS = 3;
+const OTP_REMEMBER_MS = OTP_REMEMBER_DAYS * 24 * 60 * 60 * 1000;
 
 const LAST_ACTIVITY_KEY = "hrm_last_act_t";
 
@@ -94,14 +95,35 @@ function clearDeviceKey(key: string): void {
   authSessionStorage.removeItem(key);
 }
 
+function getDeviceKeys(identifier: string): string[] {
+  if (!identifier) return [];
+  const raw = identifier.trim().toLowerCase();
+  const canonicalKey = DEVICE_KEY(raw);
+  const rawKey = `otp_dev_${raw}`;
+  const keys = new Set<string>([canonicalKey, rawKey]);
+
+  if (isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw)) {
+    const phone = isPhoneSyntheticEmail(raw) ? syntheticEmailToPhone(raw) : raw;
+    const cleanDigits = normalizePhone(phone);
+    const stripped = cleanDigits.replace(/^0+/, "");
+    keys.add(`otp_dev_${cleanDigits}`);
+    keys.add(`otp_dev_${stripped}`);
+    keys.add(`otp_dev_${phoneToSyntheticEmail(cleanDigits)}`);
+    keys.add(`otp_dev_${phoneToSyntheticEmail(stripped)}`);
+  }
+
+  return Array.from(keys);
+}
+
 // 4. Remember Token Management:
-// - Phone number accounts: 3 days of login inactivity (sliding window refreshed on every login).
-// - Email accounts: 30 days device trust.
+// - Both email and phone number accounts: exactly 3 days of device trust from OTP verification.
+// - In 3 days if users logout and login again by email or phone number, no OTP is needed.
+// - Once 3 days have passed, logging in will require OTP again.
 // - Tokens are persisted in localStorage & cookies so they survive user logout.
 export function checkDeviceRemembered(email: string): boolean {
   if (!email) return false;
-  const canonicalKey = DEVICE_KEY(email);
-  const rawKey = `otp_dev_${email.trim().toLowerCase()}`;
+  const keysToCheck = getDeviceKeys(email);
+  const now = Date.now();
 
   const checkKey = (key: string): boolean => {
     let val: string | null = null;
@@ -118,54 +140,67 @@ export function checkDeviceRemembered(email: string): boolean {
     try {
       const data = JSON.parse(val);
       if (typeof data === "object" && data?.expiresAt) {
-        if (Date.now() > data.expiresAt) {
+        // Enforce 3-day max window from OTP verification
+        if (data.verifiedAt && now - data.verifiedAt > OTP_REMEMBER_MS) {
+          clearDeviceKey(key);
+          return false;
+        }
+        if (now > data.expiresAt) {
+          clearDeviceKey(key);
+          return false;
+        }
+        // Invalidate old tokens configured with former 30-day policy
+        if (data.expiresAt > now + OTP_REMEMBER_MS) {
           clearDeviceKey(key);
           return false;
         }
         return true;
       }
     } catch {
-      if (val === "true") return true;
+      // Invalidate legacy non-JSON tokens
+      clearDeviceKey(key);
+      return false;
     }
+    clearDeviceKey(key);
     return false;
   };
 
-  return checkKey(canonicalKey) || checkKey(rawKey);
+  return keysToCheck.some((key) => checkKey(key));
 }
 
 export function setDeviceRemembered(email: string): void {
   if (!email) return;
   const raw = (email || "").trim().toLowerCase();
   const isPhone = isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw);
-  const durationMs = isPhone ? THREE_DAYS_MS : THIRTY_DAYS_MS;
-  const durationDays = isPhone ? THREE_DAYS_DAYS : THIRTY_DAYS_DAYS;
+  const durationMs = OTP_REMEMBER_MS;
+  const durationDays = OTP_REMEMBER_DAYS;
+  const now = Date.now();
 
-  const canonicalKey = DEVICE_KEY(email);
-  const rawKey = `otp_dev_${raw}`;
   const payload = JSON.stringify({
     remembered: true,
     isPhone,
-    expiresAt: Date.now() + durationMs,
+    verifiedAt: now,
+    expiresAt: now + durationMs,
   });
 
-  try {
-    localStorage.setItem(canonicalKey, payload);
-    localStorage.setItem(rawKey, payload);
-  } catch {
-    // ignore
+  const keys = getDeviceKeys(email);
+  for (const key of keys) {
+    try {
+      localStorage.setItem(key, payload);
+    } catch {
+      // ignore
+    }
+    setCookie(key, payload, durationDays);
+    authSessionStorage.setItem(key, payload);
   }
-  setCookie(canonicalKey, payload, durationDays);
-  setCookie(rawKey, payload, durationDays);
-  authSessionStorage.setItem(canonicalKey, payload);
-  authSessionStorage.setItem(rawKey, payload);
 }
 
 export function clearDeviceRemembered(email: string): void {
   if (!email) return;
-  const canonicalKey = DEVICE_KEY(email);
-  const rawKey = `otp_dev_${email.trim().toLowerCase()}`;
-  clearDeviceKey(canonicalKey);
-  clearDeviceKey(rawKey);
+  const keys = getDeviceKeys(email);
+  for (const key of keys) {
+    clearDeviceKey(key);
+  }
 }
 
 // 5. 30-Day Activity Tracker (Auto-Logout on 30 Days of Inactivity)

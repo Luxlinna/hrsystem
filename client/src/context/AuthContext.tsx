@@ -155,8 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       recordUserActivity();
-      setDeviceRemembered(resolvedEmail);
-      setDeviceRemembered(identifier);
+      // Keep existing 3-day window from OTP verification intact; do not reset countdown on routine login
       return { otpRequired: false };
     }
 

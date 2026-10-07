@@ -1,5 +1,5 @@
 const REMEMBER_PREFIX = "hr_otp_remember_";
-const REMEMBER_DAYS = 30;
+const REMEMBER_DAYS = 3;
 
 interface RememberToken {
   expiresAt: number;

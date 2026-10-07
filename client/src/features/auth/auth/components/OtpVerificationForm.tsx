@@ -85,7 +85,7 @@ export const OtpVerificationForm = memo(function OtpVerificationForm({
           className="w-4 h-4 rounded border-gray-300 text-[#253C7D] focus:ring-[#253C7D]/20"
         />
         <span className="text-[12px] text-gray-600">
-          {isPhone ? "Remember this device for 3 days" : "Remember this device for 30 days"}
+          Remember this device for 3 days
         </span>
       </label>
 
