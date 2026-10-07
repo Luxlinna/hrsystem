@@ -11,6 +11,7 @@ export interface AttendanceExportRow {
   employeeName: string;
   biometricId: string;
   position: string;
+  division: string;
   department: string;
   location: string;
   scheduleTitle: string;
@@ -84,6 +85,7 @@ export function mapRecordToExportRow(
     employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee",
     biometricId: bioId,
     position: emp?.position || emp?.role || "Staff Member",
+    division: emp?.division || "—",
     department: emp?.department || "OPERATIONS",
     location: r.work_location?.name || emp?.branches?.name || emp?.site || "Main Office",
     scheduleTitle: sched.shiftTitle,
