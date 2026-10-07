@@ -58,18 +58,24 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
   });
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-[#f8fafc] dark:bg-slate-950 overflow-y-auto p-3 sm:p-5 lg:p-7 pb-28 sm:pb-8 font-sans">
+    <div
+      className="fixed inset-0 z-[100] bg-[#f8fafc] dark:bg-slate-950 overflow-y-auto px-3.5 sm:px-5 lg:px-7 pb-28 sm:pb-8 font-sans"
+      style={{
+        paddingTop: "max(env(safe-area-inset-top, 0px), 52px)",
+      }}
+    >
       <div className="max-w-3xl mx-auto space-y-3.5 sm:space-y-4">
         {/* Top Header matching reference */}
-        <div className="flex items-center justify-between pb-2 border-b border-gray-200/80 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-200/80 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-slate-200 shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-700 dark:text-slate-200 shadow-2xs transition-colors cursor-pointer shrink-0"
           >
-            <span>&larr; Back</span>
+            <i className="ri-arrow-left-line text-sm" />
+            <span>Back</span>
           </button>
-          <h1 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white tracking-tight text-center flex-1 pr-12">
+          <h1 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white tracking-tight text-center flex-1 pr-16 truncate">
             View Leave Detail
           </h1>
         </div>
