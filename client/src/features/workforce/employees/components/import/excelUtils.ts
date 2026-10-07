@@ -1,7 +1,7 @@
 import { toast } from "@/components/Toast";
 import type { Branch } from "../../types";
 import { TEMPLATE_HEADERS, type ParsedEmployeeRow, type ColumnMappingState } from "./types";
-import { extractVal, normalizeGender, normalizeStatus, parseExcelDate, parseSalary, isRowCompletelyEmpty } from "./fieldNormalizer";
+import { extractVal, cleanHtmlString, normalizeGender, normalizeStatus, parseExcelDate, parseSalary, isRowCompletelyEmpty } from "./fieldNormalizer";
 
 export async function downloadEmployeeTemplate(branches: Branch[]) {
   try {
@@ -64,9 +64,15 @@ export function transformRowsWithMapping(
     const errors: string[] = [];
     const getMapped = (key: string): string => {
       const header = mapping[key];
-      if (!header || !row[header]) return "";
-      const val = String(row[header]).trim();
-      return val === "—" || val === "-" ? "" : val;
+      if (!header || row[header] == null) return "";
+      const cleaned = cleanHtmlString(String(row[header]));
+      return cleaned === "—" || cleaned === "-" ? "" : cleaned;
+    };
+
+    const getRaw = (key: string): any => {
+      const header = mapping[key];
+      if (!header) return undefined;
+      return row[header];
     };
 
     // 1. Personal Identity
@@ -82,7 +88,7 @@ export function transformRowsWithMapping(
     const employeeCode = getMapped("employeeCode") || extractVal(row, ["Employee ID", "Employee Code", "id"]);
     const gender = normalizeGender(getMapped("gender") || extractVal(row, ["Gender", "Sex"]));
     const title = getMapped("title") || "Mr";
-    const dob = parseExcelDate(getMapped("dob") || extractVal(row, ["Date of Birth", "DOB"]));
+    const dob = parseExcelDate(getRaw("dob") ?? extractVal(row, ["Date of Birth", "DOB"]));
     const maritalStatus = getMapped("maritalStatus") || "Single";
     const nationality = getMapped("nationality") || "Khmer";
     const nationalId = getMapped("nationalId") || extractVal(row, ["National ID", "ID Card", "national_id"]);
@@ -91,7 +97,7 @@ export function transformRowsWithMapping(
     // 2. Organization & Workplace
     const buName = getMapped("buName") || extractVal(row, ["Branch / BU", "Business Unit", "BU", "Branch"]);
     const siteName = getMapped("siteName") || extractVal(row, ["Work Location", "Site", "Location"]);
-    const department = getMapped("department") || extractVal(row, ["Department", "Dept"]) || "Operations";
+    const department = getMapped("department") || extractVal(row, ["Department", "Dept"]) || "";
     const division = getMapped("division") || extractVal(row, ["Division"]);
     const position = getMapped("position") || extractVal(row, ["Position / Role", "Position", "Role"]) || "Staff";
     const reportsTo = getMapped("reportsTo") || extractVal(row, ["Reports To", "Line Manager"]);
@@ -99,9 +105,9 @@ export function transformRowsWithMapping(
     // 3. Terms & Schedule
     const employmentType = getMapped("employmentType") || extractVal(row, ["Employment Type", "Type"]) || "FULL-TIME";
     const employeeLevel = getMapped("employeeLevel") || extractVal(row, ["Employee Level", "Level"]);
-    const joinDate = parseExcelDate(getMapped("joinDate") || extractVal(row, ["Joining Date", "Join Date", "Start Date"])) || new Date().toISOString().slice(0, 10);
+    const joinDate = parseExcelDate(getRaw("joinDate") ?? extractVal(row, ["Joining Date", "Join Date", "Start Date"])) || new Date().toISOString().slice(0, 10);
     const contractType = getMapped("contractType") || extractVal(row, ["Contract Type", "Contract"]) || "PERMANENT (UDC)";
-    const contractEndDate = parseExcelDate(getMapped("contractEndDate") || extractVal(row, ["Contract End Date"]));
+    const contractEndDate = parseExcelDate(getRaw("contractEndDate") ?? extractVal(row, ["Contract End Date"]));
     const status = normalizeStatus(getMapped("status") || extractVal(row, ["Employment Status", "Status", "Job Status"]));
 
     // 4. Compensation & Payroll

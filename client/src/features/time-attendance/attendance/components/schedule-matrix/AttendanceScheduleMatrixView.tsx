@@ -36,6 +36,8 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     employeeLevelList,
     search,
     setSearch,
+    filterBranch,
+    setFilterBranch,
     filterDept,
     setFilterDept,
     filterWorkLocation,
@@ -82,6 +84,8 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         dateRangeLabel={dateRangeLabel}
         prevMonth={prevMonth}
         nextMonth={nextMonth}
+        filterBranch={filterBranch}
+        setFilterBranch={setFilterBranch}
         filterDept={filterDept}
         setFilterDept={setFilterDept}
         filterWorkLocation={filterWorkLocation}

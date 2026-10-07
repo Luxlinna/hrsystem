@@ -55,12 +55,14 @@ export const DepartmentLocationCell = memo(function DepartmentLocationCell({
   return (
     <td className="py-2.5 px-3">
       <p className="font-bold text-slate-800 dark:text-slate-100 uppercase text-[11px] truncate">
-        {department}
+        {department || "—"}
       </p>
-      <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-[10px] text-slate-600 dark:text-slate-400 font-mono">
-        <i className="ri-building-line text-[10px] text-slate-400" />
-        <span>{siteName}</span>
-      </span>
+      {siteName ? (
+        <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-[10px] text-slate-600 dark:text-slate-400 font-mono">
+          <i className="ri-building-line text-[10px] text-slate-400" />
+          <span>{siteName}</span>
+        </span>
+      ) : null}
     </td>
   );
 });

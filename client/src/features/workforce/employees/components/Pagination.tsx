@@ -44,16 +44,23 @@ export const Pagination = memo(function Pagination({
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500">Per page</span>
           <select
-            value={pageSize}
+            value={pageSize >= 999999 ? 999999 : pageSize}
             onChange={(e) => {
               setPageSize(Number(e.target.value));
               setPage(1);
             }}
             className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent cursor-pointer"
           >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}
+            {[
+              { label: "10", value: 10 },
+              { label: "20", value: 20 },
+              { label: "50", value: 50 },
+              { label: "100", value: 100 },
+              { label: "500", value: 500 },
+              { label: "All", value: 999999 },
+            ].map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>

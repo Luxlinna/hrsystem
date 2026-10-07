@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
+import { attendanceCache } from "../../services/attendanceCacheService";
 import { DAY_NAMES_SHORT, CAMBODIA_OCTOBER_HOLIDAYS } from "./matrixConstants";
 import { useMatrixDataLoader } from "./useMatrixDataLoader";
 import { buildRosterRows } from "./matrixRosterBuilder";
@@ -8,11 +9,12 @@ import { buildAvailableShiftList, deriveShiftCode } from "./matrixShiftHelper";
 import type { DayColumn, EmployeeRosterRow } from "./types";
 
 export function useAttendanceScheduleMatrix() {
-  const { targetBranch, isSuperAdmin } = useBranchScope();
+  const { targetBranch, isSuperAdmin, visibleBranches } = useBranchScope();
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 8, 1));
   const [activeTab, setActiveTab] = useState<"schedules" | "no_schedules">("schedules");
   const [search, setSearch] = useState("");
+  const [filterBranch, setFilterBranch] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterWorkLocation, setFilterWorkLocation] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
@@ -20,31 +22,32 @@ export function useAttendanceScheduleMatrix() {
   const [filterEmployeeLevel, setFilterEmployeeLevel] = useState("");
 
   // Lookup data for filter flyout
-  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
-  const [workLocations, setWorkLocations] = useState<{ id: string; name: string; branch_id: string }[]>([]);
-  const [positionList, setPositionList] = useState<string[]>([]);
-  const [employeeTypeList, setEmployeeTypeList] = useState<string[]>([]);
-  const [employeeLevelList, setEmployeeLevelList] = useState<string[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>(() => {
+    const cached = attendanceCache.getCachedBranches();
+    if (cached && cached.length > 0) return cached;
+    if (visibleBranches && visibleBranches.length > 0) return visibleBranches.map((b) => ({ id: b.id, name: b.name }));
+    return [];
+  });
+  const [workLocations, setWorkLocations] = useState<{ id: string; name: string; branch_id: string }[]>(() => {
+    return (attendanceCache.getCachedWorkLocations() as any) || [];
+  });
+  const [positionList, setPositionList] = useState<string[]>(() => attendanceCache.getCachedTableValues("positions") || []);
+  const [employeeTypeList, setEmployeeTypeList] = useState<string[]>(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+  const [employeeLevelList, setEmployeeLevelList] = useState<string[]>(() => attendanceCache.getCachedTableValues("employee_levels") || ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
 
   useEffect(() => {
-    supabase.from("branches").select("id, name").is("deleted_at", null).order("name").then(({ data }) => {
-      if (data) setBranches(data);
+    attendanceCache.getBranches().then((data) => {
+      if (data && data.length > 0) setBranches(data);
     });
-    supabase.from("work_locations").select("id, name, branch_id").is("deleted_at", null).order("name").then(({ data }) => {
-      if (data) setWorkLocations(data);
+    attendanceCache.getWorkLocations().then((data) => {
+      if (data && data.length > 0) setWorkLocations(data as any);
     });
-    const loadTable = async (tbl: string, setter: (v: string[]) => void, fallback: string[] = []) => {
-      const { data } = await supabase.from(tbl).select("name").is("deleted_at", null).order("sort_order", { ascending: true }).order("name");
-      if (data) {
-        const vals = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
-        setter(vals.length > 0 ? vals : fallback);
-      } else if (fallback.length > 0) {
-        setter(fallback);
-      }
-    };
-    loadTable("positions", setPositionList);
-    setEmployeeTypeList(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
-    loadTable("employee_levels", setEmployeeLevelList, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
+    attendanceCache.getTableValues("positions", []).then((data) => {
+      if (data && data.length > 0) setPositionList(data);
+    });
+    attendanceCache.getTableValues("employee_levels", ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]).then((data) => {
+      if (data && data.length > 0) setEmployeeLevelList(data);
+    });
   }, []);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [manualCellOverrides, setManualCellOverrides] = useState<Record<string, string>>(() => {
@@ -141,6 +144,16 @@ export function useAttendanceScheduleMatrix() {
           row.department.toLowerCase().includes(q);
         if (!match) return false;
       }
+      if (filterBranch) {
+        const branchList = filterBranch.split(",").map((s) => s.trim()).filter(Boolean);
+        if (branchList.length > 0) {
+          const emp = rawEmployees.find((e) => e.id === row.id);
+          const empBranchId = emp?.branch_id || "";
+          const empBranchName = (emp?.branches?.name || "").toLowerCase();
+          const matched = branchList.some((s) => empBranchId === s || empBranchName === s.toLowerCase());
+          if (!matched) return false;
+        }
+      }
       if (filterDept && filterDept !== "all") {
         const deptList = filterDept.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
         if (deptList.length > 0 && !deptList.includes((row.department || "").toLowerCase())) return false;
@@ -149,9 +162,12 @@ export function useAttendanceScheduleMatrix() {
         const locList = filterWorkLocation.split(",").map((s) => s.trim()).filter(Boolean);
         if (locList.length > 0) {
           const emp = rawEmployees.find((e) => e.id === row.id);
+          const empLocId = emp?.default_work_location_id || "";
+          const empBranchId = emp?.branch_id || "";
+          const empSite = ((emp as any)?.site || "").toLowerCase();
           const matched = locList.some((s) => {
-            if (s.startsWith("site:")) return emp?.default_work_location_id === s.substring(5);
-            return emp?.branch_id === s;
+            if (s.startsWith("site:")) return empLocId === s.substring(5);
+            return empLocId === s || empBranchId === s || empSite === s.toLowerCase();
           });
           if (!matched) return false;
         }
@@ -174,7 +190,7 @@ export function useAttendanceScheduleMatrix() {
       }
       return true;
     });
-  }, [rosterRows, search, filterDept, filterWorkLocation, filterRole, filterEmploymentType, filterEmployeeLevel, rawEmployees]);
+  }, [rosterRows, search, filterBranch, filterDept, filterWorkLocation, filterRole, filterEmploymentType, filterEmployeeLevel, rawEmployees]);
 
   const scheduledEmployees = useMemo(
     () => filteredRoster.filter((r) => r.hasSchedule),
@@ -246,6 +262,8 @@ export function useAttendanceScheduleMatrix() {
     employeeLevelList,
     search,
     setSearch,
+    filterBranch,
+    setFilterBranch,
     filterDept,
     setFilterDept,
     filterWorkLocation,

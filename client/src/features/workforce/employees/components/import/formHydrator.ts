@@ -49,7 +49,7 @@ export function hydrateFormFromParsedRow(
     default_work_location_id: matchedSite?.id || "",
     site: matchedSite?.name || row.siteName || (branchName ? `Main Office (${branchName})` : "Main Office"),
     working_location: matchedBranch?.location || "Phnom Penh",
-    department: row.department || "Operations",
+    department: row.department || "",
     division: row.division || "",
     position: row.position || "Staff",
     role: row.role || row.position || "Staff",

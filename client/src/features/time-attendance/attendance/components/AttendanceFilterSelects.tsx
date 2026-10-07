@@ -18,6 +18,8 @@ interface Props {
   setFilterEmployeeLevel?: (level: string) => void;
   workLocations?: WorkLocation[];
   branches?: { id: string; name: string }[];
+  filterBranch?: string;
+  setFilterBranch?: (branch: string) => void;
   filterWorkLocation?: string;
   setFilterWorkLocation?: (locId: string) => void;
   filterStatus: string;
@@ -39,6 +41,8 @@ export const AttendanceFilterSelects = memo(function AttendanceFilterSelects({
   setFilterEmployeeLevel = () => {},
   workLocations = [],
   branches = [],
+  filterBranch = "",
+  setFilterBranch = () => {},
   filterWorkLocation = "all",
   setFilterWorkLocation = () => {},
   filterStatus,
@@ -58,6 +62,8 @@ export const AttendanceFilterSelects = memo(function AttendanceFilterSelects({
         positions={roles}
         employeeTypes={employmentTypes}
         employeeLevels={employeeLevels}
+        filterBranch={filterBranch}
+        setFilterBranch={setFilterBranch}
         filterWorkLocation={filterWorkLocation}
         setFilterWorkLocation={setFilterWorkLocation}
         filterDepartment={filterDepartment}

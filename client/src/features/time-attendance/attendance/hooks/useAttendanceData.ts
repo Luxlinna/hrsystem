@@ -15,7 +15,7 @@ export function useAttendanceData(
   permsLoading: boolean = false
 ) {
   const { user } = useAuth();
-  const { targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
+  const { targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId, visibleBranches } = useBranchScope();
 
   const cacheKey = `${targetBranch || "none"}_${isLeader ? "leader" : "emp"}_${canViewAllBranches ? "all" : "branch"}_${isLineManager ? "lm" : "norm"}_${user?.email || ""}`;
 
@@ -25,12 +25,17 @@ export function useAttendanceData(
   const [records, setRecords] = useState<AttendanceRecord[]>(initialCached?.records || []);
   const [employees, setEmployees] = useState<Employee[]>(initialCached?.employees || []);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(fallbackEmployee || null);
-  const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
-  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
-  const [depts, setDepts] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
-  const [employeeTypes, setEmployeeTypes] = useState<string[]>([]);
-  const [employeeLevels, setEmployeeLevels] = useState<string[]>([]);
+  const [workLocations, setWorkLocations] = useState<WorkLocation[]>(() => attendanceCache.getCachedWorkLocations() || []);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>(() => {
+    const cached = attendanceCache.getCachedBranches();
+    if (cached && cached.length > 0) return cached;
+    if (visibleBranches && visibleBranches.length > 0) return visibleBranches.map((b) => ({ id: b.id, name: b.name }));
+    return [];
+  });
+  const [depts, setDepts] = useState<string[]>(() => attendanceCache.getCachedTableValues("departments") || []);
+  const [positions, setPositions] = useState<string[]>(() => attendanceCache.getCachedTableValues("positions") || []);
+  const [employeeTypes, setEmployeeTypes] = useState<string[]>(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+  const [employeeLevels, setEmployeeLevels] = useState<string[]>(() => attendanceCache.getCachedTableValues("employee_levels") || ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
   const [biometricDevices, setBiometricDevices] = useState<BiometricDevice[]>([]);
   const [loading, setLoading] = useState(!initialCached);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -50,6 +55,39 @@ export function useAttendanceData(
     return () => clearInterval(timer);
   }, []);
 
+  const loadReferenceData = useCallback(async (force = false) => {
+    try {
+      const [
+        cachedBranches,
+        cachedWorkLocs,
+        cachedDepts,
+        cachedPositions,
+        cachedTypes,
+        cachedLevels,
+      ] = await Promise.all([
+        attendanceCache.getBranches(force),
+        attendanceCache.getWorkLocations(force),
+        attendanceCache.getTableValues("departments", [], force),
+        attendanceCache.getTableValues("positions", [], force),
+        Promise.resolve(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]),
+        attendanceCache.getTableValues("employee_levels", ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"], force),
+      ]);
+      if (!isMountedRef.current) return;
+      if (cachedBranches && cachedBranches.length > 0) setBranches(cachedBranches);
+      if (cachedWorkLocs && cachedWorkLocs.length > 0) setWorkLocations(cachedWorkLocs);
+      if (cachedDepts && cachedDepts.length > 0) setDepts(cachedDepts);
+      if (cachedPositions && cachedPositions.length > 0) setPositions(cachedPositions);
+      if (cachedTypes && cachedTypes.length > 0) setEmployeeTypes(cachedTypes);
+      if (cachedLevels && cachedLevels.length > 0) setEmployeeLevels(cachedLevels);
+    } catch (e) {
+      console.warn("Failed loading attendance reference data:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReferenceData(false);
+  }, [loadReferenceData]);
+
   const fetchData = useCallback(
     async (opts?: { silent?: boolean; force?: boolean }) => {
       const silent = opts?.silent ?? false;
@@ -58,12 +96,12 @@ export function useAttendanceData(
       if (permsLoading || isFetchingRef.current) return;
       isFetchingRef.current = true;
 
+      // Always ensure reference data is populated
+      loadReferenceData(force);
+
       if ((isPartnerBranchBlocked && !canViewAllBranches) || !targetBranch) {
         setRecords([]);
         setEmployees([]);
-        setWorkLocations([]);
-        setBranches([]);
-        setBiometricDevices([]);
         setLoading(false);
         isFetchingRef.current = false;
         return;

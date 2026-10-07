@@ -1,5 +1,6 @@
 import { memo, useState, useEffect } from "react";
 import type { Branch, EmployeeFormState } from "../../types";
+import { INITIAL_EMPLOYEE_FORM } from "../../constants";
 import { AddEmployeeModal } from "../AddEmployeeModal";
 import type { ParsedEmployeeRow } from "./types";
 import { hydrateFormFromParsedRow, extractParsedRowFromForm } from "./formHydrator";
@@ -20,7 +21,7 @@ export const ImportRowEditModal = memo(function ImportRowEditModal({
   onSaveRow,
 }: ImportRowEditModalProps) {
   const [form, setForm] = useState<EmployeeFormState>(() =>
-    row ? hydrateFormFromParsedRow(row, branches) : ({} as EmployeeFormState)
+    row ? hydrateFormFromParsedRow(row, branches) : INITIAL_EMPLOYEE_FORM
   );
 
   useEffect(() => {

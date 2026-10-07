@@ -28,6 +28,8 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   setFilterEmployeeLevel = () => {},
   filterBranch,
   setFilterBranch,
+  filterWorkLocation = "all",
+  setFilterWorkLocation = () => {},
   filterAccount,
   setFilterAccount,
   filterDateOption = "all",
@@ -150,6 +152,8 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
           <EmployeesFilterDropdown
             filterBranch={filterBranch}
             setFilterBranch={setFilterBranch}
+            filterWorkLocation={filterWorkLocation}
+            setFilterWorkLocation={setFilterWorkLocation}
             filterDept={filterDept}
             setFilterDept={setFilterDept}
             filterRole={filterRole}

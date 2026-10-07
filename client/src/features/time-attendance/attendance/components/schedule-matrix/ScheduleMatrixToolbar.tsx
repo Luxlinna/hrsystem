@@ -22,6 +22,8 @@ interface ScheduleMatrixToolbarProps {
   departmentList: string[];
   branches: { id: string; name: string }[];
   workLocations: { id: string; name: string; branch_id: string }[];
+  filterBranch?: string;
+  setFilterBranch?: (val: string) => void;
   positionList: string[];
   employeeTypeList: string[];
   employeeLevelList: string[];
@@ -36,6 +38,8 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
   dateRangeLabel,
   prevMonth,
   nextMonth,
+  filterBranch,
+  setFilterBranch,
   filterDept,
   setFilterDept,
   filterWorkLocation,
@@ -165,6 +169,8 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
 
         {/* Full Filter — identical to Attendance Logs */}
         <FilterFlyoutMenu
+          filterBranch={filterBranch}
+          setFilterBranch={setFilterBranch}
           filterWorkLocation={filterWorkLocation}
           setFilterWorkLocation={setFilterWorkLocation}
           filterDepartment={filterDept}

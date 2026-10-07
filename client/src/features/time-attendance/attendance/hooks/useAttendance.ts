@@ -12,7 +12,7 @@ import { useHolidays } from "@/hooks/useHolidays";
 
 export function useAttendance() {
   const { role, isAdmin, loading: permsLoading, can, isLineManager, canEdit: permsCanEdit, isReadOnly } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, effectiveBranchName, isPartnerBranchBlocked } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, effectiveBranchName, isPartnerBranchBlocked, branches: contextBranches } = useBranchScope();
   const { employee: currentEmp } = useMyEmployee();
 
   const roleName = (role?.name || "").toLowerCase();
@@ -121,13 +121,28 @@ export function useAttendance() {
     return [emp];
   }, [isLeader, data.employees, data.myEmployee, currentEmp]);
 
+  const safeBranches = useMemo(() => {
+    if (data.branches && data.branches.length > 0) return data.branches.filter((b: any) => !b.is_site);
+    if (contextBranches && contextBranches.length > 0) return contextBranches.filter((b) => !b.is_site).map((b) => ({ id: b.id, name: b.name }));
+    const cached = attendanceCache.getCachedBranches();
+    if (cached && cached.length > 0) return cached;
+    const empBranches = new Map<string, string>();
+    data.employees.forEach((e) => {
+      if (e.branch_id && e.branches?.name) {
+        empBranches.set(e.branch_id, e.branches.name);
+      }
+    });
+    return Array.from(empBranches.entries()).map(([id, name]) => ({ id, name }));
+  }, [data.branches, contextBranches, data.employees]);
+
   const scopedData = useMemo(() => {
     return {
       ...data,
+      branches: safeBranches,
       records: visibleRecords,
       employees: visibleEmployees,
     };
-  }, [data, visibleRecords, visibleEmployees]);
+  }, [data, safeBranches, visibleRecords, visibleEmployees]);
 
   const filters = useAttendanceFilters(visibleRecords, visibleEmployees, todayYMD);
 

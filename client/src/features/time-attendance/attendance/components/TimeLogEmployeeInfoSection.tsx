@@ -27,8 +27,8 @@ export const TimeLogEmployeeInfoSection = memo(function TimeLogEmployeeInfoSecti
   const empCode = empBioId || empDetail?.employee_code || emp?.employee_code || "—";
   const designation = empDetail?.role || empDetail?.position || emp?.role || "Staff";
   const division = empDetail?.division || emp?.division || "—";
-  const department = (empDetail?.department || emp?.department || "OPERATIONS").toUpperCase();
-  const supervisor = empDetail?.line_manager || empDetail?.supervisor || empDetail?.reports_to || "Taing Mey";
+  const department = (empDetail?.department || emp?.department || "—").toUpperCase();
+  const supervisor = empDetail?.line_manager || empDetail?.supervisor || empDetail?.reports_to || "—";
   const employeeType = (empDetail?.employment_type || emp?.employment_type || "FULL-TIME").toUpperCase();
   const contractType = (empDetail?.contract_type || emp?.contract_type || "PERMANENT (UDC)").toUpperCase();
 

@@ -135,7 +135,7 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
       </td>
 
       <td className="py-2.5 px-3 whitespace-nowrap">
-        <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-xs">{emp?.department || "OPERATIONS"}</p>
+        <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-xs">{emp?.department || "—"}</p>
         <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10.5px] font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 max-w-[150px] truncate" title={locationName}>
           <i className="ri-building-line text-[10.5px] text-gray-400 dark:text-slate-500 shrink-0" />
           <span className="truncate">{locationName}</span>

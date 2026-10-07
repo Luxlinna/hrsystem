@@ -1,57 +1,32 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 
 export interface FilterOptionItem {
   id: string;
   label: string;
+  fullLabel?: string;
+  isSubItem?: boolean;
 }
 
 interface EmployeesFilterFlyoutPanelProps {
   items: FilterOptionItem[];
-  selectedValues: string[];
-  onApply: (selectedIds: string[]) => void;
+  selectedSet: Set<string>;
+  onToggleItem: (id: string) => void;
+  onToggleAll: () => void;
+  onApply: () => void;
   onReset: () => void;
 }
 
 export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPanel({
   items,
-  selectedValues,
+  selectedSet,
+  onToggleItem,
+  onToggleAll,
   onApply,
   onReset,
 }: EmployeesFilterFlyoutPanelProps) {
-  const [pending, setPending] = useState<Set<string>>(() => new Set(selectedValues));
   const [displayLimit, setDisplayLimit] = useState(30);
 
-  // Stable string keys prevent the effect from resetting pending state
-  // on every parent re-render that produces a new array reference.
-  const itemsKey = items.map((i) => i.id).join(",");
-  const selectedKey = [...selectedValues].sort().join(",");
-
-  useEffect(() => {
-    setPending(new Set(selectedValues));
-    setDisplayLimit(30);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsKey, selectedKey]);
-
-  const allSelected = items.length > 0 && pending.size === items.length;
-
-  const handleToggleAll = () => {
-    if (allSelected) {
-      setPending(new Set());
-    } else {
-      setPending(new Set(items.map((i) => i.id)));
-    }
-  };
-
-  const handleToggleItem = (id: string) => {
-    const next = new Set(pending);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    setPending(next);
-  };
-
+  const allSelected = items.length > 0 && items.every((i) => selectedSet.has(i.id));
   const visibleItems = items.slice(0, displayLimit);
   const hasMore = items.length > displayLimit;
 
@@ -64,7 +39,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
           <input
             type="checkbox"
             checked={allSelected}
-            onChange={handleToggleAll}
+            onChange={onToggleAll}
             className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
           />
           <span className="font-medium text-slate-800">All</span>
@@ -72,19 +47,21 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
 
         {/* Item Checkboxes */}
         {visibleItems.map((item) => {
-          const isChecked = pending.has(item.id);
+          const isChecked = selectedSet.has(item.id);
           return (
             <label
               key={item.id}
-              className="flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 rounded cursor-pointer select-none"
+              className={`flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 rounded cursor-pointer select-none ${
+                item.isSubItem ? "pl-5 text-slate-500" : ""
+              }`}
             >
               <input
                 type="checkbox"
                 checked={isChecked}
-                onChange={() => handleToggleItem(item.id)}
+                onChange={() => onToggleItem(item.id)}
                 className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
-              <span className="truncate text-slate-700" title={item.label}>
+              <span className="truncate text-slate-700" title={item.fullLabel || item.label}>
                 {item.label}
               </span>
             </label>
@@ -99,7 +76,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
             className="w-full text-left px-1.5 py-1 text-[11px] text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer font-medium"
           >
             <i className="ri-refresh-line text-xs" />
-            <span>Load More {visibleItems.length}/ {items.length}</span>
+            <span>Load More ({visibleItems.length}/{items.length})</span>
           </button>
         )}
       </div>
@@ -108,7 +85,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
       <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onApply(allSelected ? [] : Array.from(pending))}
+          onClick={onApply}
           className="flex-1 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-semibold rounded flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
         >
           <i className="ri-filter-3-fill text-xs" />
@@ -116,10 +93,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
         </button>
         <button
           type="button"
-          onClick={() => {
-            setPending(new Set());
-            onReset();
-          }}
+          onClick={onReset}
           className="px-3 py-1.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded flex items-center justify-center gap-1 transition-colors cursor-pointer"
         >
           <i className="ri-refresh-line text-xs" />

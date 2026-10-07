@@ -70,6 +70,7 @@ export default function EmployeesPage() {
         filterEmployeeType={emp.filterEmployeeType} setFilterEmployeeType={emp.setFilterEmployeeType}
         filterEmployeeLevel={emp.filterEmployeeLevel} setFilterEmployeeLevel={emp.setFilterEmployeeLevel}
         filterBranch={emp.filterBranch} setFilterBranch={emp.setFilterBranch}
+        filterWorkLocation={emp.filterWorkLocation} setFilterWorkLocation={emp.setFilterWorkLocation}
         filterAccount={emp.filterAccount} setFilterAccount={emp.setFilterAccount}
         filterDateOption={emp.filterDateOption} setFilterDateOption={emp.setFilterDateOption}
         filterContractType={emp.filterContractType} setFilterContractType={emp.setFilterContractType}

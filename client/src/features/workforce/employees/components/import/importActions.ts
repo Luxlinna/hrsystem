@@ -109,6 +109,20 @@ export async function commitEmployeeImport({
 
     const mgr = resolveManager(r.reportsTo);
 
+    const sanitizeDate = (val?: string | null): string | null => {
+      if (!val) return null;
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const y = parseInt(s.slice(0, 4), 10);
+        if (y >= 1900 && y <= 2100) return s;
+      }
+      return null;
+    };
+
+    const validJoinDate = sanitizeDate(r.joinDate) || new Date().toISOString().slice(0, 10);
+    const validDob = sanitizeDate(r.dob);
+    const validContractEnd = sanitizeDate(r.contractEndDate);
+
     return {
       employee_code: cleanCode,
       first_name: firstName,
@@ -118,7 +132,7 @@ export async function commitEmployeeImport({
       kh_name: r.khName || null,
       gender: r.gender,
       title: r.title || "Mr",
-      date_of_birth: r.dob || null,
+      date_of_birth: validDob,
       marital_status: r.maritalStatus || "Single",
       nationality: r.nationality || "Khmer",
       national_id_number: r.nationalId || null,
@@ -128,21 +142,21 @@ export async function commitEmployeeImport({
       branch_id: branchId,
       bu_full_name: branchName,
       default_work_location_id: siteLocationId,
-      site: matchedSite?.name || r.siteName || "Main Office",
+      site: matchedSite?.name || r.siteName || (branchName ? `Main Office (${branchName})` : "Main Office"),
       working_location: matchedBranch?.location || "Phnom Penh",
-      department: r.department || "Operations",
-      division: r.division || null,
+      department: r.department?.trim() || null,
+      division: r.division?.trim() || null,
       position: r.position || "Staff",
       role: r.position || "Staff",
       reports_to: mgr.id,
       line_manager: mgr.name,
 
       employment_type: r.employmentType || "FULL-TIME",
-      join_date: r.joinDate || new Date().toISOString().slice(0, 10),
-      start_date: r.joinDate || new Date().toISOString().slice(0, 10),
+      join_date: validJoinDate,
+      start_date: validJoinDate,
       contract_type: r.contractType || "PERMANENT (UDC)",
-      contract_end_date: r.contractEndDate || null,
-      fdc_end_date: r.contractEndDate || null,
+      contract_end_date: validContractEnd,
+      fdc_end_date: validContractEnd,
       status: normalizeStatus(r.status),
       hiring_status: normalizeStatus(r.status) === "onboarding" ? "probation" : "employed",
 

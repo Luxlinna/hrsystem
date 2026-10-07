@@ -134,6 +134,48 @@ function matchEmployeeJobStatus(status?: string | null, selected?: string[]): bo
   });
 }
 
+const EMPLOYEES_FILTERS_STORAGE_KEY = "hrm_employees_filters_v1";
+
+interface SavedEmployeesFilters {
+  filterDept?: string;
+  filterStatus?: string;
+  filterJobStatus?: string[];
+  filterRole?: string;
+  filterEmployeeType?: string;
+  filterEmployeeLevel?: string;
+  filterBranch?: string;
+  filterWorkLocation?: string;
+  filterAccount?: string;
+  filterDateOption?: string;
+  filterContractType?: string[];
+  pageSize?: number;
+}
+
+const getSavedEmployeesFilters = (): SavedEmployeesFilters | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(EMPLOYEES_FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      filterDept: typeof parsed.filterDept === "string" ? parsed.filterDept : "",
+      filterStatus: typeof parsed.filterStatus === "string" ? parsed.filterStatus : "",
+      filterJobStatus: Array.isArray(parsed.filterJobStatus) ? parsed.filterJobStatus : [],
+      filterRole: typeof parsed.filterRole === "string" ? parsed.filterRole : "",
+      filterEmployeeType: typeof parsed.filterEmployeeType === "string" ? parsed.filterEmployeeType : "",
+      filterEmployeeLevel: typeof parsed.filterEmployeeLevel === "string" ? parsed.filterEmployeeLevel : "",
+      filterBranch: typeof parsed.filterBranch === "string" ? parsed.filterBranch : "",
+      filterWorkLocation: typeof parsed.filterWorkLocation === "string" ? parsed.filterWorkLocation : "all",
+      filterAccount: typeof parsed.filterAccount === "string" ? parsed.filterAccount : "",
+      filterDateOption: typeof parsed.filterDateOption === "string" ? parsed.filterDateOption : "all",
+      filterContractType: Array.isArray(parsed.filterContractType) ? parsed.filterContractType : [],
+      pageSize: typeof parsed.pageSize === "number" && parsed.pageSize > 0 ? parsed.pageSize : 10,
+    };
+  } catch {
+    return null;
+  }
+};
+
 export function useEmployeesFilters({
   employees,
   managerEmails,
@@ -145,24 +187,63 @@ export function useEmployeesFilters({
   isEmployee = false,
   currentEmployee = null,
 }: UseEmployeesFiltersProps) {
+  const savedFilters = useMemo(() => getSavedEmployeesFilters(), []);
+
   const [search, setSearch] = useState("");
-  const [filterDept, setFilterDept] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterJobStatus, setFilterJobStatus] = useState<string[]>([]);
-  const [filterRole, setFilterRole] = useState<string>("");
-  const [filterEmployeeType, setFilterEmployeeType] = useState<string>("");
-  const [filterEmployeeLevel, setFilterEmployeeLevel] = useState<string>("");
-  const [filterBranch, setFilterBranch] = useState("");
-  const [filterWorkLocation, setFilterWorkLocation] = useState<string>("all");
-  const [filterAccount, setFilterAccount] = useState("");
-  const [filterDateOption, setFilterDateOption] = useState<string>("all");
-  const [filterContractType, setFilterContractType] = useState<string[]>([]);
+  const [filterDept, setFilterDept] = useState<string>(() => savedFilters?.filterDept ?? "");
+  const [filterStatus, setFilterStatus] = useState<string>(() => savedFilters?.filterStatus ?? "");
+  const [filterJobStatus, setFilterJobStatus] = useState<string[]>(() => savedFilters?.filterJobStatus ?? []);
+  const [filterRole, setFilterRole] = useState<string>(() => savedFilters?.filterRole ?? "");
+  const [filterEmployeeType, setFilterEmployeeType] = useState<string>(() => savedFilters?.filterEmployeeType ?? "");
+  const [filterEmployeeLevel, setFilterEmployeeLevel] = useState<string>(() => savedFilters?.filterEmployeeLevel ?? "");
+  const [filterBranch, setFilterBranch] = useState<string>(() => savedFilters?.filterBranch ?? "");
+  const [filterWorkLocation, setFilterWorkLocation] = useState<string>(() => savedFilters?.filterWorkLocation ?? "all");
+  const [filterAccount, setFilterAccount] = useState<string>(() => savedFilters?.filterAccount ?? "");
+  const [filterDateOption, setFilterDateOption] = useState<string>(() => savedFilters?.filterDateOption ?? "all");
+  const [filterContractType, setFilterContractType] = useState<string[]>(() => savedFilters?.filterContractType ?? []);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState<number>(() => savedFilters?.pageSize ?? 10);
   const [searchParams, setSearchParams] = useSearchParams();
   const parsedPage = parseInt(searchParams.get("page") || "1", 10);
   const [page, setPageState] = useState<number>(!isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1);
+
+  // Persist filter selections to localStorage so they remain fixed until explicitly updated or reset
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const payload: SavedEmployeesFilters = {
+        filterBranch,
+        filterWorkLocation,
+        filterDept,
+        filterRole,
+        filterEmployeeType,
+        filterEmployeeLevel,
+        filterStatus,
+        filterJobStatus,
+        filterContractType,
+        filterAccount,
+        filterDateOption,
+        pageSize,
+      };
+      localStorage.setItem(EMPLOYEES_FILTERS_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // ignore
+    }
+  }, [
+    filterBranch,
+    filterWorkLocation,
+    filterDept,
+    filterRole,
+    filterEmployeeType,
+    filterEmployeeLevel,
+    filterStatus,
+    filterJobStatus,
+    filterContractType,
+    filterAccount,
+    filterDateOption,
+    pageSize,
+  ]);
 
   const setPage = useCallback(
     (newPageOrFn: number | ((prev: number) => number)) => {
@@ -355,9 +436,18 @@ export function useEmployeesFilters({
           else if (filterAccount === "no_account") matchesAccount = !status?.hasAccount && !status?.invited;
         }
 
-        const matchesLocation =
-          filterWorkLocation === "all" ||
-          (filterWorkLocation === "main" ? !e.default_work_location_id : e.default_work_location_id === filterWorkLocation);
+        let matchesLocation = true;
+        if (filterWorkLocation && filterWorkLocation !== "all") {
+          const locList = filterWorkLocation.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+          matchesLocation =
+            locList.length === 0 ||
+            locList.some((locId) => {
+              if (locId === "main") return !e.default_work_location_id;
+              const empLocId = (e.default_work_location_id || "").toLowerCase();
+              const empLocName = (e.work_locations?.name || "").toLowerCase();
+              return empLocId === locId || empLocName === locId;
+            });
+        }
 
         return (
           matchesSearch &&

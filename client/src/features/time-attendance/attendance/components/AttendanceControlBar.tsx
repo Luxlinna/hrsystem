@@ -20,6 +20,7 @@ interface AttendanceControlBarProps {
   filterStatus: string; setFilterStatus: (status: string) => void;
   workLocations: WorkLocation[];
   branches?: { id: string; name: string }[];
+  filterBranch?: string; setFilterBranch?: (branch: string) => void;
   filterWorkLocation: string; setFilterWorkLocation: (id: string) => void;
   viewMode?: ViewMode; setViewMode?: (mode: ViewMode) => void;
   todayYMD: string;
@@ -31,20 +32,25 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   departments, filterDepartment, setFilterDepartment, roles = [], filterRole = "all", setFilterRole,
   employmentTypes = [], filterEmploymentType = "all", setFilterEmploymentType,
   employeeLevels = [], filterEmployeeLevel = "", setFilterEmployeeLevel,
-  filterStatus, setFilterStatus, workLocations, branches = [], filterWorkLocation, setFilterWorkLocation,
+  filterStatus, setFilterStatus, workLocations, branches = [],
+  filterBranch = "", setFilterBranch,
+  filterWorkLocation, setFilterWorkLocation,
   todayYMD,
 }: AttendanceControlBarProps) {
   const isFiltered = Boolean(
-    searchQuery || (filterDepartment && filterDepartment !== "all") || (filterRole && filterRole !== "all") ||
+    searchQuery || (filterBranch && filterBranch !== "all") || (filterDepartment && filterDepartment !== "all") || (filterRole && filterRole !== "all") ||
     (filterEmploymentType && filterEmploymentType !== "all") || Boolean(filterEmployeeLevel) ||
     (filterStatus && filterStatus !== "all") || (filterWorkLocation && filterWorkLocation !== "all") ||
     (filterDatePreset && filterDatePreset !== "all")
   );
 
   const handleResetFilters = () => {
-    setSearchQuery(""); setFilterDepartment("all"); setFilterRole?.("all");
+    setSearchQuery(""); setFilterBranch?.(""); setFilterDepartment("all"); setFilterRole?.("all");
     setFilterEmploymentType?.("all"); setFilterEmployeeLevel?.(""); setFilterStatus("all");
     setFilterWorkLocation("all"); setFilterDatePreset("all"); setFromDate(""); setToDate(""); setSingleDate(todayYMD);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("hrm_attendance_filters_v1");
+    }
   };
 
   return (
@@ -104,6 +110,8 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
             setFilterEmployeeLevel={setFilterEmployeeLevel}
             workLocations={workLocations}
             branches={branches}
+            filterBranch={filterBranch}
+            setFilterBranch={setFilterBranch}
             filterWorkLocation={filterWorkLocation}
             setFilterWorkLocation={setFilterWorkLocation}
             filterStatus={filterStatus}

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 
 export interface FilterOptionItem {
   id: string;
@@ -9,56 +9,29 @@ export interface FilterOptionItem {
 
 interface AttendanceFilterFlyoutPanelProps {
   items: FilterOptionItem[];
-  selectedValues: string[];
-  onApply: (selectedIds: string[]) => void;
+  selectedSet: Set<string>;
+  onToggleItem: (id: string) => void;
+  onToggleAll: () => void;
+  onApply: () => void;
   onReset: () => void;
 }
 
 export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutPanel({
   items,
-  selectedValues,
+  selectedSet,
+  onToggleItem,
+  onToggleAll,
   onApply,
   onReset,
 }: AttendanceFilterFlyoutPanelProps) {
-  const [pending, setPending] = useState<Set<string>>(() => new Set(selectedValues));
   const [displayLimit, setDisplayLimit] = useState(30);
 
-  // Use stable string keys so the effect only fires when the actual values change,
-  // not on every parent render that creates a new array reference.
-  const itemsKey = items.map((i) => i.id).join(",");
-  const selectedKey = [...selectedValues].sort().join(",");
-
-  useEffect(() => {
-    setPending(new Set(selectedValues));
-    setDisplayLimit(30);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsKey, selectedKey]);
-
-  const allSelected = items.length > 0 && pending.size === items.length;
-
-  const handleToggleAll = () => {
-    if (allSelected) {
-      setPending(new Set());
-    } else {
-      setPending(new Set(items.map((i) => i.id)));
-    }
-  };
-
-  const handleToggleItem = (id: string) => {
-    const next = new Set(pending);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    setPending(next);
-  };
-
+  const allSelected = items.length > 0 && items.every((i) => selectedSet.has(i.id));
   const visibleItems = items.slice(0, displayLimit);
   const hasMore = items.length > displayLimit;
 
   return (
-    <div className="w-60 py-2 px-2.5 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+    <div className="w-64 py-2 px-2.5 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
       {/* Scrollable Checkbox List */}
       <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700 dark:text-slate-200">
         {/* 'All' Checkbox */}
@@ -66,7 +39,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
           <input
             type="checkbox"
             checked={allSelected}
-            onChange={handleToggleAll}
+            onChange={onToggleAll}
             className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
           />
           <span className="font-medium text-slate-800 dark:text-slate-100">All</span>
@@ -74,7 +47,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
 
         {/* Item Checkboxes */}
         {visibleItems.map((item) => {
-          const isChecked = pending.has(item.id);
+          const isChecked = selectedSet.has(item.id);
           return (
             <label
               key={item.id}
@@ -85,7 +58,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
               <input
                 type="checkbox"
                 checked={isChecked}
-                onChange={() => handleToggleItem(item.id)}
+                onChange={() => onToggleItem(item.id)}
                 className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
               <span className="truncate text-slate-700 dark:text-slate-200" title={item.fullLabel || item.label}>
@@ -112,7 +85,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
       <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onApply(allSelected ? [] : Array.from(pending))}
+          onClick={onApply}
           className="flex-1 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-semibold rounded flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
         >
           <i className="ri-filter-3-fill text-xs" />
@@ -120,10 +93,7 @@ export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutP
         </button>
         <button
           type="button"
-          onClick={() => {
-            setPending(new Set());
-            onReset();
-          }}
+          onClick={onReset}
           className="px-3 py-1.5 bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded flex items-center justify-center gap-1 transition-colors cursor-pointer"
         >
           <i className="ri-refresh-line text-xs" />

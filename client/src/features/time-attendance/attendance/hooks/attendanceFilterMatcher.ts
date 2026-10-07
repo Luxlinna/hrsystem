@@ -6,8 +6,10 @@ interface MatchParams {
   filterDepartment: string;
   filterRole: string;
   filterEmploymentType: string;
+  filterEmployeeLevel?: string;
   filterEmployeeId: string;
   filterWorkLocation: string;
+  filterBranch?: string;
   dateBounds: { start: string; end: string } | null;
   searchQuery: string;
 }
@@ -16,6 +18,23 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
   if (p.filterStatus && p.filterStatus !== "all") {
     const statuses = p.filterStatus.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
     if (statuses.length > 0 && !statuses.includes(r.status.toLowerCase())) return false;
+  }
+
+  if (p.filterBranch) {
+    const branchList = p.filterBranch.split(",").map((s) => s.trim()).filter(Boolean);
+    if (branchList.length > 0) {
+      const empBranchId = r.employees?.branch_id || "";
+      const empBranchName = (r.employees?.branches?.name || "").toLowerCase();
+      const matched = branchList.some((s) => {
+        const sLower = s.toLowerCase();
+        return (
+          empBranchId === s ||
+          empBranchName === sLower ||
+          empBranchName.includes(sLower)
+        );
+      });
+      if (!matched) return false;
+    }
   }
 
   if (p.filterDepartment && p.filterDepartment !== "all") {
@@ -36,6 +55,15 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
     if (types.length > 0 && !types.includes(empType)) return false;
   }
 
+  if (p.filterEmployeeLevel) {
+    const levelList = p.filterEmployeeLevel.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (levelList.length > 0) {
+      const empLevel = ((r.employees as any)?.employee_level || "").toLowerCase();
+      const matched = levelList.some((l) => empLevel === l || empLevel.includes(l));
+      if (!matched) return false;
+    }
+  }
+
   if (p.filterEmployeeId && p.filterEmployeeId !== "all") {
     const empIds = p.filterEmployeeId.split(",").map((id) => id.trim()).filter(Boolean);
     if (empIds.length > 0 && !empIds.includes(r.employee_id)) return false;
@@ -49,6 +77,7 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
       const empBranchId = r.employees?.branch_id || "";
       const empBranchName = (r.employees?.branches?.name || "").toLowerCase();
       const recLocName = (r.work_location?.name || "").toLowerCase();
+      const empSite = ((r.employees as any)?.site || "").toLowerCase();
 
       const matched = locList.some((s) => {
         if (s.startsWith("site:")) {
@@ -64,7 +93,10 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
             empLocId === s ||
             empBranchId === s ||
             empBranchName === sLower ||
-            recLocName === sLower
+            recLocName === sLower ||
+            recLocName.includes(sLower) ||
+            empSite === sLower ||
+            empSite.includes(sLower)
           );
         }
       });

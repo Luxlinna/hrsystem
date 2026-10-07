@@ -19,7 +19,7 @@ export const Pagination = memo(function Pagination({
 }: PaginationProps) {
   if (totalCount === 0) return null;
 
-  const safePage = Math.min(page, totalPages);
+  const safePage = Math.max(1, Math.min(page, totalPages));
   const pageStart = (safePage - 1) * pageSize + 1;
   const pageEnd = Math.min(safePage * pageSize, totalCount);
 
@@ -42,13 +42,23 @@ export const Pagination = memo(function Pagination({
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-gray-400">Per page</span>
           <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
+            value={pageSize >= 999999 ? 999999 : pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
             className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
+            {[
+              { label: "10", value: 10 },
+              { label: "20", value: 20 },
+              { label: "50", value: 50 },
+              { label: "100", value: 100 },
+              { label: "500", value: 500 },
+              { label: "All", value: 999999 },
+            ].map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>

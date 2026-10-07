@@ -54,6 +54,21 @@ class AttendanceCacheManager {
     return promise;
   }
 
+  getCachedBranches(): { id: string; name: string }[] | null {
+    const entry = this.refCache.get("ref_branches");
+    return entry ? entry.data : null;
+  }
+
+  getCachedWorkLocations(): WorkLocation[] | null {
+    const entry = this.refCache.get("ref_work_locations");
+    return entry ? entry.data : null;
+  }
+
+  getCachedTableValues(table: string): string[] | null {
+    const entry = this.refCache.get(`ref_table_${table}`);
+    return entry ? entry.data : null;
+  }
+
   // --- Reference Data Getters ---
 
   async getBranches(force = false): Promise<{ id: string; name: string }[]> {

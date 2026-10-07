@@ -21,6 +21,8 @@ export interface EmployeesFilterBarProps {
   setFilterEmployeeLevel?: (level: string) => void;
   filterBranch: string;
   setFilterBranch: (branch: string) => void;
+  filterWorkLocation?: string;
+  setFilterWorkLocation?: (loc: string) => void;
   filterAccount: string;
   setFilterAccount: (acc: string) => void;
   filterDateOption?: string;

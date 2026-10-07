@@ -62,15 +62,6 @@ export const AttendanceHeader = memo(function AttendanceHeader({
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5 flex-wrap">
             Time &amp; Attendance Hub
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300">Historical Logs</span>
-            {isFourPunchMode ? (
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 inline-flex items-center gap-1">
-                <i className="ri-fingerprint-line text-xs" /> 4-Punch Policy Active
-              </span>
-            ) : (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1">
-                <i className="ri-time-line text-xs" /> Standard 2-Punch
-              </span>
-            )}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
             Track daily employee check-ins, work hours, attendance history, and log manual entries.
