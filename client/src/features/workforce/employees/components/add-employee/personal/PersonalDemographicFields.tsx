@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
 import type { PersonalSectionProps } from "./types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 const MONTHS = [
   { value: "01", label: "January" },
@@ -14,6 +15,20 @@ const MONTHS = [
   { value: "10", label: "October" },
   { value: "11", label: "November" },
   { value: "12", label: "December" },
+];
+
+const GENDER_OPTIONS = ["Male", "Female", "Other"];
+const MARITAL_STATUS_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
+const NATIONALITY_OPTIONS = [
+  "Khmer",
+  "Chinese",
+  "Vietnamese",
+  "Thai",
+  "American",
+  "British",
+  "French",
+  "Australian",
+  "Other",
 ];
 
 export const PersonalDemographicFields = memo(function PersonalDemographicFields({
@@ -110,15 +125,12 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           Gender <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
-          <select
+          <SearchableSelect
+            options={GENDER_OPTIONS}
             value={form.gender || "Male"}
-            onChange={(e) => onChange("gender", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
+            onChange={(val) => onChange("gender", val)}
+            placeholder="Select Gender"
+          />
         </div>
       </div>
 
@@ -128,16 +140,12 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           Marital Status <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
-          <select
+          <SearchableSelect
+            options={MARITAL_STATUS_OPTIONS}
             value={form.marital_status || "Single"}
-            onChange={(e) => onChange("marital_status", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="Single">Single</option>
-            <option value="Married">Married</option>
-            <option value="Divorced">Divorced</option>
-            <option value="Widowed">Widowed</option>
-          </select>
+            onChange={(val) => onChange("marital_status", val)}
+            placeholder="Select Marital Status"
+          />
         </div>
       </div>
 
@@ -147,21 +155,13 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           Nationality <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
-          <select
+          <SearchableSelect
+            options={NATIONALITY_OPTIONS}
             value={form.nationality || "Khmer"}
-            onChange={(e) => onChange("nationality", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="Khmer">Khmer</option>
-            <option value="Chinese">Chinese</option>
-            <option value="Vietnamese">Vietnamese</option>
-            <option value="Thai">Thai</option>
-            <option value="American">American</option>
-            <option value="British">British</option>
-            <option value="French">French</option>
-            <option value="Australian">Australian</option>
-            <option value="Other">Other</option>
-          </select>
+            onChange={(val) => onChange("nationality", val)}
+            placeholder="Select Nationality"
+            searchPlaceholder="Search nationality..."
+          />
         </div>
       </div>
 

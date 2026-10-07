@@ -87,6 +87,9 @@ export const EmployeesModals: React.FC<EmployeesModalsProps> = ({
         isSuperAdmin={isSuperAdmin}
         onClose={onCloseAddModal}
         onSubmit={onAddEmployee}
+        departments={depts}
+        divisions={divisions}
+        positions={positions}
       />
 
       <CreateChangeStatusModal

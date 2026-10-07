@@ -9,7 +9,7 @@ interface BranchSyncProps {
   form: EmployeeFormState;
   setForm: React.Dispatch<React.SetStateAction<EmployeeFormState>>;
   cleanBranches: Array<{ id: string; name: string; location?: string }>;
-  workSites: Array<{ id: string; name: string; description: string | null }>;
+  workSites: Array<{ id: string; name: string; description: string | null; branch_id?: string | null; is_default?: boolean; city?: string | null; province?: string | null }>;
   currentBranch?: { id: string; name: string; location?: string };
   getBranchCode: (name: string) => string;
   deriveBuHandle: (name: string, code: string) => string;
@@ -37,15 +37,22 @@ export function useAddEmployeeBranchSync({
       if (branch) {
         const code = getBranchCode(branch.name);
         const handle = deriveBuHandle(branch.name, code);
+        const defaultSite =
+          workSites.find((w) => w.branch_id === branch.id && w.is_default) ||
+          workSites.find((w) => w.branch_id === branch.id) ||
+          workSites.find((w) => w.is_default);
+
         setForm((prev) => ({
           ...prev,
           branch_id: branch.id,
           code_bu: code,
           bu_full_name: branch.name,
           handle_bu: handle,
-          site: branch.name ? `Main Office (${branch.name})` : "Main Office",
-          working_location: branch.location || "Phnom Penh",
-          default_work_location_id: "",
+          site: defaultSite ? defaultSite.name : (prev.site || ""),
+          working_location: defaultSite
+            ? (defaultSite.city || defaultSite.province || defaultSite.description || branch.location || "Phnom Penh")
+            : (branch.location || "Phnom Penh"),
+          default_work_location_id: defaultSite ? defaultSite.id : (prev.default_work_location_id || ""),
         }));
       } else {
         setForm((prev) => ({
@@ -59,7 +66,7 @@ export function useAddEmployeeBranchSync({
         }));
       }
     },
-    [cleanBranches, getBranchCode, deriveBuHandle, setForm, onFieldTouch]
+    [cleanBranches, workSites, getBranchCode, deriveBuHandle, setForm, onFieldTouch]
   );
 
   useEffect(() => {
@@ -80,13 +87,18 @@ export function useAddEmployeeBranchSync({
     if (branch) {
       const code = getBranchCode(branch.name);
       const handle = deriveBuHandle(branch.name, code);
+      const defaultSite =
+        workSites.find((w) => w.branch_id === branch.id && w.is_default) ||
+        workSites.find((w) => w.branch_id === branch.id) ||
+        workSites.find((w) => w.is_default);
 
       setForm((prev) => {
         if (
           prev.bu_full_name &&
           prev.handle_bu &&
           prev.code_bu &&
-          prev.branch_id === branch.id
+          prev.branch_id === branch.id &&
+          (prev.default_work_location_id || prev.site)
         ) {
           return prev;
         }
@@ -97,12 +109,13 @@ export function useAddEmployeeBranchSync({
           code_bu: prev.code_bu || code,
           bu_full_name: prev.bu_full_name || branch.name,
           handle_bu: prev.handle_bu || handle,
-          site: prev.site || (branch.name ? `Main Office (${branch.name})` : "Main Office"),
-          working_location: prev.working_location || branch.location || "Phnom Penh",
+          site: prev.site || (defaultSite ? defaultSite.name : ""),
+          default_work_location_id: prev.default_work_location_id || (defaultSite ? defaultSite.id : ""),
+          working_location: prev.working_location || (defaultSite ? (defaultSite.city || defaultSite.province || defaultSite.description || branch.location || "Phnom Penh") : (branch.location || "Phnom Penh")),
         };
       });
     }
-  }, [isOpen, isSuperAdmin, cleanBranches, form.branch_id, targetBranch, userBranchId, getBranchCode, deriveBuHandle, setForm]);
+  }, [isOpen, isSuperAdmin, cleanBranches, workSites, form.branch_id, targetBranch, userBranchId, getBranchCode, deriveBuHandle, setForm]);
 
   const handleSelectSite = useCallback(
     (siteIdOrVal: string) => {
@@ -111,16 +124,15 @@ export function useAddEmployeeBranchSync({
         setForm((prev) => ({
           ...prev,
           default_work_location_id: "",
-          site: currentBranch?.name ? `Main Office (${currentBranch.name})` : "Main Office",
-          working_location: currentBranch?.location || "Phnom Penh",
+          site: "",
         }));
         return;
       }
 
-      const targetSite = workSites.find((w) => w.id === siteIdOrVal);
+      const targetSite = workSites.find((w) => w.id === siteIdOrVal || w.name === siteIdOrVal);
       if (targetSite) {
-        let loc = targetSite.description || targetSite.name;
-        const lower = targetSite.name.toLowerCase();
+        let loc = targetSite.city || targetSite.province || targetSite.description || targetSite.name;
+        const lower = (targetSite.name || "").toLowerCase();
         if (lower.includes("kampong thom") || lower.includes("kampongthom")) loc = "Kampong Thom";
         else if (lower.includes("battambang") || lower.includes("btb")) loc = "Battambang";
         else if (lower.includes("siem reap")) loc = "Siem Reap";
@@ -134,7 +146,7 @@ export function useAddEmployeeBranchSync({
         }));
       }
     },
-    [workSites, currentBranch, setForm, onFieldTouch]
+    [workSites, setForm, onFieldTouch]
   );
 
   return {

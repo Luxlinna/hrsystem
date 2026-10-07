@@ -1,5 +1,15 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
+import { SearchableSelect } from "@/components/SearchableSelect";
+
+const CONTRACT_TYPE_OPTIONS = [
+  "FDC (Fixed Duration Contract)",
+  "UDC (Undetermined Duration Contract)",
+  "Probationary Contract",
+  "Internship Agreement",
+  "Casual / Project Basis",
+  "Part Time Agreement",
+];
 
 interface TermsContractInfoSectionProps {
   form: EmployeeFormState;
@@ -27,19 +37,14 @@ export const TermsContractInfoSection = memo(function TermsContractInfoSection({
           <label className="block text-xs font-extrabold text-slate-700 mb-1">
             Contract Type <span className="text-rose-500">*</span>
           </label>
-          <select
+          <SearchableSelect
+            options={CONTRACT_TYPE_OPTIONS}
             value={form.contract_type || ""}
-            onChange={(e) => onChange("contract_type", e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer transition-all shadow-2xs"
-          >
-            <option value="">Select</option>
-            <option value="FDC">FDC (Fixed Duration Contract)</option>
-            <option value="UDC">UDC (Undetermined Duration Contract)</option>
-            <option value="Probationary">Probationary Contract</option>
-            <option value="Internship">Internship Agreement</option>
-            <option value="Casual">Casual / Project Basis</option>
-            <option value="Part Time">Part Time Agreement</option>
-          </select>
+            onChange={(val) => onChange("contract_type", val)}
+            placeholder="Select Contract Type"
+            searchPlaceholder="Search contract type..."
+            showClear
+          />
         </div>
 
         {/* 2. Effective Date */}

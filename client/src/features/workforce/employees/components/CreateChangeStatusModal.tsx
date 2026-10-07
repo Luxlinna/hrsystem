@@ -22,6 +22,8 @@ export const CreateChangeStatusModal: React.FC<CreateChangeStatusModalProps> = (
     employees,
     branches,
     divisions,
+    departments,
+    positions,
     preselectedEmployeeId,
     onSuccess,
     onClose,
@@ -106,8 +108,8 @@ export const CreateChangeStatusModal: React.FC<CreateChangeStatusModalProps> = (
             buOptions={form.allBuOptions}
             siteOptions={form.siteOptions}
             divisions={form.allDivisionOptions}
-            departments={departments}
-            positions={positions}
+            departments={form.allDepartmentOptions}
+            positions={form.allPositionOptions}
             supervisorOptions={form.supervisorOptions}
             onReloadBranches={form.reloadBranches}
             onReloadSites={form.reloadWorkLocations}

@@ -26,50 +26,59 @@ const SEED_POSITIONS = [
   "Intern",
 ];
 
-export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState) {
+export interface UseAddEmployeeModalDataOptions {
+  passedDepartments?: string[];
+  passedDivisions?: string[];
+  passedPositions?: string[];
+}
+
+export function useAddEmployeeModalData(
+  isOpen: boolean,
+  form: EmployeeFormState,
+  options: UseAddEmployeeModalDataOptions = {}
+) {
+  const { passedDepartments, passedDivisions, passedPositions } = options;
   const [dbBranches, setDbBranches] = useState<Array<{ id: string; name: string; location: string | null }>>([]);
   const [dbWorkLocations, setDbWorkLocations] = useState<Array<{ id: string; name: string; description: string | null; branch_id: string | null }>>([]);
   const [dbEmployees, setDbEmployees] = useState<ModalManagerEmployee[]>([]);
-  const [dbDivisions, setDbDivisions] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
-  const [dbDepartments, setDbDepartments] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
-  const [dbPositions, setDbPositions] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
-  const [dbEmployeeTypes, setDbEmployeeTypes] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
-  const [dbContractTypes, setDbContractTypes] = useState<Array<{ id: string; name: string; term?: string; branch_id: string | null }>>([]);
+  const [dbDivisions, setDbDivisions] = useState<Array<{ id: string; name: string; branch_id?: string | null; status?: string | null }>>([]);
+  const [dbDepartments, setDbDepartments] = useState<Array<{ id: string; name: string; branch_id?: string | null; status?: string | null }>>([]);
+  const [dbPositions, setDbPositions] = useState<Array<{ id: string; name: string; branch_id?: string | null; status?: string | null }>>([]);
+  const [dbEmployeeTypes, setDbEmployeeTypes] = useState<Array<{ id: string; name: string; branch_id?: string | null }>>([]);
+  const [dbContractTypes, setDbContractTypes] = useState<Array<{ id: string; name: string; term?: string; branch_id?: string | null; status?: string | null }>>([]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     Promise.all([
       supabase.from("branches").select("id, name, location").is("deleted_at", null).order("name"),
-      supabase.from("work_locations").select("id, name, description, branch_id").is("deleted_at", null).order("name"),
+      supabase.from("work_locations").select("id, name, description, branch_id, status, is_default, city, province, address").is("deleted_at", null).order("is_default", { ascending: false }).order("name"),
       supabase.from("employees").select("id, first_name, last_name, email, phone, department, role, position, branch_id, bu_full_name, code_bu, branches(id, name)").is("deleted_at", null).order("first_name"),
       supabase.from("user_role_assignments").select("id, user_id, email, display_name, role_id, deleted_at, app_roles(id, name, is_admin, branch_id)").is("deleted_at", null),
       supabase.from("divisions").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
-      supabase.from("departments").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
-      supabase.from("positions").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
-      supabase.from("contract_types").select("id, name, term, branch_id").is("deleted_at", null).order("sort_order"),
+      supabase.from("departments").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
+      supabase.from("positions").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
+      supabase.from("contract_types").select("id, name, term, branch_id, status").is("deleted_at", null).order("name"),
     ]).then(([bRes, wRes, eRes, uRes, divRes, dRes, pRes, cRes]) => {
       if (bRes.data) setDbBranches(bRes.data);
-      if (wRes.data) setDbWorkLocations(wRes.data);
+      if (wRes.data) setDbWorkLocations((wRes.data as any[]).filter((w) => !w.status || w.status !== "disabled"));
       if (divRes.data) setDbDivisions(divRes.data.filter((d) => !d.status || d.status !== "disabled"));
-      if (dRes.data) setDbDepartments(dRes.data);
-      if (pRes.data) setDbPositions(pRes.data);
-      if (cRes.data) setDbContractTypes(cRes.data);
+      if (dRes.data) setDbDepartments(dRes.data.filter((d) => !d.status || d.status !== "disabled"));
+      if (pRes.data) setDbPositions(pRes.data.filter((p) => !p.status || p.status !== "disabled"));
+      if (cRes.data) setDbContractTypes(cRes.data.filter((c) => !c.status || c.status !== "disabled"));
 
       const rawEmployees = (eRes.data || []) as any[];
       const assignments = (uRes.data || []) as any[];
 
-      const enriched: ModalManagerEmployee[] = rawEmployees
-        .map((emp) => {
-          const empEmail = emp.email?.toLowerCase().trim();
-          const matchedAssignment = assignments.find((a) => a.email && a.email.toLowerCase().trim() === empEmail);
-          const assignedRoleName = matchedAssignment?.app_roles?.name || null;
-          const realRole = assignedRoleName || emp.position || emp.role || "Staff";
-          const lowerRole = realRole.toLowerCase();
-          const isManager = Boolean(matchedAssignment?.app_roles?.is_admin) || lowerRole.includes("manager") || lowerRole.includes("head") || lowerRole.includes("lead") || lowerRole.includes("director") || lowerRole.includes("supervisor");
-          return { ...emp, realRole, isManager, isAdmin: Boolean(matchedAssignment?.app_roles?.is_admin) };
-        })
-        .filter((emp) => emp.isManager || emp.isAdmin);
+      const enriched: ModalManagerEmployee[] = rawEmployees.map((emp) => {
+        const empEmail = emp.email?.toLowerCase().trim();
+        const matchedAssignment = assignments.find((a) => a.email && a.email.toLowerCase().trim() === empEmail);
+        const assignedRoleName = matchedAssignment?.app_roles?.name || null;
+        const realRole = assignedRoleName || emp.position || emp.role || "Staff";
+        const lowerRole = realRole.toLowerCase();
+        const isManager = Boolean(matchedAssignment?.app_roles?.is_admin) || lowerRole.includes("manager") || lowerRole.includes("head") || lowerRole.includes("lead") || lowerRole.includes("director") || lowerRole.includes("supervisor");
+        return { ...emp, realRole, isManager, isAdmin: Boolean(matchedAssignment?.app_roles?.is_admin) };
+      });
 
       setDbEmployees(enriched);
     });
@@ -92,48 +101,55 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
   const currentBranchName = currentBranch?.name || form.bu_full_name || cleanBranches[0]?.name || "";
 
   const workSites = useMemo(() => {
-    if (!currentBranch) return dbWorkLocations;
-    return dbWorkLocations.filter((w) => w.branch_id === currentBranch.id);
+    const activeSites = dbWorkLocations.filter((w: any) => !w.status || w.status !== "disabled");
+    if (!currentBranch) return activeSites;
+    return [...activeSites].sort((a, b) => {
+      const aMatch = a.branch_id === currentBranch.id ? -1 : 1;
+      const bMatch = b.branch_id === currentBranch.id ? -1 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return (a.name || "").localeCompare(b.name || "");
+    });
   }, [dbWorkLocations, currentBranch]);
 
   const currentSiteSelectValue = useMemo(() => {
-    if (!form.site) return "";
-    const lower = form.site.toLowerCase().trim();
-    if (lower === "headquarters" || lower.startsWith("main office")) return "";
-    const matched = workSites.find((w) => w.name.toLowerCase().trim() === lower || w.id === form.site);
+    if (!form.site && !form.default_work_location_id) return "";
+    const matched = workSites.find(
+      (w) => w.id === form.default_work_location_id || w.name.toLowerCase().trim() === (form.site || "").toLowerCase().trim()
+    );
     return matched ? matched.id : "";
-  }, [workSites, form.site]);
+  }, [workSites, form.site, form.default_work_location_id]);
 
   const divisions = useMemo(() => {
-    if (!dbDivisions || dbDivisions.length === 0) return [];
-    return Array.from(new Set(dbDivisions.map((d) => d.name.trim()).filter(Boolean)));
-  }, [dbDivisions]);
+    const list = dbDivisions.map((d) => d.name?.trim()).filter(Boolean);
+    const merged = Array.from(new Set([...(passedDivisions || []), ...list]));
+    return merged;
+  }, [dbDivisions, passedDivisions]);
 
   const departments = useMemo(() => {
-    const list = currentBranch ? dbDepartments.filter((d) => !d.branch_id || d.branch_id === currentBranch.id) : dbDepartments;
-    return list.length > 0 ? Array.from(new Set(list.map((d) => d.name))) : DEPARTMENTS;
-  }, [dbDepartments, currentBranch]);
+    const list = dbDepartments.map((d) => d.name?.trim()).filter(Boolean);
+    const merged = Array.from(new Set([...(passedDepartments || []), ...list]));
+    return merged.length > 0 ? merged : DEPARTMENTS;
+  }, [dbDepartments, passedDepartments]);
 
   const positions = useMemo(() => {
-    const list = currentBranch ? dbPositions.filter((p) => !p.branch_id || p.branch_id === currentBranch.id) : dbPositions;
-    return list.length > 0 ? Array.from(new Set(list.map((p) => p.name))) : SEED_POSITIONS;
-  }, [dbPositions, currentBranch]);
+    const list = dbPositions.map((p) => p.name?.trim()).filter(Boolean);
+    const merged = Array.from(new Set([...(passedPositions || []), ...list]));
+    return merged.length > 0 ? merged : SEED_POSITIONS;
+  }, [dbPositions, passedPositions]);
 
   const employeeTypes = useMemo(() => {
-    const list = currentBranch ? dbEmployeeTypes.filter((t) => !t.branch_id || t.branch_id === currentBranch.id) : dbEmployeeTypes;
-    return list.length > 0 ? Array.from(new Set(list.map((t) => t.name))) : ["Full-Time", "Part-Time", "Probationary", "Internship", "Casual"];
-  }, [dbEmployeeTypes, currentBranch]);
+    const list = dbEmployeeTypes.map((t) => t.name?.trim()).filter(Boolean);
+    return list.length > 0 ? Array.from(new Set(list)) : ["Full-Time", "Part-Time", "Probationary", "Internship", "Casual"];
+  }, [dbEmployeeTypes]);
 
   const contractTypes = useMemo(() => {
-    const list = currentBranch ? dbContractTypes.filter((c) => !c.branch_id || c.branch_id === currentBranch.id) : dbContractTypes;
-    return list.length > 0 ? Array.from(new Set(list.map((c) => c.name))) : ["1-YEAR FDC", "2-YEAR FDC", "3-YEAR FDC", "PERMANENT (UDC)", "PROBATION", "Internship"];
-  }, [dbContractTypes, currentBranch]);
+    const list = dbContractTypes.map((c) => c.name?.trim()).filter(Boolean);
+    return list.length > 0 ? Array.from(new Set(list)) : ["1-YEAR FDC", "2-YEAR FDC", "3-YEAR FDC", "PERMANENT (UDC)", "PROBATION", "Internship"];
+  }, [dbContractTypes]);
 
   const buManagers = useMemo(() => {
-    const selectedBranchId = currentBranch?.id || form.branch_id;
-    if (!selectedBranchId) return dbEmployees;
-    return dbEmployees.filter((e) => e.branch_id === selectedBranchId || e.branches?.id === selectedBranchId);
-  }, [dbEmployees, currentBranch, form.branch_id]);
+    return dbEmployees;
+  }, [dbEmployees]);
 
   return {
     cleanBranches,

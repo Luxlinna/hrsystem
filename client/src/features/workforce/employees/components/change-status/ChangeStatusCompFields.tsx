@@ -1,5 +1,6 @@
 import React, { type RefObject } from "react";
 import { SALARY_TYPES } from "./types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface Props {
   supervisor: string;
@@ -101,18 +102,12 @@ export const ChangeStatusCompFields: React.FC<Props> = ({
           Salary Type <span className="text-rose-500">*</span>
         </label>
         <div className="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="relative">
-            <select
-              value={salaryType}
-              onChange={(e) => setSalaryType(e.target.value)}
-              className="w-full px-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs appearance-none focus:outline-none focus:border-[#0284c7]"
-            >
-              {SALARY_TYPES.map((st) => (
-                <option key={st} value={st}>{st}</option>
-              ))}
-            </select>
-            <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs" />
-          </div>
+          <SearchableSelect
+            options={SALARY_TYPES}
+            value={salaryType}
+            onChange={setSalaryType}
+            placeholder="Select Salary Type"
+          />
           <input
             type="number"
             step="any"

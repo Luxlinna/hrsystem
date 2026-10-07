@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface OrgContractInfoSectionProps {
   form: EmployeeFormState;
@@ -32,18 +33,14 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
             Contract Type <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <select
+            <SearchableSelect
+              options={contractTypes}
               value={form.contract_type || ""}
-              onChange={(e) => onChange("contract_type", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-            >
-              <option value="">Select Contract Type</option>
-              {contractTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => onChange("contract_type", val)}
+              placeholder="Select Contract Type"
+              searchPlaceholder="Search contract type..."
+              showClear
+            />
           </div>
         </div>
 

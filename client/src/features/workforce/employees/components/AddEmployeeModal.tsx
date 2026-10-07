@@ -23,6 +23,9 @@ interface AddEmployeeModalProps {
   isSuperAdmin?: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  departments?: string[];
+  divisions?: string[];
+  positions?: string[];
 }
 
 export const AddEmployeeModal = memo(function AddEmployeeModal({
@@ -34,6 +37,9 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   isSuperAdmin = true,
   onClose,
   onSubmit,
+  departments: passedDepartments,
+  divisions: passedDivisions,
+  positions: passedPositions,
 }: AddEmployeeModalProps) {
   const { targetBranch, userBranchId } = useBranchScope();
   const { collapsed } = useSidebar();
@@ -73,7 +79,11 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     deriveBuHandle,
     buManagers,
     buCeos,
-  } = useAddEmployeeModalData(isOpen, form);
+  } = useAddEmployeeModalData(isOpen, form, {
+    passedDepartments,
+    passedDivisions,
+    passedPositions,
+  });
 
   const { handleSelectBranch, handleSelectSite } = useAddEmployeeBranchSync({
     isOpen,

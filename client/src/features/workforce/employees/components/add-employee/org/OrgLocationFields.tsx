@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface OrgLocationFieldsProps {
   form: EmployeeFormState;
@@ -18,6 +19,18 @@ export const OrgLocationFields = memo(function OrgLocationFields({
   onSelectBranch,
   onSelectSite,
 }: OrgLocationFieldsProps) {
+  const branchOptions = cleanBranches.map((b) => ({
+    value: b.id,
+    label: b.name,
+    sublabel: b.location || undefined,
+  }));
+
+  const siteOptions = workSites.map((site) => ({
+    value: site.id,
+    label: site.name,
+    sublabel: site.description || undefined,
+  }));
+
   return (
     <>
       {/* Business Unit (BU) */}
@@ -27,18 +40,15 @@ export const OrgLocationFields = memo(function OrgLocationFields({
             Business Unit (BU) <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <select
+            <SearchableSelect
+              options={branchOptions}
               value={form.branch_id || ""}
-              onChange={(e) => onSelectBranch?.(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-            >
-              <option value="">Select Business Unit</option>
-              {cleanBranches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => onSelectBranch?.(val)}
+              placeholder="Select Business Unit"
+              searchPlaceholder="Search Business Unit..."
+              required
+              showClear
+            />
           </div>
         </div>
       )}
@@ -49,22 +59,20 @@ export const OrgLocationFields = memo(function OrgLocationFields({
           Site <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2 flex items-center gap-1.5">
-          <select
-            value={form.default_work_location_id || ""}
-            onChange={(e) => onSelectSite(e.target.value)}
-            className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
-          >
-            <option value="">
-              {form.branch_id && currentBranchName ? `Main Office (${currentBranchName})` : "Select Site"}
-            </option>
-            {workSites.map((site) => (
-              <option key={site.id} value={site.id}>{site.name}</option>
-            ))}
-          </select>
+          <div className="flex-1">
+            <SearchableSelect
+              options={siteOptions}
+              value={form.default_work_location_id || form.site || ""}
+              onChange={(val) => onSelectSite(val)}
+              placeholder="Select Site"
+              searchPlaceholder="Search site..."
+              showClear
+            />
+          </div>
           <button
             type="button"
             onClick={() => onSelectSite("")}
-            className="p-1.5 text-slate-500 hover:text-[#253C7D] hover:bg-slate-100 rounded border border-slate-300 cursor-pointer"
+            className="p-1.5 text-slate-500 hover:text-[#253C7D] hover:bg-slate-100 rounded border border-slate-300 cursor-pointer shrink-0"
             title="Reset Site"
           >
             <i className="ri-refresh-line text-xs" />
