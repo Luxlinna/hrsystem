@@ -37,7 +37,7 @@ export function getStoredApproverFlow(
       const buRaw = localStorage.getItem(buKey);
       if (buRaw) {
         const parsed = JSON.parse(buRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     }
 
@@ -46,11 +46,16 @@ export function getStoredApproverFlow(
       const nameRaw = localStorage.getItem(nameKey);
       if (nameRaw) {
         const parsed = JSON.parse(nameRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     }
 
-    // Check global default flow key
+    // If branchId or branchName is specified, but has no stored flow for this BU, return empty flow
+    if (branchId || branchName) {
+      return [];
+    }
+
+    // Global default fallback only when no branchId / branchName was provided
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -59,29 +64,6 @@ export function getStoredApproverFlow(
           s.approvers?.some((a: ApproverPerson) => a.name === "You Steven" || a.name === "Chea Rachana")
         );
         if (!hasFake) return parsed;
-      }
-    }
-
-    // Check any configured branch flow in localStorage
-    if (typeof localStorage !== "undefined") {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(STORAGE_KEY)) {
-          const buRaw = localStorage.getItem(key);
-          if (buRaw) {
-            try {
-              const parsed = JSON.parse(buRaw);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                const hasFake = parsed.some((s) =>
-                  s.approvers?.some((a: ApproverPerson) => a.name === "You Steven" || a.name === "Chea Rachana")
-                );
-                if (!hasFake) return parsed;
-              }
-            } catch {
-              // ignore malformed JSON in localStorage
-            }
-          }
-        }
       }
     }
   } catch {
@@ -102,8 +84,9 @@ export function saveApproverFlow(
     if (branchName) {
       localStorage.setItem(`${STORAGE_KEY}_${branchName.trim().toLowerCase()}`, JSON.stringify(steps));
     }
-    // Always store as latest default so all views stay in sync
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(steps));
+    if (!branchId && !branchName) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(steps));
+    }
 
     window.dispatchEvent(
       new CustomEvent("leave_approver_flow_updated", { detail: { branchId, branchName } })
