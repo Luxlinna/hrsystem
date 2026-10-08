@@ -10,19 +10,6 @@ jobs:
     name: Deploy hrmsystem to Droplet
     runs-on: ubuntu-latest
     steps:
-      - name: Reset deploy script on server (prevent git pull conflict)
-        env:
-          ADMIN_SSH_KEY: ${{ secrets.ADMIN_SSH_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          ADMIN_USER: ${{ secrets.ADMIN_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$ADMIN_SSH_KEY" | base64 -d > ~/.ssh/admin_key
-          chmod 600 ~/.ssh/admin_key
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/admin_key -o StrictHostKeyChecking=no "$ADMIN_USER@$DEPLOY_HOST" \
-            "cd /opt/hrmsystem/app && git checkout -- deploy/deploy.sh 2>/dev/null || true"
-
       - name: Deploy over SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
