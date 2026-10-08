@@ -1,11 +1,9 @@
 import { useAuth } from "@/context/AuthContext";
 import { useOtpRateLimit } from "../hooks/useOtpRateLimit";
 
-// ─── Tiny reusable field card ─────────────────────────────────────────────────
 function OtpField({
   id,
   label,
-  hint,
   value,
   unit,
   onChange,
@@ -14,7 +12,6 @@ function OtpField({
 }: {
   id: string;
   label: string;
-  hint: string;
   value: string;
   unit?: string;
   onChange: (v: string) => void;
@@ -22,11 +19,10 @@ function OtpField({
   max?: number;
 }) {
   return (
-    <div className="space-y-2">
-      <div>
-        <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">{label}</p>
-        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{hint}</p>
-      </div>
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-xs font-semibold text-gray-800 dark:text-slate-200">
+        {label}
+      </label>
       <div className="relative">
         <input
           id={id}
@@ -35,10 +31,10 @@ function OtpField({
           max={max}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-4 py-3 pr-16 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-blue-500/20 focus:border-[#253C7D] dark:focus:border-blue-500 transition-colors appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="w-full px-3.5 py-2.5 pr-14 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-blue-500/20 focus:border-[#253C7D] dark:focus:border-blue-500 transition-colors appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         {unit && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500 pointer-events-none select-none">
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 dark:text-slate-500 pointer-events-none select-none">
             {unit}
           </span>
         )}
@@ -47,7 +43,6 @@ function OtpField({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export function OtpRateLimitSection() {
   const { user } = useAuth();
   const actorName =
@@ -68,75 +63,84 @@ export function OtpRateLimitSection() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  return (
-    <div className="w-full space-y-6">
+  const isTelegramEnabled = config.telegram_otp_enabled !== "false";
 
+  return (
+    <div className="w-full space-y-5">
       {/* Header */}
-      <div className="flex items-start gap-3 pb-2 border-b border-gray-100 dark:border-slate-800">
-        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center shrink-0">
-          <i className="ri-shield-keyhole-line text-lg text-indigo-600 dark:text-indigo-400" />
+      <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-slate-800">
+        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
+          <i className="ri-shield-keyhole-line text-lg" />
         </div>
         <div>
           <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">OTP Rate Limits</h3>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-            Control how often users can request and attempt one-time passwords. Changes take effect immediately.
-          </p>
         </div>
       </div>
 
       {/* Telegram Phone OTP Delivery Channel Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-5 shadow-xs flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#229ED9] flex items-center justify-center text-xl shrink-0">
             <i className="ri-telegram-fill" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-sm font-bold text-gray-900 dark:text-slate-100">
-                Phone Number OTP via Telegram Bot
+                Phone OTP via Telegram Bot
               </h4>
               <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
-                  config.telegram_otp_enabled !== "false"
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900"
-                    : "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-900"
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1.5 ${
+                  isTelegramEnabled
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60"
+                    : "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400"
                 }`}
               >
-                {config.telegram_otp_enabled !== "false" ? "Enabled (Working)" : "Disabled (Off)"}
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isTelegramEnabled ? "bg-emerald-500" : "bg-gray-400"
+                  }`}
+                />
+                {isTelegramEnabled ? "Active" : "Disabled"}
               </span>
             </div>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-              Controls whether @HRM_OPS_bot sends 6-digit login codes when employees sign in with their phone number.
-            </p>
           </div>
         </div>
 
-        <label className={`flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-gray-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 shrink-0 self-start sm:self-auto shadow-2xs ${togglingTelegramOtp ? "opacity-60 pointer-events-none" : ""}`}>
-          <input
-            type="checkbox"
+        {/* Switch Toggle */}
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">
+            {togglingTelegramOtp ? "Saving..." : isTelegramEnabled ? "Enabled" : "Disabled"}
+          </span>
+          <button
+            type="button"
+            role="switch"
             disabled={togglingTelegramOtp}
-            checked={config.telegram_otp_enabled !== "false"}
-            onChange={(e) => toggleTelegramOtp(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
-          />
-          <span>{togglingTelegramOtp ? "Saving..." : config.telegram_otp_enabled !== "false" ? "Enabled" : "Disabled"}</span>
-        </label>
+            aria-checked={isTelegramEnabled}
+            onClick={() => toggleTelegramOtp(!isTelegramEnabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+              isTelegramEnabled ? "bg-emerald-600" : "bg-gray-300 dark:bg-slate-700"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                isTelegramEnabled ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
-      {/* Config card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 space-y-6 shadow-xs">
-
-        {/* Row 1 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {/* Main Limits Card */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-5 shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <OtpField
             id="otp-lifetime"
-            label="Code lifetime (minutes)"
-            hint="How long a 6-digit code works after it is sent."
+            label="Code Lifetime"
             value={config.otp_code_lifetime_minutes}
             unit="min"
             onChange={(v) => update("otp_code_lifetime_minutes", v)}
@@ -145,22 +149,16 @@ export function OtpRateLimitSection() {
           />
           <OtpField
             id="otp-per-hour"
-            label="Codes per hour"
-            hint="Most codes one phone number or email can request in an hour."
+            label="Max Codes Per Hour"
             value={config.otp_codes_per_hour}
             unit="codes"
             onChange={(v) => update("otp_codes_per_hour", v)}
             min={1}
             max={20}
           />
-        </div>
-
-        {/* Row 2 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <OtpField
             id="otp-wrong-tries"
-            label="Wrong tries per code"
-            hint="After this many wrong entries the code stops working."
+            label="Wrong Tries Limit"
             value={config.otp_wrong_tries_per_code}
             unit="tries"
             onChange={(v) => update("otp_wrong_tries_per_code", v)}
@@ -169,8 +167,7 @@ export function OtpRateLimitSection() {
           />
           <OtpField
             id="otp-resend-wait"
-            label="Wait before resending (seconds)"
-            hint="How long the user waits before they can ask for a new code."
+            label="Cooldown Before Resending"
             value={config.otp_resend_wait_seconds}
             unit="sec"
             onChange={(v) => update("otp_resend_wait_seconds", v)}
@@ -179,26 +176,18 @@ export function OtpRateLimitSection() {
           />
         </div>
 
-        {/* Security callout */}
-        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-300">
-          <i className="ri-information-line text-base shrink-0 mt-0.5" />
-          <span>
-            <strong>Recommended:</strong> Code lifetime ≤ 10 min · Max 3–5 codes/hour · Max 3–5 wrong tries · Resend wait ≥ 30 sec
-          </span>
-        </div>
-
-        {/* Footer: last saved + save button */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800">
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-800">
           <p className="text-[11px] text-gray-400 dark:text-slate-500">
             {lastSaved
-              ? `Last changed: ${new Date(lastSaved).toLocaleString()}`
-              : "Not yet configured — using defaults"}
+              ? `Last updated: ${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : "Default settings active"}
           </p>
 
           <div className="flex items-center gap-3">
             {dirty && (
               <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <i className="ri-error-warning-line" /> Unsaved
+                <i className="ri-error-warning-line text-xs" /> Unsaved
               </span>
             )}
             <button
@@ -206,37 +195,23 @@ export function OtpRateLimitSection() {
               type="button"
               disabled={saving || !dirty}
               onClick={save}
-              className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] dark:bg-blue-600 hover:bg-[#1F336A] dark:hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#253C7D] dark:bg-blue-600 hover:bg-[#1F336A] dark:hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
             >
               {saving ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <i className="ri-save-line" />
-                  Save
+                  <i className="ri-save-line text-xs" />
+                  <span>Save</span>
                 </>
               )}
             </button>
           </div>
         </div>
       </div>
-
-      {/* Runtime enforcement info */}
-      <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/40 p-4 space-y-2 text-xs text-gray-500 dark:text-slate-400">
-        <p className="font-semibold text-gray-700 dark:text-slate-300 flex items-center gap-1.5">
-          <i className="ri-server-line" /> How enforcement works
-        </p>
-        <ul className="space-y-1 list-disc list-inside">
-          <li>The server reads these values on every OTP request — no restart needed.</li>
-          <li>Rate limits are applied per identifier (email or phone number).</li>
-          <li>Codes are invalidated immediately after the wrong-try limit is reached.</li>
-          <li>All OTP events are written to the Activity Audit Log.</li>
-        </ul>
-      </div>
-
     </div>
   );
 }

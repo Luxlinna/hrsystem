@@ -4,9 +4,56 @@ class RedisService {
   private client: any = null;
   private isConnected = false;
   private isConnecting = false;
+  private customUrl: string | null = null;
+  private customTls: boolean | null = null;
 
   constructor() {
     // Lazy or explicit connection via connect()
+  }
+
+  public async reconfigure(newUrl: string, isTls = true): Promise<boolean> {
+    await this.disconnect();
+    this.customUrl = newUrl;
+    this.customTls = isTls;
+    return this.connect();
+  }
+
+  public getActiveUrl(): string | null {
+    return this.customUrl || process.env.REDIS_URL || null;
+  }
+
+  public async testConnection(url: string, isTls = true): Promise<{ ok: boolean; latencyMs?: number; error?: string }> {
+    try {
+      // @ts-ignore
+      const ioredisModule = await import('ioredis').catch(() => null);
+      if (!ioredisModule) return { ok: false, error: 'ioredis module not installed' };
+      const RedisConstructor: any = ioredisModule.default || ioredisModule.Redis || ioredisModule;
+
+      let testUrl = url;
+      if (isTls && testUrl.startsWith('redis://')) {
+        testUrl = testUrl.replace('redis://', 'rediss://');
+      }
+
+      const testClient = new RedisConstructor(testUrl, {
+        lazyConnect: true,
+        connectTimeout: 7000,
+        maxRetriesPerRequest: 1,
+        tls: isTls ? { rejectUnauthorized: false } : undefined,
+      });
+
+      const start = Date.now();
+      await testClient.connect();
+      const pong = await testClient.ping();
+      const latencyMs = Date.now() - start;
+      await testClient.quit();
+
+      if (pong === 'PONG') {
+        return { ok: true, latencyMs };
+      }
+      return { ok: false, error: 'Unexpected ping response from Redis' };
+    } catch (err: any) {
+      return { ok: false, error: err.message || 'Connection failed' };
+    }
   }
 
   public async connect(): Promise<boolean> {
@@ -19,11 +66,14 @@ class RedisService {
   }
 
   private async init(): Promise<void> {
-    const redisUrl = process.env.REDIS_URL;
+    const redisUrl = this.customUrl || process.env.REDIS_URL;
     const redisHost = process.env.REDIS_HOST || '127.0.0.1';
     const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
     const redisPassword = process.env.REDIS_PASSWORD || undefined;
-    const isTls = (redisUrl && redisUrl.startsWith('rediss://')) || process.env.REDIS_TLS === 'true';
+    const isTls =
+      this.customTls !== null
+        ? this.customTls
+        : (redisUrl && redisUrl.startsWith('rediss://')) || process.env.REDIS_TLS === 'true';
 
     try {
       // @ts-ignore

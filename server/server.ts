@@ -19,7 +19,15 @@ async function bootstrap() {
     const embeddedStarted = await startEmbeddedRedis(6379);
     const hasRedisConfigured = Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
 
-    if (embeddedStarted || hasRedisConfigured) {
+    // Check if admin previously configured custom Redis URL in database
+    const dbRedisSetting = await prisma.system_settings.findFirst({ where: { key: 'redis_url' } });
+    if (dbRedisSetting?.value) {
+      const dbTlsSetting = await prisma.system_settings.findFirst({ where: { key: 'redis_tls' } });
+      const isTls = dbTlsSetting ? dbTlsSetting.value === 'true' : true;
+      await redisService.reconfigure(dbRedisSetting.value, isTls);
+      cacheService.initPubSub();
+      logger.info('✅ [Redis Boot] Connected to custom Redis URL configured via Admin UI');
+    } else if (embeddedStarted || hasRedisConfigured) {
       await redisService.connect();
       cacheService.initPubSub();
     } else {

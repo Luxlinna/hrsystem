@@ -15,10 +15,6 @@ import {
 import {
   ANNOUNCEMENT_PRIORITY_TIERS,
   type AnnouncementPriorityTier,
-  ALERT_DELIVERY_OPTIONS,
-  type AlertDeliveryType,
-  getStoredAlertDeliveryType,
-  setStoredAlertDeliveryType,
   getStoredAlertIntervalSeconds,
   setStoredAlertIntervalSeconds,
 } from "@/lib/announcementAlertTypes";
@@ -182,9 +178,6 @@ export function NotificationsSettings({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Event Notifications</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Choose which channels receive automated updates for system and employee actions.
-            </p>
           </div>
           {hasChanges(notifKeys) && (
             <button
@@ -235,12 +228,7 @@ export function NotificationsSettings({
 
         {/* Attendance frequency policy */}
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Attendance Alerts Filter</span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-              Control when attendance push notifications trigger for managers
-            </span>
-          </div>
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Attendance Alerts Filter</span>
           <select
             value={getVal("attendance_notify_scope") || "exceptions"}
             onChange={(e) => updateValue("attendance_notify_scope", e.target.value)}
@@ -259,12 +247,7 @@ export function NotificationsSettings({
             <span className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#229ED9] flex items-center justify-center text-lg shrink-0">
               <i className="ri-telegram-fill" />
             </span>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Telegram Bot &amp; Group Routing</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Real-time alert delivery and login OTP distribution via @HRM_OPS_bot
-              </p>
-            </div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Telegram Bot &amp; Group Routing</h3>
           </div>
           <div className="flex items-center gap-2">
             {hasChanges(telegramKeys) && (
@@ -292,7 +275,7 @@ export function NotificationsSettings({
 
         <div className="space-y-4">
           {/* Channel 1: Action Notifications Group */}
-          <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+          <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
@@ -312,21 +295,15 @@ export function NotificationsSettings({
                 <span>{testingNotifTelegram ? "Sending..." : "Test Group Alert"}</span>
               </button>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Receives attendance events, leave approvals, employee updates, device offline alarms, and bulletins.
-            </p>
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="-5314130569"
+                placeholder="Telegram Group Chat ID (e.g. -5314130569)"
                 value={getVal("telegram_notifications_chat_id")}
                 onChange={(e) => updateValue("telegram_notifications_chat_id", e.target.value.trim())}
                 className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
               />
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Type <code className="px-1 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded font-mono text-slate-700 dark:text-slate-300">/set_notifications</code> in your Telegram group with @HRM_OPS_bot to auto-link.
-            </p>
           </div>
 
           {/* Channel 2: OTP Group */}
@@ -343,7 +320,7 @@ export function NotificationsSettings({
                       : "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-900"
                   }`}
                 >
-                  {getVal("telegram_otp_enabled") !== "false" ? "Enabled (Working)" : "Disabled (Off)"}
+                  {getVal("telegram_otp_enabled") !== "false" ? "Enabled" : "Disabled"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -370,29 +347,16 @@ export function NotificationsSettings({
               </div>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              When <b>enabled</b>, employees signing in with their phone number receive a 6-digit verification code via @HRM_OPS_bot. When <b>disabled</b>, employees log in directly with their phone number and password without needing an OTP code.
-            </p>
-
-            <div className="space-y-1 pt-1">
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                OTP Telegram Group ID (Broadcast Destination)
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="-5356924617"
-                  value={getVal("telegram_otp_chat_id") || "-5356924617"}
-                  onChange={(e) => updateValue("telegram_otp_chat_id", e.target.value.trim())}
-                  disabled={getVal("telegram_otp_enabled") === "false"}
-                  className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] disabled:opacity-50"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="OTP Telegram Group ID (e.g. -5356924617)"
+                value={getVal("telegram_otp_chat_id") || "-5356924617"}
+                onChange={(e) => updateValue("telegram_otp_chat_id", e.target.value.trim())}
+                disabled={getVal("telegram_otp_enabled") === "false"}
+                className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] disabled:opacity-50"
+              />
             </div>
-
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Target Telegram Group ID for broadcast verification codes. Type <code className="px-1 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded font-mono text-slate-700 dark:text-slate-300">/set_otp</code> in your Telegram group with @HRM_OPS_bot to auto-link.
-            </p>
           </div>
 
           {/* Channel 3: Biometric Terminal Inactive Watcher */}
@@ -416,11 +380,8 @@ export function NotificationsSettings({
                 <span>{testingDeviceTelegram ? "Sending..." : "Test Device Offline Alert"}</span>
               </button>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Alerts the Notifications group if any branch terminal stops heartbeating during working hours (06:00 – 19:00).
-            </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
                 <input
                   type="checkbox"
@@ -470,17 +431,10 @@ function AnnouncementAlertSoundSettingsCard({
 
   const currentSound = (getVal("announcement_alert_sound") || getStoredAlertSound()) as AlertSoundType;
   const currentVol = Number(getVal("announcement_alert_volume") || getStoredAlertVolume());
-  const currentDeliveryType = (getVal("announcement_alert_type") || getStoredAlertDeliveryType()) as AlertDeliveryType;
   const currentIntervalSec = Number(getVal("announcement_alert_interval_sec") || getStoredAlertIntervalSeconds());
   const [intervalUnit, setIntervalUnit] = useState<"seconds" | "minutes">(
     currentIntervalSec >= 60 && currentIntervalSec % 60 === 0 ? "minutes" : "seconds"
   );
-
-  const handleSelectDeliveryType = (typeId: AlertDeliveryType) => {
-    updateValue("announcement_alert_type", typeId);
-    setStoredAlertDeliveryType(typeId);
-    toast("Alert Presentation Updated", `Set to "${ALERT_DELIVERY_OPTIONS.find((t) => t.id === typeId)?.label}".`, "success");
-  };
 
   const handleIntervalChange = (sec: number) => {
     updateValue("announcement_alert_interval_sec", String(sec));
@@ -513,14 +467,9 @@ function AnnouncementAlertSoundSettingsCard({
           <span className="w-8 h-8 rounded-xl bg-[#253C7D]/10 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-400 flex items-center justify-center text-base shrink-0 font-bold">
             <i className="ri-notification-3-line" />
           </span>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              Announcement Alert Rules &amp; Audio Tone
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Control delivery styles, repeat reminder intervals, and chime sound effects per priority level
-            </p>
-          </div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            Announcement Alert Rules &amp; Audio Tone
+          </h3>
         </div>
 
         {/* Severity Tier Selector Tabs */}
@@ -549,143 +498,66 @@ function AnnouncementAlertSoundSettingsCard({
       {/* Tier Details Body */}
       <div className="p-6 space-y-6">
         {/* Tier Info Card */}
-        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-3">
-          <span className="w-7 h-7 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 flex items-center justify-center text-sm shrink-0 mt-0.5">
-            <i className={activeTier === "urgent" ? "ri-alarm-warning-line text-rose-600" : activeTier === "priority" ? "ri-flashlight-line text-amber-600" : "ri-information-line text-blue-600"} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                {currentTierConfig.label} Behavior
-              </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                activeTier === "urgent"
-                  ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300"
-                  : activeTier === "priority"
-                  ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300"
-                  : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
-              }`}>
-                {activeTier === "urgent" ? "Mandatory Acknowledgment" : "Optional Informational"}
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              {currentTierConfig.description}
-            </p>
+        <div className="p-3 px-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 flex items-center justify-center text-sm shrink-0">
+              <i className={activeTier === "urgent" ? "ri-alarm-warning-line text-rose-600" : activeTier === "priority" ? "ri-flashlight-line text-amber-600" : "ri-information-line text-blue-600"} />
+            </span>
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              {currentTierConfig.label}
+            </span>
           </div>
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md border ${
+            activeTier === "urgent"
+              ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300"
+              : activeTier === "priority"
+              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300"
+              : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
+          }`}>
+            {activeTier === "urgent" ? "Mandatory Acknowledgment" : "Optional Informational"}
+          </span>
         </div>
 
         {/* ── NORMAL TIER SETTINGS ── */}
         {activeTier === "normal" && (
-          <div className="bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <i className="ri-volume-mute-line text-slate-400" />
-                Audio Chime &amp; Screen Interruptions:
-              </span>
-              <span className="font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                Silent Feed Only
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Normal bulletins never trigger modal popups or sound chimes to avoid notification fatigue.
-            </p>
+          <div className="bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <i className="ri-volume-mute-line text-slate-400" />
+              Audio Chime &amp; Screen Interruptions
+            </span>
+            <span className="font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+              Silent Feed Only
+            </span>
           </div>
         )}
 
         {/* ── PRIORITY TIER SETTINGS ── */}
         {activeTier === "priority" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="p-4 bg-slate-50/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-1">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
-                Presentation Style
-              </span>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Displays a gentle floating corner toast when published. Dismissible instantly with one click.
-              </p>
-            </div>
-
-            <div className="p-4 bg-slate-50/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  Audio Tone
-                </span>
-                <button
-                  type="button"
-                  onClick={() => playAnnouncementAlertSound("bell")}
-                  className="text-xs font-bold text-[#253C7D] dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <i className="ri-play-circle-line" />
-                  <span>Preview Bell</span>
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Plays a subtle crystal bell tone once upon publication.
-              </p>
-            </div>
+          <div className="bg-slate-50/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700 p-4 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              Audio Tone
+            </span>
+            <button
+              type="button"
+              onClick={() => playAnnouncementAlertSound("bell")}
+              className="text-xs font-bold text-[#253C7D] dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700"
+            >
+              <i className="ri-play-circle-line" />
+              <span>Crystal Bell</span>
+            </button>
           </div>
         )}
 
         {/* ── URGENT TIER SETTINGS ── */}
         {activeTier === "urgent" && (
           <div className="space-y-6">
-            {/* 1. Alert Delivery Style */}
-            <div className="space-y-2.5">
-              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block">
-                Urgent Alert Presentation Style
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {ALERT_DELIVERY_OPTIONS.map((opt) => {
-                  const isSelected = currentDeliveryType === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleSelectDeliveryType(opt.id)}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
-                        isSelected
-                          ? "bg-white dark:bg-slate-800 border-[#253C7D] dark:border-blue-500 shadow-xs ring-2 ring-[#253C7D]/10 dark:ring-blue-500/20"
-                          : "bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-700"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
-                          isSelected
-                            ? "bg-[#253C7D] dark:bg-blue-600 text-white"
-                            : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                        }`}>
-                          <i className={opt.icon} />
-                        </span>
-                        {isSelected && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950 text-[#253C7D] dark:text-blue-300 border border-blue-200 dark:border-blue-900">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
-                          {opt.label}
-                        </span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 leading-snug">
-                          {opt.description}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
-            {/* 2. Custom Reminder Interval Input */}
+            {/* Reminder Interval Input */}
             <div className="p-4 bg-slate-50/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
-                    Reminder Interval (Repeat Until Acknowledged)
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                    How frequently the urgent reminder chime should repeat until the employee signs off
-                  </span>
-                </div>
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+                  Reminder Interval (Repeat Until Acknowledged)
+                </span>
 
                 {/* Unit Switcher */}
                 <div className="flex items-center bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
@@ -791,7 +663,7 @@ function AnnouncementAlertSoundSettingsCard({
               ) : (
                 <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
                   <i className="ri-notification-off-line text-slate-400" />
-                  <span>Alert will only be triggered once upon publication; no recurring reminder chime will repeat.</span>
+                  <span>Alert will only be triggered once upon publication.</span>
                 </div>
               )}
             </div>
@@ -834,14 +706,9 @@ function AnnouncementAlertSoundSettingsCard({
                       }`}>
                         <i className={sound.icon} />
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block truncate">
-                          {sound.label}
-                        </span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-400 block truncate">
-                          {sound.description}
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {sound.label}
+                      </span>
                     </button>
                   );
                 })}

@@ -9,9 +9,33 @@ export class CacheService {
   private cache = new Map<string, CacheItem<any>>();
   private timers = new Map<string, NodeJS.Timeout>();
   private isSubscribed = false;
+  private isEnabled = true;
 
   constructor() {
     this.initPubSub();
+  }
+
+  public get enabled(): boolean {
+    return this.isEnabled;
+  }
+
+  public setEnabled(val: boolean, broadcast = true): void {
+    this.isEnabled = val;
+    if (!val) {
+      this.clearMemoryOnly();
+    }
+    if (broadcast && redisService.isAvailable) {
+      redisService
+        .publish(
+          'hrms:cache:sync',
+          JSON.stringify({ action: 'setEnabled', target: val })
+        )
+        .catch(() => {});
+    }
+  }
+
+  public get l1KeysCount(): number {
+    return this.cache.size;
   }
 
   /**
@@ -30,6 +54,8 @@ export class CacheService {
             this.deleteMemoryOnly(payload.target);
           } else if (payload.action === 'clear') {
             this.clearMemoryOnly();
+          } else if (payload.action === 'setEnabled' && typeof payload.target === 'boolean') {
+            this.setEnabled(payload.target, false);
           }
         } catch {
           // Ignore malformed broadcast messages
@@ -42,6 +68,8 @@ export class CacheService {
    * Fast L1 (In-Memory) synchronous retrieval
    */
   get<T>(key: string): T | null {
+    if (!this.isEnabled) return null;
+
     const item = this.cache.get(key);
     if (!item) return null;
 
@@ -58,6 +86,8 @@ export class CacheService {
    * All server nodes read from the same global Redis instance
    */
   async getAsync<T>(key: string): Promise<T | null> {
+    if (!this.isEnabled) return null;
+
     // 1. Check L1 Memory (0ms)
     const memCached = this.get<T>(key);
     if (memCached !== null) {
@@ -81,6 +111,8 @@ export class CacheService {
    * Set an item in cache with TTL in seconds (writes to L1 and Global L2 Redis)
    */
   set<T>(key: string, data: T, ttlSeconds = 60): void {
+    if (!this.isEnabled) return;
+
     this.setMemoryOnly(key, data, ttlSeconds);
 
     // Asynchronously write to Global Redis L2
@@ -113,6 +145,10 @@ export class CacheService {
    * Wrap an async function with automatic multi-tier caching
    */
   async getOrSet<T>(key: string, fetchFn: () => Promise<T>, ttlSeconds = 60): Promise<T> {
+    if (!this.isEnabled) {
+      return fetchFn();
+    }
+
     const cached = await this.getAsync<T>(key);
     if (cached !== null) {
       return cached;
@@ -130,7 +166,9 @@ export class CacheService {
     this.deleteMemoryOnly(key);
     if (redisService.isAvailable) {
       redisService.del(key).catch(() => {});
-      redisService.publish('hrms:cache:sync', JSON.stringify({ action: 'delete', target: key })).catch(() => {});
+      redisService
+        .publish('hrms:cache:sync', JSON.stringify({ action: 'delete', target: key }))
+        .catch(() => {});
     }
   }
 
@@ -158,7 +196,12 @@ export class CacheService {
 
     if (redisService.isAvailable) {
       redisService.delByPattern(`${prefix}*`).catch(() => {});
-      redisService.publish('hrms:cache:sync', JSON.stringify({ action: 'invalidatePrefix', target: prefix })).catch(() => {});
+      redisService
+        .publish(
+          'hrms:cache:sync',
+          JSON.stringify({ action: 'invalidatePrefix', target: prefix })
+        )
+        .catch(() => {});
     }
   }
 

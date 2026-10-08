@@ -14,6 +14,7 @@ export const SETTINGS_SECTIONS = [
   { key: "permissions", label: "Permissions", icon: "ri-lock-2-line" },
   { key: "branches", label: "Organization", icon: "ri-building-line" },
   { key: "integrations", label: "Integrations", icon: "ri-apps-2-line" },
+  { key: "cache_performance", label: "Global Cache", icon: "ri-flashlight-line" },
 ];
 
 export const keyLabels: Record<string, string> = {

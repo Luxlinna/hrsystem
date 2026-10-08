@@ -9,6 +9,7 @@ import { IntegrationsSection } from "./components/IntegrationsSection";
 import { EmailSmtpSection } from "./components/EmailSmtpSection";
 import { OtpRateLimitSection } from "./components/OtpRateLimitSection";
 import { PasswordResetLimitSection } from "./components/PasswordResetLimitSection";
+import { CachePerformanceSection } from "./components/CachePerformanceSection";
 
 export default function Settings() {
   const { isAdmin, can } = usePermissions();
@@ -66,6 +67,7 @@ export default function Settings() {
       {section === "email_smtp" && <EmailSmtpSection />}
       {section === "otp_rate_limit" && <OtpRateLimitSection />}
       {section === "password_reset_limit" && <PasswordResetLimitSection />}
+      {section === "cache_performance" && <CachePerformanceSection />}
     </div>
   );
 }
