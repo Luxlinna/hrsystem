@@ -1,6 +1,7 @@
 import React from "react";
 import type { Employee } from "../../types";
 import { formatPaddedPin } from "@/lib/biometricUtils";
+import { getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 
 interface LeaveFormEmployeeSectionProps {
   selectedEmployee: Employee | null;
@@ -28,13 +29,13 @@ export function LeaveFormEmployeeSection({
   onSelectEmployee,
 }: LeaveFormEmployeeSectionProps) {
   const empName = selectedEmployee
-    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+    ? getLeaveEmployeeName(selectedEmployee)
     : "Select Employee";
   const empSub = selectedEmployee
     ? `${selectedEmployee.role || "Staff"} - ${selectedEmployee.department || "INFORMATION (IT)"}`
     : "Choose team member";
   const initials = selectedEmployee
-    ? `${selectedEmployee.first_name?.[0] || ""}${selectedEmployee.last_name?.[0] || ""}`.toUpperCase()
+    ? getLeaveEmployeeInitials(selectedEmployee)
     : "CK";
 
   return (
@@ -117,7 +118,7 @@ export function LeaveFormEmployeeSection({
                         isSelected ? "bg-blue-50 text-[#2563eb] font-bold" : "hover:bg-slate-50 text-slate-800"
                       }`}
                     >
-                      <span>{emp.first_name} {emp.last_name}</span>
+                      <span>{getLeaveEmployeeName(emp)}</span>
                       {paddedPin && <span className="text-[10px] font-mono text-slate-400">#{paddedPin}</span>}
                     </div>
                   );

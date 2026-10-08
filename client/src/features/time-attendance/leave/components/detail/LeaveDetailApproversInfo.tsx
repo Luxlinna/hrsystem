@@ -68,7 +68,7 @@ export const LeaveDetailApproversInfo = memo(function LeaveDetailApproversInfo({
       if (reportsTo) {
         const { data: mgr } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branch_id")
+          .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, branch_id")
           .eq("id", reportsTo)
           .maybeSingle();
 
@@ -80,7 +80,7 @@ export const LeaveDetailApproversInfo = memo(function LeaveDetailApproversInfo({
       if (dynamicApprovers.length === 0 && branchId) {
         const { data: buStaff } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branch_id")
+          .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, branch_id")
           .eq("branch_id", branchId)
           .is("deleted_at", null)
           .or("role.ilike.%manager%,role.ilike.%head%,role.ilike.%director%,role.ilike.%lead%")

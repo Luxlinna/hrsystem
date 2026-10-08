@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { EmployeeSummaryItem } from "../types";
-import { initials } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface ScorecardTabProps {
   filteredSummary: EmployeeSummaryItem[];
@@ -53,9 +53,9 @@ export const ScorecardTab = memo(function ScorecardTab({
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#253C7D] to-[#17254E] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
                         {emp.avatar_url ? (
-                          <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+                          <img src={emp.avatar_url} alt={getAttendanceEmployeeName(emp)} className="w-full h-full object-cover" />
                         ) : (
-                          <span>{initials(emp.first_name, emp.last_name)}</span>
+                          <span>{getAttendanceEmployeeInitials(emp)}</span>
                         )}
                       </div>
                       <div className="min-w-0 flex flex-col justify-center">
@@ -63,7 +63,7 @@ export const ScorecardTab = memo(function ScorecardTab({
                           to={`/employees/${emp.id}`}
                           className="font-bold text-gray-900 hover:text-[#253C7D] transition-colors text-sm leading-tight block truncate hover:underline"
                         >
-                          {emp.first_name} {emp.last_name}
+                          {getAttendanceEmployeeName(emp)}
                         </Link>
                         {emp.biometric_user_id && (
                           <div className="mt-1">

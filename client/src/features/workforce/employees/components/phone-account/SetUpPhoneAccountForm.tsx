@@ -71,7 +71,10 @@ export const SetUpPhoneAccountForm = memo(function SetUpPhoneAccountForm({
 
     setSubmitting(true);
     try {
-      const displayName = `${employee.first_name} ${employee.last_name}`.trim();
+      const displayName =
+        employee.display_name?.trim() ||
+        employee.full_name?.trim() ||
+        `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
       const res = await onSubmit({
         employeeId: employee.id,
         phone: employee.phone.trim(),
@@ -97,7 +100,11 @@ export const SetUpPhoneAccountForm = memo(function SetUpPhoneAccountForm({
   };
 
   const formattedPhone = employee.phone ? formatPhoneDisplay(employee.phone) : "";
-  const fullName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Employee";
+  const fullName =
+    employee.display_name?.trim() ||
+    employee.full_name?.trim() ||
+    `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
+    "Employee";
 
   return (
     <form onSubmit={handleFormSubmit} className="p-5 space-y-4 text-xs">

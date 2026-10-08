@@ -1,10 +1,11 @@
 import type { Employee, AttendanceRecord } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfAttendanceCSV(
   records: AttendanceRecord[],
   employee: Employee | null
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const headers = ["Employee", "Date", "Clock In", "Clock Out", "Hours Worked", "Late Minutes", "Early Leave Minutes", "Status", "Notes"];
 
   const rows = records.map((r) => [

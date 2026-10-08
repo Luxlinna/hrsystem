@@ -48,7 +48,7 @@ export function useShiftCalculations({
         const shiftAssignedEmp = assignments
           .filter((a) => a.shift_id === sh.id)
           .some((a) =>
-            `${a.employee?.first_name || ""} ${a.employee?.last_name || ""} ${a.employee?.role || ""}`
+            `${a.employee?.display_name || ""} ${a.employee?.full_name || ""} ${a.employee?.first_name || ""} ${a.employee?.last_name || ""} ${a.employee?.role || ""}`
               .toLowerCase()
               .includes(q)
           );

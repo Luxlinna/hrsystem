@@ -1,6 +1,7 @@
 import type { LeaveRequest } from "../types";
 import { LEAVE_TYPE_CONFIG } from "../constants";
 import { formatDate } from "../dateUtils";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 export function exportLeaveCSV(filteredRequests: LeaveRequest[]): boolean {
   if (filteredRequests.length === 0) {
@@ -19,7 +20,7 @@ export function exportLeaveCSV(filteredRequests: LeaveRequest[]): boolean {
     "Submitted Date",
   ];
   const rows = filteredRequests.map((r) => [
-    `"${(r.employees?.first_name || "") + " " + (r.employees?.last_name || "")}"`,
+    `"${getLeaveEmployeeName(r.employees).replace(/"/g, '""')}"`,
     `"${r.employees?.department || ""}"`,
     `"${r.employees?.role || ""}"`,
     `"${LEAVE_TYPE_CONFIG[r.leave_type]?.label || r.leave_type}"`,

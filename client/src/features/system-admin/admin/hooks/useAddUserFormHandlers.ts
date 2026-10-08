@@ -23,6 +23,11 @@ export function useAddUserFormHandlers({
       (role) => role.name.trim().toLowerCase() === (emp.role || "").trim().toLowerCase()
     );
 
+    const empDisplayName =
+      emp.display_name?.trim() ||
+      emp.full_name?.trim() ||
+      `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+
     setNewUser((p) => {
       const activeType = p.accountType || (p.phone && !p.email ? "phone" : "email");
       return {
@@ -31,7 +36,7 @@ export function useAddUserFormHandlers({
         email: activeType === "email" ? (emp.email || "") : (p.email || ""),
         phone: activeType === "phone" ? (emp.phone || "") : (p.phone || ""),
         employee_id: emp.id,
-        display_name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || p.display_name,
+        display_name: empDisplayName || p.display_name,
         role_id: matchingRole ? String(matchingRole.id) : p.role_id,
       };
     });

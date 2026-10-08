@@ -1,5 +1,5 @@
 import type { Shift, ShiftAssignment } from "../types";
-import { calculateHours } from "../utils";
+import { calculateHours, getShiftEmployeeName } from "../utils";
 
 export function exportShiftsPDF(
   filteredShifts: Shift[],
@@ -25,7 +25,7 @@ export function exportShiftsPDF(
     .map((s) => {
       const shiftStaff = assignments
         .filter((a) => a.shift_id === s.id)
-        .map((a) => `${a.employee?.first_name || ""} ${a.employee?.last_name || ""}`.trim())
+        .map((a) => getShiftEmployeeName(a.employee))
         .join(", ");
       const hours = calculateHours(s.start_time, s.end_time);
       const isFull = (s.assignmentCount || 0) >= (s.capacity || 1);

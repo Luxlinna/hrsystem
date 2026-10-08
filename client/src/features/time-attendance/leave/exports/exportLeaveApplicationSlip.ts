@@ -1,5 +1,6 @@
 import type { Employee, LeaveFormData, LeaveTypeBalanceStats } from "../types";
 import { LEAVE_TYPE_CONFIG } from "../constants";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 interface ExportLeaveSlipOptions {
   form: LeaveFormData;
@@ -18,7 +19,7 @@ export function exportLeaveApplicationSlip({
 }: ExportLeaveSlipOptions): boolean {
   if (!employee) return false;
 
-  const empName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Employee";
+  const empName = getLeaveEmployeeName(employee);
   const empCode = employee.employee_code || employee.employee_id || employee.biometric_user_id || "—";
   const typeCfg = LEAVE_TYPE_CONFIG[form.leave_type] || LEAVE_TYPE_CONFIG.annual;
   const printDate = new Date().toLocaleDateString("en-GB", {

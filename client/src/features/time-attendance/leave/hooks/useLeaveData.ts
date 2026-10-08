@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import type { LeaveRequest, Employee, LeaveTypePolicy } from "../types";
 import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 export function normalizeLeaveRequest(r: LeaveRequest): LeaveRequest {
   const isCancelled =
@@ -48,13 +49,13 @@ export function useLeaveData() {
 
       const { data: hrStaff } = await supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, avatar_url, email, branch_id")
+        .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id")
         .or("department.ilike.%hr%,role.ilike.%hr%")
         .is("deleted_at", null).order("first_name");
       setHrApprovers(hrStaff || []);
 
       const meQuery = applyUserEmployeeFilter(
-        supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to"),
+        supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id"),
         user.email
       );
       const { data: rows } = await meQuery.limit(5);
@@ -64,8 +65,8 @@ export function useLeaveData() {
       setMyEmployee(me);
 
       if (me?.reports_to) {
-        const { data: mgr } = await supabase.from("employees").select("first_name, last_name").eq("id", me.reports_to).maybeSingle();
-        setMyApproverName(mgr ? `${mgr.first_name} ${mgr.last_name}`.trim() : "");
+        const { data: mgr } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name").eq("id", me.reports_to).maybeSingle();
+        setMyApproverName(mgr ? getLeaveEmployeeName(mgr) : "");
       } else {
         setMyApproverName("");
       }
@@ -78,7 +79,7 @@ export function useLeaveData() {
           filters.push(`and(first_name.ilike.${me.first_name.trim()},last_name.ilike.${me.last_name.trim()})`);
         }
         if (filters.length > 0) {
-          const { data: sibs } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").or(filters.join(",")).is("deleted_at", null);
+          const { data: sibs } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id").or(filters.join(",")).is("deleted_at", null);
           if (sibs && sibs.length > 0) {
             mySiblings = sibs;
           }
@@ -87,13 +88,13 @@ export function useLeaveData() {
       const myEmpIds = mySiblings.map((s) => s.id);
 
       if (canViewAll || canViewOwnBranch || isSuperAdmin) {
-        let teamQuery = supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").is("deleted_at", null).order("first_name");
+        let teamQuery = supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id").is("deleted_at", null).order("first_name");
         if (targetBranch && !isSuperAdmin) teamQuery = teamQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
         const { data: team } = await teamQuery;
         const allTeam = [...mySiblings, ...(team || []).filter((e) => !myEmpIds.includes(e.id))];
         setEmployees(allTeam);
 
-        let reqQuery = supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)").is("deleted_at", null).order("created_at", { ascending: false });
+        let reqQuery = supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id)").is("deleted_at", null).order("created_at", { ascending: false });
         if (targetBranch && !isSuperAdmin) {
           const ids = allTeam.map((e) => e.id);
           if (ids.length > 0) reqQuery = reqQuery.in("employee_id", ids);
@@ -108,12 +109,12 @@ export function useLeaveData() {
 
       if (!me) { setEmployees([]); setRequests([]); setLoading(false); return; }
 
-      const { data: directReports } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to").in("reports_to", myEmpIds).is("deleted_at", null);
+      const { data: directReports } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id").in("reports_to", myEmpIds).is("deleted_at", null);
       const combinedTeam = [...mySiblings, ...(directReports || []).filter((e) => !myEmpIds.includes(e.id))];
       setEmployees(combinedTeam);
 
       const targetIds = combinedTeam.map((e) => e.id);
-      const { data: lr } = await supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)").in("employee_id", targetIds).is("deleted_at", null).order("created_at", { ascending: false });
+      const { data: lr } = await supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id)").in("employee_id", targetIds).is("deleted_at", null).order("created_at", { ascending: false });
       const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({ ...x, employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null }));
       setRequests(allReqs);
       setCalendarRequests(allReqs.filter((r) => r.status === "approved"));

@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { Employee } from "../../types";
 import type { OvertimeStatus } from "../../types/overtimeTypes";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName } from "../../utils/employeeNameUtils";
 
 interface OvertimeApprovalSectionProps {
   formMode: "direct" | "request" | "request_for";
@@ -123,7 +124,7 @@ export const OvertimeApprovalSection = memo(function OvertimeApprovalSection({
                     const bioId = formatBiometricId(emp.biometric_user_id, emp.branches?.name);
                     return (
                       <option key={emp.id} value={emp.id}>
-                        {emp.first_name} {emp.last_name}
+                        {getAttendanceEmployeeName(emp)}
                         {bioId ? ` [${bioId}]` : ""}
                         {emp.role ? ` (${emp.role})` : ""}
                       </option>

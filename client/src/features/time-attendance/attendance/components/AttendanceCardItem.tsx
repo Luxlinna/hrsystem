@@ -1,8 +1,9 @@
 import { memo } from "react";
 import type { AttendanceRecord } from "../types";
-import { STATUS_CONFIG, formatTime, calcHours, initials } from "../constants";
+import { STATUS_CONFIG, formatTime, calcHours } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
 import type { Holiday } from "@/services/holidays/holidaysService";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface AttendanceCardItemProps {
   record: AttendanceRecord;
@@ -58,11 +59,11 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#253C7D] to-[#17254E] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-xs">
-              {emp?.avatar_url ? <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" /> : <span>{initials(emp?.first_name, emp?.last_name)}</span>}
+              {emp?.avatar_url ? <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" /> : <span>{getAttendanceEmployeeInitials(emp)}</span>}
             </div>
             <div className="min-w-0">
               <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm truncate">
-                {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                {emp ? getAttendanceEmployeeName(emp) : "—"}
               </h4>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[11px] text-gray-400 dark:text-slate-400 font-medium truncate max-w-[120px]">
@@ -96,41 +97,18 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
           </span>
         </div>
 
-        {isCardFourPunch && (r.break_out || r.break_in) ? (
-          <div className="grid grid-cols-4 gap-1.5 bg-slate-50/70 dark:bg-slate-800/60 p-2.5 rounded-2xl border border-gray-100 dark:border-slate-800 mb-3 text-center">
-            <div>
-              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">In</span>
-              <p className="font-extrabold text-gray-800 dark:text-slate-200 text-[11px] mt-0.5">{formatTime(r.clock_in)}</p>
-            </div>
-            <div>
-              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">L.Out</span>
-              <p className="font-extrabold text-amber-800 dark:text-amber-300 text-[11px] mt-0.5">{formatTime(r.break_out)}</p>
-            </div>
-            <div>
-              <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">L.In</span>
-              <p className="font-extrabold text-indigo-800 dark:text-indigo-300 text-[11px] mt-0.5">{formatTime(r.break_in)}</p>
-            </div>
-            <div>
-              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">Out</span>
-              <p className="font-extrabold text-gray-800 dark:text-slate-200 text-[11px] mt-0.5">
-                {isWorkingNow ? <span className="text-sky-600 dark:text-sky-400 font-bold">Now</span> : formatTime(r.clock_out)}
-              </p>
-            </div>
+        <div className="grid grid-cols-2 gap-2 bg-slate-50/70 dark:bg-slate-800/60 p-3 rounded-2xl border border-gray-100 dark:border-slate-800 mb-3 text-center">
+          <div>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">Check In</span>
+            <p className="font-extrabold text-gray-800 dark:text-slate-200 text-xs mt-0.5">{formatTime(r.clock_in)}</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 bg-slate-50/70 dark:bg-slate-800/60 p-3 rounded-2xl border border-gray-100 dark:border-slate-800 mb-3 text-center">
-            <div>
-              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">Check In</span>
-              <p className="font-extrabold text-gray-800 dark:text-slate-200 text-xs mt-0.5">{formatTime(r.clock_in)}</p>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">Check Out</span>
-              <p className="font-extrabold text-gray-800 dark:text-slate-200 text-xs mt-0.5">
-                {isWorkingNow ? <span className="text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />Working</span> : formatTime(r.clock_out)}
-              </p>
-            </div>
+          <div>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider block">Check Out</span>
+            <p className="font-extrabold text-gray-800 dark:text-slate-200 text-xs mt-0.5">
+              {isWorkingNow ? <span className="text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />Working</span> : formatTime(r.clock_out)}
+            </p>
           </div>
-        )}
+        </div>
 
         <div className="mb-2.5 flex items-center justify-between gap-2 text-[11px]">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -184,7 +162,7 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
                 type="button"
                 onClick={() => onLogTimeForEmployee(r.employee_id)}
                 className="w-7 h-7 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
-                title={`Create Time Log for ${emp ? `${emp.first_name} ${emp.last_name}` : "this employee"}`}
+                title={`Create Time Log for ${emp ? getAttendanceEmployeeName(emp) : "this employee"}`}
               ><i className="ri-time-line text-xs" /></button>
             )}
             <button

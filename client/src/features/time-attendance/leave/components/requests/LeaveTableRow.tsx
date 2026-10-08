@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { LeaveRequest } from "../../types";
-import { getLeaveTypeDisplay, formatDMY, formatDateTime } from "../../utils/leaveDisplayUtils";
+import { getLeaveTypeDisplay, formatDMY, formatDateTime, getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 import { LeaveRowActionsDropdown } from "./LeaveRowActionsDropdown";
 
 interface LeaveTableRowProps {
@@ -36,7 +36,7 @@ export const LeaveTableRow = memo(function LeaveTableRow({
 }: LeaveTableRowProps) {
   const typeInfo = getLeaveTypeDisplay(r.leave_type);
   const isHalfDay = r.days < 1 || (r.reason && r.reason.toLowerCase().includes("half day"));
-  const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
+  const empName = getLeaveEmployeeName(r.employees);
   const empCode = r.employees?.employee_code || r.employees?.biometric_user_id || r.employee_id.slice(0, 5);
 
   const cleanReason = (r.reason || "—")
@@ -91,7 +91,7 @@ export const LeaveTableRow = memo(function LeaveTableRow({
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center shrink-0">
-              {r.employees?.first_name?.[0] || "U"}
+              {getLeaveEmployeeInitials(r.employees)}
             </div>
           )}
           <div>

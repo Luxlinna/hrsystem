@@ -1,8 +1,9 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { EmployeeSummaryItem } from "../types";
-import { formatTime, calcHours, initials } from "../constants";
+import { formatTime, calcHours } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface DayRosterTabProps {
   rosterDate: string;
@@ -101,9 +102,9 @@ export const DayRosterTab = memo(function DayRosterTab({
                     <div className="relative">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#253C7D] to-[#17254E] text-white flex items-center justify-center font-bold text-sm overflow-hidden shadow-xs">
                         {emp.avatar_url ? (
-                          <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+                          <img src={emp.avatar_url} alt={getAttendanceEmployeeName(emp)} className="w-full h-full object-cover" />
                         ) : (
-                          <span>{initials(emp.first_name, emp.last_name)}</span>
+                          <span>{getAttendanceEmployeeInitials(emp)}</span>
                         )}
                       </div>
                       <span
@@ -124,7 +125,7 @@ export const DayRosterTab = memo(function DayRosterTab({
                         to={`/employees/${emp.id}`}
                         className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm leading-tight block hover:underline"
                       >
-                        {emp.first_name} {emp.last_name}
+                        {getAttendanceEmployeeName(emp)}
                       </Link>
                       {emp.biometric_user_id && (
                         <div className="mt-1">
@@ -153,18 +154,6 @@ export const DayRosterTab = memo(function DayRosterTab({
                         <span className="text-gray-500 text-[11px]">Check In:</span>
                         <span className="font-bold text-gray-900">{formatTime(rRecord.clock_in)}</span>
                       </div>
-                      {rRecord.break_out && (
-                        <div className="flex items-center justify-between text-amber-700">
-                          <span className="text-[11px] font-semibold">Lunch Out:</span>
-                          <span className="font-bold">{formatTime(rRecord.break_out)}</span>
-                        </div>
-                      )}
-                      {rRecord.break_in && (
-                        <div className="flex items-center justify-between text-indigo-700">
-                          <span className="text-[11px] font-semibold">Lunch In:</span>
-                          <span className="font-bold">{formatTime(rRecord.break_in)}</span>
-                        </div>
-                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500 text-[11px]">Check Out:</span>
                         <span className="font-bold text-gray-900">
@@ -207,7 +196,7 @@ export const DayRosterTab = memo(function DayRosterTab({
                       type="button"
                       onClick={() => onLogTimeForEmployee(emp.id)}
                       className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer"
-                      title={`Create Time Log for ${emp.first_name} ${emp.last_name}`}
+                      title={`Create Time Log for ${getAttendanceEmployeeName(emp)}`}
                     >
                       <i className="ri-time-line text-xs" />
                       Log Time

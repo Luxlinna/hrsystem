@@ -1,10 +1,11 @@
 import type { Employee, OutsideWorkTask } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfWorkOutsideCSV(
   tasks: OutsideWorkTask[],
   employee: Employee | null
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const headers = ["Employee", "Task Title", "Work Location", "Due Date", "Check-In At", "Check-Out At", "Status"];
 
   const rows = tasks.map((t) => [

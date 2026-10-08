@@ -2,6 +2,7 @@ import React, { memo, useEffect } from "react";
 import type { Employee, NewRecordForm, WorkLocation } from "../types";
 import { STATUS_CONFIG } from "../constants";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
+import { getAttendanceEmployeeName } from "../utils/employeeNameUtils";
 
 interface LogAttendanceModalProps {
   isOpen: boolean;
@@ -91,7 +92,7 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
               />
             ) : (
               <div className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800">
-                {myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name} — ${myEmployee.department}` : "—"}
+                {myEmployee ? `${getAttendanceEmployeeName(myEmployee)} — ${myEmployee.department}` : "—"}
               </div>
             )}
           </div>

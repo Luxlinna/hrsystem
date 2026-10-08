@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { StaffWorkloadItem } from "../../types";
+import { getShiftEmployeeName, getShiftEmployeeInitials } from "../../utils";
 
 interface WorkloadDrawerProps {
   show: boolean;
@@ -55,11 +56,11 @@ export const WorkloadDrawer = memo(function WorkloadDrawer({
                     {emp.avatar_url ? (
                       <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      `${emp.first_name[0] || ""}${emp.last_name[0] || ""}`
+                      getShiftEmployeeInitials(emp)
                     )}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">{emp.first_name} {emp.last_name}</p>
+                    <p className="text-xs font-bold text-slate-900 truncate">{getShiftEmployeeName(emp)}</p>
                     <p className="text-[10px] text-slate-400 truncate">{emp.role || "Staff"} &middot; {emp.department}</p>
                   </div>
                 </div>

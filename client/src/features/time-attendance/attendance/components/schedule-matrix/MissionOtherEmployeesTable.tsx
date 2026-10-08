@@ -1,5 +1,6 @@
 import { useState, memo } from "react";
 import type { FullEmployee } from "./CellLeaveEmployeeCard";
+import { getAttendanceEmployeeName } from "../../utils/employeeNameUtils";
 
 interface MissionOtherEmployeesTableProps {
   allEmployees: FullEmployee[];
@@ -25,9 +26,10 @@ export const MissionOtherEmployeesTable = memo(function MissionOtherEmployeesTab
 
   const filteredEmployees = availableEmployees.filter((e) => {
     const term = search.toLowerCase();
-    const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+    const displayName = getAttendanceEmployeeName(e).toLowerCase();
+    const rawName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
     const code = (e.employee_code || e.biometric_user_id || "").toLowerCase();
-    return fullName.includes(term) || code.includes(term);
+    return displayName.includes(term) || rawName.includes(term) || code.includes(term);
   });
 
   return (
@@ -82,7 +84,7 @@ export const MissionOtherEmployeesTable = memo(function MissionOtherEmployeesTab
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-gray-800 dark:text-slate-200">
-                      {emp.first_name} {emp.last_name}
+                      {getAttendanceEmployeeName(emp)}
                     </span>
                     <span className="text-[10px] text-gray-400">
                       ({emp.employee_code || emp.biometric_user_id || "—"})
@@ -130,7 +132,7 @@ export const MissionOtherEmployeesTable = memo(function MissionOtherEmployeesTab
                     {emp.employee_code || emp.biometric_user_id || "—"}
                   </td>
                   <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-slate-100">
-                    {emp.first_name} {emp.last_name}
+                    {getAttendanceEmployeeName(emp)}
                   </td>
                   <td className="py-2.5 px-3 text-gray-600 dark:text-slate-300">
                     {emp.department || "—"}

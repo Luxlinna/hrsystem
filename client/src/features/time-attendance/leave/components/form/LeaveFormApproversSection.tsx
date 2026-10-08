@@ -1,6 +1,7 @@
 import React from "react";
 import type { Employee } from "../../types";
 import type { ApplicantTier } from "../../utils/leaveApprovalChain";
+import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 
 interface LeaveFormApproversSectionProps {
   lineManager: Employee | null;
@@ -23,7 +24,7 @@ export function LeaveFormApproversSection({
     : "Step 1 — Direct Manager";
   const managerSub = isManager
     ? "Direct Line Manager / Supervisor"
-    : (lineManager ? `${lineManager.first_name} ${lineManager.last_name}` : myApproverName ? `${myApproverName}` : "Direct Line Manager / Supervisor");
+    : (lineManager ? getLeaveEmployeeName(lineManager) : myApproverName ? `${myApproverName}` : "Direct Line Manager / Supervisor");
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-2.5 sm:p-3.5 shadow-2xs space-y-2">

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { LeaveRequest } from "../../types";
-import { getLeaveTypeDisplay, formatDateTime } from "../../utils/leaveDisplayUtils";
+import { getLeaveTypeDisplay, formatDateTime, getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 
 interface LeaveDetailTypeInfoProps {
   request: LeaveRequest;
@@ -28,7 +28,7 @@ export const LeaveDetailTypeInfo = memo(function LeaveDetailTypeInfo({
     .replace(/\[Endorsed[^\]]+\]/g, "")
     .trim() || "—";
 
-  const requestedBy = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
+  const requestedBy = getLeaveEmployeeName(r.employees);
 
   const statusPill = (() => {
     if (r.status === "approved") {

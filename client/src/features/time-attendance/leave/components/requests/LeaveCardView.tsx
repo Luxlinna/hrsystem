@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { LeaveRequest } from "../../types";
 import { formatDateShort } from "../../dateUtils";
-import { getLeaveTypeDisplay } from "../../utils/leaveDisplayUtils";
+import { getLeaveTypeDisplay, getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 import { canUserActOnRequest } from "../../utils/leaveApprovalChain";
 
 interface LeaveCardViewProps {
@@ -46,9 +46,9 @@ export const LeaveCardView = memo(function LeaveCardView({
         const canCancel = r.status === "pending" || ((isOwn || isSuperAdmin || isBranchAdmin || _canApproveLeave) && r.status === "approved");
         const canDelete = isSuperAdmin || isBranchAdmin || _canApproveLeave || isOwn;
         
-        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
+        const empName = getLeaveEmployeeName(r.employees);
         const deptName = r.employees?.department || "General";
-        const initials = `${r.employees?.first_name?.[0] || ""}${r.employees?.last_name?.[0] || ""}`.toUpperCase() || "EM";
+        const initials = getLeaveEmployeeInitials(r.employees);
         const reqCode = `REQ-${(idx + 100)}`;
 
         const { canAct, actionLabel } = canUserActOnRequest({

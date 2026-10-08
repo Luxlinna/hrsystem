@@ -154,7 +154,7 @@ class AttendanceCacheManager {
           supabase
             .from("employees")
             .select(
-              "id, first_name, last_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site"
+              "id, first_name, last_name, display_name, full_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site"
             ),
           email
         );

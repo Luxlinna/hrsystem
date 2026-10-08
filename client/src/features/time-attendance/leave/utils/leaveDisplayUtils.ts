@@ -90,3 +90,32 @@ export function formatDateTime(dateStr?: string | null): string {
   const displayH = String(hours % 12 === 0 ? 12 : hours % 12).padStart(2, "0");
   return `${day}/${month}/${year} ${displayH}:${mins} ${ampm}`;
 }
+
+export function getLeaveEmployeeName(emp?: {
+  first_name?: string | null;
+  last_name?: string | null;
+  display_name?: string | null;
+  full_name?: string | null;
+} | null): string {
+  if (!emp) return "Employee";
+  return (
+    emp.display_name?.trim() ||
+    emp.full_name?.trim() ||
+    `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+    "Employee"
+  );
+}
+
+export function getLeaveEmployeeInitials(emp?: {
+  first_name?: string | null;
+  last_name?: string | null;
+  display_name?: string | null;
+  full_name?: string | null;
+} | null): string {
+  if (!emp) return "E";
+  const name = getLeaveEmployeeName(emp);
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return (name[0] || "E").toUpperCase();
+}
+

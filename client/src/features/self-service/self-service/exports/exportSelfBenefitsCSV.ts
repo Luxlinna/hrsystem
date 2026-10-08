@@ -1,11 +1,12 @@
 import type { Employee } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 import type { SelfBenefitEnrollment } from "./exportSelfBenefitsPDF";
 
 export function exportSelfBenefitsCSV(
   enrollments: SelfBenefitEnrollment[],
   employee: Employee | null
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const headers = ["Employee", "Plan Name", "Provider", "Type", "Coverage Amount", "Employee Contribution", "Status", "Enrolled Date"];
 
   const rows = enrollments.map((e) => [

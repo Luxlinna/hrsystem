@@ -11,7 +11,7 @@ interface UseEmployeesPageStateParams {
   setForm: (f: any) => void;
   setShowAddModal: (show: boolean) => void;
   setEditingEmployeeId: (id: string | null) => void;
-  inviteUser: (email: string, first: string, last: string, role?: string) => Promise<boolean>;
+  inviteUser: (email: string, first: string, last: string, role?: string, empDisplayName?: string) => Promise<boolean>;
 }
 
 export function useEmployeesPageState({
@@ -73,7 +73,7 @@ export function useEmployeesPageState({
   }, [isSuperAdmin, userBranchId, targetBranch, branches, setForm, setShowAddModal, setEditingEmployeeId]);
 
   const handleInviteEmployee = useCallback(
-    (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role),
+    (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role, e.display_name || e.full_name),
     [inviteUser]
   );
 

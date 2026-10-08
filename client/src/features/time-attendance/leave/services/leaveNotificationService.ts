@@ -4,6 +4,7 @@ import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/teleg
 import type { Employee, LeaveRequest } from "../types";
 import { LEAVE_TYPE_CONFIG } from "../constants";
 import { getApplicantTier } from "../utils/leaveApprovalChain";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 export async function notifyNewLeaveRequest({
   request,
@@ -16,7 +17,7 @@ export async function notifyNewLeaveRequest({
   actorName: string;
   isDirectHr: boolean;
 }) {
-  const empName = requester ? `${requester.first_name} ${requester.last_name}`.trim() : actorName;
+  const empName = requester ? getLeaveEmployeeName(requester) : actorName;
   const leaveLabel = LEAVE_TYPE_CONFIG[request.leave_type]?.label || request.leave_type;
   const durationStr = `${request.days} day(s) (${request.start_date} → ${request.end_date})`;
   const tier = getApplicantTier(requester, isDirectHr);
@@ -99,9 +100,7 @@ export async function notifyLeaveManagerEndorsed({
   note?: string;
   isBuAdminEndorsement?: boolean;
 }) {
-  const empName = request.employees
-    ? `${request.employees.first_name} ${request.employees.last_name}`.trim()
-    : "Employee";
+  const empName = getLeaveEmployeeName(request.employees);
   const leaveLabel = LEAVE_TYPE_CONFIG[request.leave_type]?.label || request.leave_type;
   const durationStr = `${request.days} day(s) (${request.start_date} → ${request.end_date})`;
   const endorserTitle = isBuAdminEndorsement ? "BU Admin" : "Line Manager";
@@ -155,9 +154,7 @@ export async function notifyLeaveFinalDecision({
   isApproved: boolean;
   note?: string;
 }) {
-  const empName = request.employees
-    ? `${request.employees.first_name} ${request.employees.last_name}`.trim()
-    : "Employee";
+  const empName = getLeaveEmployeeName(request.employees);
   const leaveLabel = LEAVE_TYPE_CONFIG[request.leave_type]?.label || request.leave_type;
   const durationStr = `${request.days} day(s) (${request.start_date} → ${request.end_date})`;
 

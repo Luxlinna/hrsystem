@@ -4,6 +4,8 @@ export interface FullEmployee {
   id: string;
   first_name: string;
   last_name: string;
+  display_name?: string | null;
+  full_name?: string | null;
   employee_code?: string | null;
   biometric_user_id?: string | null;
   role?: string | null;
@@ -74,7 +76,7 @@ export const CellLeaveEmployeeCard = memo(function CellLeaveEmployeeCard({
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-3.5 text-xs">
           <div>
             <h4 className="font-bold text-gray-900 dark:text-slate-100 text-[13px] leading-tight mb-2">
-              {employee ? `${employee.first_name} ${employee.last_name}` : fallbackName}
+              {employee ? (employee.display_name?.trim() || employee.full_name?.trim() || `${employee.first_name} ${employee.last_name}`) : fallbackName}
             </h4>
             <div className="mb-2">
               <p className="font-medium text-gray-800 dark:text-slate-200">{empCode}</p>

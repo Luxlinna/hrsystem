@@ -20,6 +20,10 @@ export default function LoginPage() {
     telegramBotUrl,
     setTelegramBotUrl,
     otpInputRef,
+    isLocked,
+    lockoutSeconds,
+    singleAttemptAllowed,
+    attemptsRemaining,
     handlePasswordSubmit,
     handleOtpChange,
     handleOtpKeyDown,
@@ -101,6 +105,10 @@ export default function LoginPage() {
             showPassword={showPassword}
             setShowPassword={setShowPassword}
             loading={loading}
+            isLocked={isLocked}
+            lockoutSeconds={lockoutSeconds}
+            singleAttemptAllowed={singleAttemptAllowed}
+            attemptsRemaining={attemptsRemaining}
             onSubmit={handlePasswordSubmit}
           />
         ) : (

@@ -121,7 +121,7 @@ export function useSelfServiceLeaveMutations({
         if (error) throw error;
 
         const actorName = currentEmployee
-          ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
+          ? currentEmployee.display_name?.trim() || currentEmployee.full_name?.trim() || `${currentEmployee.first_name} ${currentEmployee.last_name}`.trim()
           : "Employee";
 
         const actorRole = currentEmployee?.role || "Employee";

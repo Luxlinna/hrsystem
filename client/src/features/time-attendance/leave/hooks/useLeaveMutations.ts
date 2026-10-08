@@ -6,6 +6,7 @@ import { uploadMediaToS3 } from "@/lib/s3-storage";
 import type { LeaveRequest, Employee, LeaveFormData } from "../types";
 import { INITIAL_LEAVE_FORM } from "../constants";
 import { calculateDays, rangesOverlap } from "../dateUtils";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 import { useLeaveApprovalDecision } from "./useLeaveApprovalDecision";
 
 interface UseLeaveMutationsProps {
@@ -150,7 +151,7 @@ export function useLeaveMutations({
         setFormData(INITIAL_LEAVE_FORM);
 
         const requester = employees.find((x) => x.id === targetEmpId) || myEmployee;
-        const empName = requester ? `${requester.first_name} ${requester.last_name}` : "An employee";
+        const empName = requester ? getLeaveEmployeeName(requester) : "An employee";
 
         logActivity({
           module: "leave",

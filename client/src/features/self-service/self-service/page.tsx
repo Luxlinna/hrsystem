@@ -64,7 +64,9 @@ export default function SelfServicePage() {
   }
 
   const employeeName = selectedEmployee
-    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+    ? selectedEmployee.display_name?.trim() ||
+      selectedEmployee.full_name?.trim() ||
+      `${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim()
     : "";
 
   return (

@@ -228,20 +228,7 @@ export function useAttendance() {
     }
   }, [mutations, editingRecord]);
 
-  const isFourPunchMode = useMemo(() => {
-    // If filtering by specific work location:
-    if (filters.filterWorkLocation && filters.filterWorkLocation !== "all") {
-      if (filters.filterWorkLocation === "main") {
-        const mainSite = data.workLocations.find((wl) => wl.is_default);
-        return mainSite ? Boolean(mainSite.is_four_punch_enabled) : false;
-      }
-      const site = data.workLocations.find((wl) => wl.id === filters.filterWorkLocation);
-      return site ? Boolean(site.is_four_punch_enabled) : false;
-    }
-
-    // When viewing all locations in a branch, check if any site has 4-punch policy enabled
-    return data.workLocations.some((wl) => Boolean(wl.is_four_punch_enabled));
-  }, [data.workLocations, filters.filterWorkLocation]);
+  const isFourPunchMode = false;
 
   return {
     canManage,

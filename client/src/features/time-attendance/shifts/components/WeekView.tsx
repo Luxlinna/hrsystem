@@ -1,4 +1,4 @@
-import { formatDate, calculateHours } from "../utils";
+import { formatDate, calculateHours, getShiftEmployeeName, getShiftEmployeeInitials } from "../utils";
 import { DAYS_SHORT, deptColors } from "../constants";
 import type { Shift, ShiftAssignment, DensityMode } from "../types";
 
@@ -114,11 +114,11 @@ export function WeekView({
                       <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between gap-1.5">
                         <div className="flex -space-x-1.5 overflow-hidden">
                           {shiftStaff.slice(0, 3).map((a) => (
-                            <span key={a.id} title={`${a.employee?.first_name} ${a.employee?.last_name}`} className="w-5 h-5 rounded-full border border-white bg-slate-200 text-[#253C7D] flex items-center justify-center text-[8px] font-bold overflow-hidden shadow-2xs">
+                            <span key={a.id} title={getShiftEmployeeName(a.employee)} className="w-5 h-5 rounded-full border border-white bg-slate-200 text-[#253C7D] flex items-center justify-center text-[8px] font-bold overflow-hidden shadow-2xs">
                               {a.employee?.avatar_url ? (
                                 <img src={a.employee.avatar_url} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                `${a.employee?.first_name?.[0] || ""}${a.employee?.last_name?.[0] || ""}`.toUpperCase()
+                                getShiftEmployeeInitials(a.employee)
                               )}
                             </span>
                           ))}

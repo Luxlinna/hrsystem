@@ -9,7 +9,7 @@ interface UseEmployeesSelectionProps {
   actorName: string;
   roleName: string;
   loadEmployees: () => void;
-  inviteUser: (email: string, firstName: string, lastName: string, roleName: string) => Promise<boolean>;
+  inviteUser: (email: string, firstName: string, lastName: string, roleName: string, empDisplayName?: string) => Promise<boolean>;
 }
 
 export function useEmployeesSelection({
@@ -53,7 +53,11 @@ export function useEmployeesSelection({
     let successCount = 0;
     for (const emp of toInvite) {
       if (emp.email) {
-        const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role || "");
+        const empDisplayName =
+          emp.display_name?.trim() ||
+          emp.full_name?.trim() ||
+          `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+        const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role || "", empDisplayName);
         if (ok) successCount++;
       }
     }

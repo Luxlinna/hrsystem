@@ -1,11 +1,12 @@
 import type { Employee, OutsideWorkTask } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfWorkOutsidePDF(
   tasks: OutsideWorkTask[],
   employee: Employee | null,
   title = "My Outside Work & Fieldwork History"
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const dept = employee?.department || "General";
   const total = tasks.length;
   const completedCount = tasks.filter((t) => t.work_status === "checked_out").length;

@@ -1,10 +1,11 @@
 import type { Employee, LeaveRequest } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfLeaveCSV(
   leaves: LeaveRequest[],
   employee: Employee | null
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const headers = ["Employee", "Leave Type", "Start Date", "End Date", "Days", "Reason", "Status", "Submitted Date"];
 
   const rows = leaves.map((l) => [

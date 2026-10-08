@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Employee } from "../../types";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../../utils/employeeNameUtils";
 
 interface TimeLogEmployeeSectionProps {
   isEmployeeFixed: boolean;
@@ -55,13 +56,13 @@ export const TimeLogEmployeeSection = memo(function TimeLogEmployeeSection({
                   {selectedEmployee.avatar_url ? (
                     <img src={selectedEmployee.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span>{selectedEmployee.first_name?.[0] || "E"}</span>
+                    <span>{getAttendanceEmployeeInitials(selectedEmployee)}</span>
                   )}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-gray-900 dark:text-slate-100 truncate">
-                      {selectedEmployee.first_name} {selectedEmployee.last_name}
+                      {getAttendanceEmployeeName(selectedEmployee)}
                     </span>
                     {buName && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0">
@@ -93,7 +94,7 @@ export const TimeLogEmployeeSection = memo(function TimeLogEmployeeSection({
                 <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
                   <span className={selectedEmployee ? "font-bold text-gray-900 dark:text-slate-100 truncate" : "text-gray-400"}>
                     {selectedEmployee
-                      ? `${selectedEmployee.first_name} ${selectedEmployee.last_name} — ${selectedEmployee.role || selectedEmployee.department || "Staff"}`
+                      ? `${getAttendanceEmployeeName(selectedEmployee)} — ${selectedEmployee.role || selectedEmployee.department || "Staff"}`
                       : "Search or select employee..."}
                   </span>
                   {selectedEmployee && buName && (
@@ -137,7 +138,7 @@ export const TimeLogEmployeeSection = memo(function TimeLogEmployeeSection({
                         >
                           <div className="flex-1 min-w-0 pr-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-bold">{emp.first_name} {emp.last_name}</p>
+                              <p className="font-bold">{getAttendanceEmployeeName(emp)}</p>
                               {emp.biometric_user_id && (
                                 <span
                                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"

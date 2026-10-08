@@ -55,13 +55,15 @@ export const CreateMissionModal = memo(function CreateMissionModal({
       try {
         const { data } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
+          .select("id, first_name, last_name, display_name, full_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
           .is("deleted_at", null)
           .order("first_name");
         if (data && active) {
           setEmployees(data as any[]);
           const sm: Record<string, string> = {};
-          data.forEach((e: any) => { sm[e.id] = `${e.first_name || ""} ${e.last_name || ""}`.trim(); });
+          data.forEach((e: any) => {
+            sm[e.id] = (e.display_name?.trim() || e.full_name?.trim() || `${e.first_name || ""} ${e.last_name || ""}`).trim();
+          });
           setSupervisorsMap(sm);
         }
       } catch (err) {
@@ -104,7 +106,8 @@ export const CreateMissionModal = memo(function CreateMissionModal({
         attachmentFile,
       });
 
-      toast("Success", `Mission created successfully and added to Tasks for ${selectedEmployee?.first_name || target.empName}`, "success");
+      const empLabel = selectedEmployee?.display_name || selectedEmployee?.full_name || selectedEmployee?.first_name || target.empName;
+      toast("Success", `Mission created successfully and added to Tasks for ${empLabel}`, "success");
       onSaved?.();
       onClose();
     } catch (err: any) {
@@ -133,7 +136,9 @@ export const CreateMissionModal = memo(function CreateMissionModal({
               <div className="sm:col-span-9">
                 <select value={selectedEmpId} onChange={(e) => setSelectedEmpId(e.target.value)} required className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-md text-xs focus:outline-none focus:border-sky-500 cursor-pointer">
                   {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} ({e.employee_code || e.biometric_user_id || "No Code"})</option>
+                    <option key={e.id} value={e.id}>
+                      {e.display_name?.trim() || e.full_name?.trim() || `${e.first_name} ${e.last_name}`} ({e.employee_code || e.biometric_user_id || "No Code"})
+                    </option>
                   ))}
                 </select>
               </div>

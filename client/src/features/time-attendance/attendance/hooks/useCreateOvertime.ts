@@ -158,7 +158,8 @@ export function useCreateOvertime({
         return;
       }
 
-      toast("Success", `Logged ${calculatedHours}h overtime for ${selectedEmployee?.first_name || "Employee"}`, "success");
+      const empName = selectedEmployee?.display_name || selectedEmployee?.full_name || selectedEmployee?.first_name || "Employee";
+      toast("Success", `Logged ${calculatedHours}h overtime for ${empName}`, "success");
       await onSaved?.();
       onBack();
     } catch (err: any) {

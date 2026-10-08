@@ -4,6 +4,7 @@ import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
 import { formatDateShort } from "../../dateUtils";
 import { getRequestTier } from "../../utils/leaveApprovalChain";
+import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 
 interface LeaveApprovalModalProps {
   isOpen: boolean;
@@ -69,7 +70,7 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
           <div className="flex items-center justify-between">
             <span className="text-gray-400">Employee:</span>
             <span className="font-bold text-gray-900">
-              {selectedRequest.employees?.first_name} {selectedRequest.employees?.last_name}
+              {getLeaveEmployeeName(selectedRequest.employees)}
             </span>
           </div>
           <div className="flex items-center justify-between">

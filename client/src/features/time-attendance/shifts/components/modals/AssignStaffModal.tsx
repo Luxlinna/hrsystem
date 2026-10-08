@@ -54,7 +54,7 @@ export const AssignStaffModal = memo(function AssignStaffModal({
     if (assignDeptFilter !== "all" && emp.department !== assignDeptFilter) return false;
     if (!assignSearch.trim()) return true;
     const q = assignSearch.trim().toLowerCase();
-    return `${emp.first_name} ${emp.last_name} ${emp.department} ${emp.role}`.toLowerCase().includes(q);
+    return `${emp.display_name || ""} ${emp.full_name || ""} ${emp.first_name} ${emp.last_name} ${emp.department} ${emp.role}`.toLowerCase().includes(q);
   });
 
   const isMaxSelected = assignEmployeeIds.length >= remainingSpots;

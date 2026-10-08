@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 
 export interface SearchableEmployee {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
+  display_name?: string | null;
+  full_name?: string | null;
   department?: string;
   role?: string;
   avatar_url?: string | null;
@@ -23,7 +25,18 @@ interface Props {
   excludeIds?: string[];
 }
 
-const initials = (first: string, last: string) => `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
+export function getSearchableEmployeeDisplayName(e?: SearchableEmployee | null): string {
+  if (!e) return "";
+  return e.display_name?.trim() || e.full_name?.trim() || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "Employee";
+}
+
+export function getSearchableEmployeeInitials(e?: SearchableEmployee | null): string {
+  if (!e) return "E";
+  const name = getSearchableEmployeeDisplayName(e);
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return (name[0] || "E").toUpperCase();
+}
 
 /**
  * Searchable employee combobox — type to filter by name, ID, department, role, or BU/branch;
@@ -48,7 +61,9 @@ export default function EmployeeSearchSelect({
   const filtered = available.filter((e) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return `${e.first_name} ${e.last_name} ${e.employee_id || ""} ${e.department || ""} ${e.role || ""} ${e.app_role || ""} ${e.branch_name || ""}`.toLowerCase().includes(q);
+    const name = getSearchableEmployeeDisplayName(e).toLowerCase();
+    const raw = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+    return `${name} ${raw} ${e.employee_id || ""} ${e.department || ""} ${e.role || ""} ${e.app_role || ""} ${e.branch_name || ""}`.toLowerCase().includes(q);
   });
 
   // Close when clicking anywhere outside the combobox.
@@ -74,7 +89,7 @@ export default function EmployeeSearchSelect({
           type="text"
           role="combobox"
           aria-expanded={open}
-          value={open ? query : selected ? `${selected.first_name} ${selected.last_name}` : query}
+          value={open ? query : selected ? getSearchableEmployeeDisplayName(selected) : query}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
@@ -95,7 +110,7 @@ export default function EmployeeSearchSelect({
               if (emp) {
                 e.preventDefault();
                 onChange(emp.id);
-                setQuery(`${emp.first_name} ${emp.last_name}`);
+                setQuery(getSearchableEmployeeDisplayName(emp));
                 setOpen(false);
               }
             } else if (e.key === "Escape") {
@@ -126,7 +141,7 @@ export default function EmployeeSearchSelect({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onChange(emp.id);
-                    setQuery(`${emp.first_name} ${emp.last_name}`);
+                    setQuery(getSearchableEmployeeDisplayName(emp));
                     setOpen(false);
                   }}
                   onMouseEnter={() => setHighlight(i)}
@@ -136,14 +151,14 @@ export default function EmployeeSearchSelect({
                     {emp.avatar_url ? (
                       <img src={emp.avatar_url} alt="" className="w-7 h-7 object-cover" />
                     ) : (
-                      initials(emp.first_name, emp.last_name)
+                      getSearchableEmployeeInitials(emp)
                     )}
                   </span>
                   <span className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-[13px] font-medium text-gray-900 truncate">
-                          {emp.first_name} {emp.last_name}
+                          {getSearchableEmployeeDisplayName(emp)}
                         </span>
                         {emp.employee_id && (
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-bold shrink-0">

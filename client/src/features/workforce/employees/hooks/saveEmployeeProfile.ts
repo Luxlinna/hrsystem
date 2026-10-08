@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { normalizePhone } from "@/lib/phoneUtils";
+import { normalizePhone, phoneToSyntheticEmail } from "@/lib/phoneUtils";
 import { formatPaddedPin } from "@/lib/biometricUtils";
 import { logActivity } from "@/lib/audit";
 import type { Employee } from "../types";
@@ -170,6 +170,28 @@ export async function executeSaveEmployeeProfile({
   } else {
     toast("Saved", "Employee profile updated successfully", "success");
     setEditing(false);
+    const finalDisplayName =
+      form.display_name?.trim() ||
+      form.full_name?.trim() ||
+      `${form.first_name || ""} ${form.last_name || ""}`.trim();
+
+    if (finalDisplayName && (cleanEmail || cleanPhone)) {
+      const identifiers: string[] = [];
+      if (cleanEmail) identifiers.push(cleanEmail.toLowerCase());
+      if (cleanPhone) {
+        identifiers.push(phoneToSyntheticEmail(cleanPhone));
+        const digits = cleanPhone.replace(/\D/g, "");
+        if (digits) identifiers.push(`${digits}@phone.hrmsystem.local`);
+      }
+      if (identifiers.length > 0) {
+        supabase
+          .from("user_role_assignments")
+          .update({ display_name: finalDisplayName })
+          .in("email", identifiers)
+          .then();
+      }
+    }
+
     logActivity({
       module: "employees",
       action: "updated",

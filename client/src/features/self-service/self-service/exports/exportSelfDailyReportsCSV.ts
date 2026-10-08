@@ -1,10 +1,11 @@
 import type { Employee, WorkLog } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfDailyReportsCSV(
   logs: WorkLog[],
   employee: Employee | null
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const headers = ["Employee", "Date", "Start Time", "End Time", "Activity", "Notes"];
 
   const rows = logs.map((l) => [

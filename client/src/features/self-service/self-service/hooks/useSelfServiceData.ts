@@ -57,7 +57,7 @@ export function useSelfServiceData() {
       const empQuery = applyUserEmployeeFilter(
         supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)"),
+          .select("id, first_name, last_name, display_name, full_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)"),
         user.email
       );
       const { data: rows } = await empQuery
@@ -80,10 +80,16 @@ export function useSelfServiceData() {
         if (emp.reports_to) {
           const { data: mgr } = await supabase
             .from("employees")
-            .select("first_name, last_name")
+            .select("first_name, last_name, display_name, full_name")
             .eq("id", emp.reports_to)
             .maybeSingle();
-          if (mgr) setManagerName(`${mgr.first_name} ${mgr.last_name}`.trim());
+          if (mgr) {
+            setManagerName(
+              mgr.display_name?.trim() ||
+              mgr.full_name?.trim() ||
+              `${mgr.first_name} ${mgr.last_name}`.trim()
+            );
+          }
         }
       } else {
         setNoOwnRecord(true);

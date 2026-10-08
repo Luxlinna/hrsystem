@@ -26,7 +26,11 @@ export default function Sidebar() {
     .filter((g) => g.items.length > 0);
 
   const isExpanded = !collapsed || hovered;
-  const displayName = (myEmployee && `${myEmployee.first_name} ${myEmployee.last_name}`.trim()) || (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
+  const displayName =
+    (myEmployee && (myEmployee.display_name?.trim() || myEmployee.full_name?.trim() || `${myEmployee.first_name} ${myEmployee.last_name}`.trim())) ||
+    (user?.user_metadata?.display_name as string) ||
+    user?.email?.split("@")[0] ||
+    "HR Admin";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const avatarUrl = myEmployee?.avatar_url || (user?.user_metadata?.avatar_url as string | undefined);
 

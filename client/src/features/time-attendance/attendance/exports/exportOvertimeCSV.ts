@@ -26,7 +26,7 @@ export function exportOvertimeCSV(records: OvertimeRecord[]) {
   ];
 
   const rows = records.map((r) => [
-    `"${r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown"}"`,
+    `"${r.employees ? (r.employees.display_name || r.employees.full_name || `${r.employees.first_name} ${r.employees.last_name}`) : "Unknown"}"`,
     `"${r.employees?.department || ""}"`,
     `"${r.employees?.role || ""}"`,
     `"${r.overtime_type}"`,

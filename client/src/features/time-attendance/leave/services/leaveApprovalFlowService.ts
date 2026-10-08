@@ -1,4 +1,5 @@
 import type { Employee } from "../types";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 export interface ApproverPerson {
   id: string;
@@ -100,7 +101,7 @@ export function saveApproverFlow(
 export function mapEmployeeToApprover(emp: Employee): ApproverPerson {
   return {
     id: emp.id,
-    name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Employee",
+    name: getLeaveEmployeeName(emp),
     role: emp.role || emp.department || "Officer",
     avatar_url: emp.avatar_url || null,
   };

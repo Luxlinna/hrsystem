@@ -256,7 +256,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
         if (levelList.length > 0 && !levelList.some((l) => empLevel === l || empLevel.includes(l))) return false;
       }
       if (query) {
-        const full = `${e.first_name} ${e.last_name} ${e.employee_code || ""}`.toLowerCase();
+        const full = `${e.display_name || ""} ${e.full_name || ""} ${e.first_name || ""} ${e.last_name || ""} ${e.employee_code || ""}`.toLowerCase();
         if (!full.includes(query)) return false;
       }
       return true;

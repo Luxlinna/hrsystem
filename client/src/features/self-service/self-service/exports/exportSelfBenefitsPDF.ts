@@ -1,4 +1,5 @@
 import type { Employee } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export interface SelfBenefitEnrollment {
   id: string;
@@ -20,7 +21,7 @@ export function exportSelfBenefitsPDF(
   employee: Employee | null,
   title = "My Benefits Coverage & Insurance Programs"
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const dept = employee?.department || "General";
   const total = enrollments.length;
   const activeCount = enrollments.filter((e) => e.status === "enrolled" || e.status === "active").length;

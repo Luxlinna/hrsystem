@@ -1,11 +1,12 @@
 import type { Employee } from "../types";
 import type { SelfPayslip } from "./exportSelfPayslipsPDF";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfPayslipsCSV(
   payslips: SelfPayslip[],
   employee: Employee | null
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const headers = ["Employee", "Pay Period", "Base Salary", "Bonus", "Gross Pay", "Deductions", "Net Pay", "Status"];
 
   const rows = payslips.map((p) => {

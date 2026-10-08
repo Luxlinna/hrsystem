@@ -45,6 +45,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests', details?: any) {
+    super(message, 429, details);
+  }
+}
+
 export function handlePrismaError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {

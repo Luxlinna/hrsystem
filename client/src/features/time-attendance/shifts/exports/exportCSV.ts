@@ -1,5 +1,5 @@
 import type { Shift, ShiftAssignment } from "../types";
-import { formatDate, calculateHours } from "../utils";
+import { formatDate, calculateHours, getShiftEmployeeName } from "../utils";
 
 export function exportShiftsCSV(
   filteredShifts: Shift[],
@@ -25,7 +25,7 @@ export function exportShiftsCSV(
   const rows = filteredShifts.map((s) => {
     const shiftStaff = assignments
       .filter((a) => a.shift_id === s.id)
-      .map((a) => `${a.employee?.first_name || ""} ${a.employee?.last_name || ""}`.trim())
+      .map((a) => getShiftEmployeeName(a.employee))
       .join("; ");
     const hours = calculateHours(s.start_time, s.end_time);
 

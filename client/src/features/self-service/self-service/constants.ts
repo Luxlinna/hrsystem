@@ -36,3 +36,16 @@ export const ATTENDANCE_STATUS_COLOR: Record<string, string> = {
   remote: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800/60",
   half_day: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60",
 };
+
+export function getSelfServiceEmployeeName(
+  employee: { display_name?: string | null; full_name?: string | null; first_name?: string | null; last_name?: string | null } | null | undefined,
+  fallback = "Employee"
+): string {
+  if (!employee) return fallback;
+  return (
+    employee.display_name?.trim() ||
+    employee.full_name?.trim() ||
+    `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
+    fallback
+  );
+}

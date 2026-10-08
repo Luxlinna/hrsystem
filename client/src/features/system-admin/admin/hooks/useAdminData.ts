@@ -35,7 +35,7 @@ export function useAdminData() {
 
     let empQuery = supabase
       .from("employees")
-      .select("id, email, phone, first_name, last_name, role, department, branch_id, default_work_location_id, branches(id, name)")
+      .select("id, email, phone, first_name, last_name, display_name, full_name, role, department, branch_id, default_work_location_id, branches(id, name)")
       .is("deleted_at", null)
       .order("first_name");
 
@@ -172,6 +172,20 @@ export function useAdminData() {
         if (clean) {
           employeeMap.set(clean, e);
           employeeMap.set(phoneToSyntheticEmail(clean), e);
+        }
+        const digits = e.phone.replace(/\D/g, "");
+        if (digits) {
+          employeeMap.set(digits, e);
+          employeeMap.set(`${digits}@phone.hrmsystem.local`, e);
+          if (digits.startsWith("855") && digits.length >= 11) {
+            const local = `0${digits.slice(3)}`;
+            employeeMap.set(local, e);
+            employeeMap.set(`${local}@phone.hrmsystem.local`, e);
+          } else if (digits.startsWith("0")) {
+            const intl = `855${digits.slice(1)}`;
+            employeeMap.set(intl, e);
+            employeeMap.set(`${intl}@phone.hrmsystem.local`, e);
+          }
         }
       }
     });

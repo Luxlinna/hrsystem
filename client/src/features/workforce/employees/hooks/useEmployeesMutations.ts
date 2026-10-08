@@ -148,7 +148,7 @@ export function useEmployeesMutations({
   }, [setForm, setShowAddModal]);
 
   const inviteUser = useCallback(
-    async (email: string, firstName: string, lastName: string, empRole: string) => {
+    async (email: string, firstName: string, lastName: string, empRole: string, empDisplayName?: string) => {
       if (!email) {
         toast("Missing email", "Cannot invite employee without an email address.", "error");
         return false;
@@ -157,7 +157,7 @@ export function useEmployeesMutations({
       try {
         const staffRole = roles.find((r) => r.name.toLowerCase() === "staff") || roles[0];
         const roleId = staffRole?.id ? String(staffRole.id) : null;
-        const displayName = `${firstName} ${lastName}`.trim();
+        const displayName = empDisplayName?.trim() || `${firstName} ${lastName}`.trim();
 
         const { res, result } = await sendUserInvite({
           email,

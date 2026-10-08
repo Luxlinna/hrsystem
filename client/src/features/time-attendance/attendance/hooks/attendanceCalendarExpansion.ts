@@ -73,8 +73,8 @@ export function expandRecordsToCalendarDays(
 
   return result.sort((a, b) => {
     if (a.date !== b.date) return b.date.localeCompare(a.date);
-    const nameA = `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`;
-    const nameB = `${b.employees?.first_name || ""} ${b.employees?.last_name || ""}`;
+    const nameA = a.employees?.display_name || a.employees?.full_name || `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`;
+    const nameB = b.employees?.display_name || b.employees?.full_name || `${b.employees?.first_name || ""} ${b.employees?.last_name || ""}`;
     return nameA.localeCompare(nameB);
   });
 }

@@ -1,4 +1,5 @@
 import type { Employee, AttendanceRecord } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -8,7 +9,7 @@ export async function exportSelfAttendanceXLSX(
   records: AttendanceRecord[],
   employee: Employee | null
 ): Promise<boolean> {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
 
   const data = records.length > 0
     ? records.map((r) => ({

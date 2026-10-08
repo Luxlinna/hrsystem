@@ -7,6 +7,8 @@ export interface MyEmployee {
   id: string;
   first_name: string;
   last_name: string;
+  display_name?: string | null;
+  full_name?: string | null;
   email?: string | null;
   role: string | null;
   department: string | null;
@@ -50,7 +52,7 @@ export function useMyEmployee(): UseMyEmployeeReturn {
     const empQuery = applyUserEmployeeFilter(
       supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, avatar_url, email"),
+        .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, email"),
       email
     );
     const { data: rows } = await empQuery

@@ -1,4 +1,4 @@
-import { formatDate, calculateHours } from "../utils";
+import { formatDate, calculateHours, getShiftEmployeeName, getShiftEmployeeInitials } from "../utils";
 import type { Shift, ShiftAssignment } from "../types";
 
 interface DayViewProps {
@@ -72,8 +72,8 @@ export function DayView({
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-1.5 overflow-hidden">
                       {shiftStaff.map((a) => (
-                        <span key={a.id} title={`${a.employee?.first_name} ${a.employee?.last_name}`} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[#253C7D] flex items-center justify-center text-[9px] font-bold overflow-hidden">
-                          {a.employee?.avatar_url ? <img src={a.employee.avatar_url} alt="" className="w-full h-full object-cover" /> : `${a.employee?.first_name?.[0] || ""}${a.employee?.last_name?.[0] || ""}`.toUpperCase()}
+                        <span key={a.id} title={getShiftEmployeeName(a.employee)} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[#253C7D] flex items-center justify-center text-[9px] font-bold overflow-hidden">
+                          {a.employee?.avatar_url ? <img src={a.employee.avatar_url} alt="" className="w-full h-full object-cover" /> : getShiftEmployeeInitials(a.employee)}
                         </span>
                       ))}
                     </div>

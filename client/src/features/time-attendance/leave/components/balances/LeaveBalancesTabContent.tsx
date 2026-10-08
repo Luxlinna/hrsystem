@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import type { Employee, LeaveTypePolicy } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
+import { getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 
 interface LeaveBalancesTabContentProps {
   employees: Employee[];
@@ -36,10 +37,11 @@ export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
     if (balanceDept !== "all" && e.department !== balanceDept) return false;
     if (balanceSearch.trim()) {
       const q = balanceSearch.toLowerCase().trim();
-      const name = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+      const name = getLeaveEmployeeName(e).toLowerCase();
+      const firstLast = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
       const role = (e.role || "").toLowerCase();
       const dept = (e.department || "").toLowerCase();
-      if (!name.includes(q) && !role.includes(q) && !dept.includes(q)) return false;
+      if (!name.includes(q) && !firstLast.includes(q) && !role.includes(q) && !dept.includes(q)) return false;
     }
     return true;
   });
@@ -108,12 +110,11 @@ export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-2xl bg-[#253C7D]/10 text-[#253C7D] font-extrabold text-sm flex items-center justify-center shrink-0">
-                      {emp.first_name?.[0]}
-                      {emp.last_name?.[0]}
+                      {getLeaveEmployeeInitials(emp)}
                     </div>
                     <div className="min-w-0">
                       <h4 className="font-extrabold text-sm text-gray-900 truncate">
-                        {emp.first_name} {emp.last_name}
+                        {getLeaveEmployeeName(emp)}
                         {isMe && (
                           <span className="ml-1.5 text-[9px] font-extrabold bg-[#253C7D] text-white px-1.5 py-0.5 rounded-full uppercase">
                             You

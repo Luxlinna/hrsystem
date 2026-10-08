@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Employee } from "../../types";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../../utils/employeeNameUtils";
 
 interface OvertimeEmployeeSectionProps {
   isEmployeeFixed: boolean;
@@ -46,12 +47,12 @@ export const OvertimeEmployeeSection = memo(function OvertimeEmployeeSection({
           <div className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-800 dark:text-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[#253C7D] text-white flex items-center justify-center font-bold text-xs">
-                {selectedEmployee.first_name?.[0] || "E"}
+                {getAttendanceEmployeeInitials(selectedEmployee)}
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-bold text-gray-900 dark:text-slate-100">
-                    {selectedEmployee.first_name} {selectedEmployee.last_name}
+                    {getAttendanceEmployeeName(selectedEmployee)}
                   </p>
                   {selectedEmployee.biometric_user_id && (
                     <span
@@ -82,7 +83,7 @@ export const OvertimeEmployeeSection = memo(function OvertimeEmployeeSection({
               <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
                 <span className={selectedEmployee ? "font-bold text-gray-900 dark:text-slate-100 truncate" : "text-gray-400"}>
                   {selectedEmployee
-                    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name} — ${selectedEmployee.role || selectedEmployee.department || "Staff"}`
+                    ? `${getAttendanceEmployeeName(selectedEmployee)} — ${selectedEmployee.role || selectedEmployee.department || "Staff"}`
                     : "Search & Select Employee..."}
                 </span>
                 {selectedEmployee?.biometric_user_id ? (
@@ -131,7 +132,7 @@ export const OvertimeEmployeeSection = memo(function OvertimeEmployeeSection({
                         <div className="flex-1 min-w-0 pr-2">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-bold text-gray-900 dark:text-slate-100">
-                              {emp.first_name} {emp.last_name}
+                              {getAttendanceEmployeeName(emp)}
                             </p>
                             {emp.biometric_user_id && (
                               <span

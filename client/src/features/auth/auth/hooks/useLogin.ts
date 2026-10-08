@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getLockoutStatus,
+  recordFailedLogin,
+  recordSuccessfulLogin,
+  formatLockoutTimer,
+} from "../loginRateLimiter";
 
 export type LoginStep = "password" | "otp";
 
@@ -15,6 +21,13 @@ export function useLogin() {
   const [rememberDevice, setRememberDevice] = useState(true);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [telegramBotUrl, setTelegramBotUrl] = useState<string | null>(null);
+
+  // Lockout / Rate Limiting State
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [singleAttemptAllowed, setSingleAttemptAllowed] = useState(false);
+  const [attemptsRemaining, setAttemptsRemaining] = useState(5);
+
   const otpInputRef = useRef<(HTMLInputElement | null)[]>([]);
   const { user, loading: authLoading, login, sendOTP, verifyOTP } = useAuth();
   const navigate = useNavigate();
@@ -25,6 +38,40 @@ export function useLogin() {
       navigate("/self-service", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  // Synchronize lockout status whenever email or phone number input changes
+  useEffect(() => {
+    if (!email.trim()) {
+      setIsLocked(false);
+      setLockoutSeconds(0);
+      setSingleAttemptAllowed(false);
+      setAttemptsRemaining(5);
+      return;
+    }
+    const status = getLockoutStatus(email);
+    setIsLocked(status.isLocked);
+    setLockoutSeconds(status.remainingSeconds);
+    setSingleAttemptAllowed(status.singleAttemptAllowed);
+    setAttemptsRemaining(status.attemptsRemaining);
+  }, [email]);
+
+  // Active countdown timer for lockout
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsLocked(false);
+          setSingleAttemptAllowed(true);
+          setAttemptsRemaining(1);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -42,11 +89,32 @@ export function useLogin() {
 
   const handlePasswordSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!email.trim() || !password) return;
+
+    // Check if account is currently locked out
+    const currentStatus = getLockoutStatus(email);
+    if (currentStatus.isLocked) {
+      setIsLocked(true);
+      setLockoutSeconds(currentStatus.remainingSeconds);
+      setError(
+        `Too many failed login attempts. Please wait ${formatLockoutTimer(currentStatus.remainingSeconds)} before trying again.`
+      );
+      return;
+    }
+
     setError("");
     setLoading(true);
     try {
       setTelegramBotUrl(null);
       const result = await login(email, password);
+
+      // On successful credentials: clear lockout record completely
+      recordSuccessfulLogin(email);
+      setIsLocked(false);
+      setLockoutSeconds(0);
+      setSingleAttemptAllowed(false);
+      setAttemptsRemaining(5);
+
       if (result.otpRequired) {
         setStep("otp");
         setResendCooldown(30);
@@ -58,7 +126,28 @@ export function useLogin() {
         setTelegramBotUrl(err.botUrl || "https://t.me/HRM_OPS_bot?start=connect");
         setError("");
       } else {
-        setError(err.message || "Invalid email, phone number, or password");
+        const isCredError =
+          err?.status === 401 ||
+          err?.statusCode === 401 ||
+          err?.status === 429 ||
+          err?.statusCode === 429 ||
+          err?.message?.toLowerCase().includes("invalid") ||
+          err?.message?.toLowerCase().includes("password") ||
+          err?.message?.toLowerCase().includes("credential") ||
+          err?.message?.toLowerCase().includes("too many");
+
+        if (isCredError) {
+          const retrySec = err.retryAfterSeconds;
+          const stage = err.stage;
+          const outcome = recordFailedLogin(email, retrySec, stage);
+          setIsLocked(outcome.isLocked);
+          setLockoutSeconds(outcome.remainingSeconds);
+          setSingleAttemptAllowed(outcome.stage >= 1 && !outcome.isLocked);
+          setAttemptsRemaining(outcome.attemptsRemaining);
+          setError(outcome.message);
+        } else {
+          setError(err.message || "Invalid email, phone number, or password");
+        }
       }
     } finally {
       setLoading(false);
@@ -147,6 +236,10 @@ export function useLogin() {
     telegramBotUrl,
     setTelegramBotUrl,
     otpInputRef,
+    isLocked,
+    lockoutSeconds,
+    singleAttemptAllowed,
+    attemptsRemaining,
     handlePasswordSubmit,
     handleOtpChange,
     handleOtpKeyDown,

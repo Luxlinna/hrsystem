@@ -143,20 +143,20 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
       </td>
 
       <td className="py-2.5 px-3 whitespace-nowrap">
-        <p className="text-xs font-semibold text-gray-800 dark:text-slate-200 mb-0.5 flex items-center gap-1">
+        <p className="text-[11px] font-semibold text-gray-800 dark:text-slate-200 flex items-center gap-1 leading-tight">
           <i className="ri-calendar-schedule-line text-[#253C7D] dark:text-sky-400 text-xs" />
           <span>{shiftTitle}</span>
         </p>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="space-y-0.5 mt-1 text-[11px] text-gray-600 dark:text-slate-400">
           {windows.map((w, i) => (
-            <span key={w.id || i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono">
-              <i className="ri-time-line text-[#253C7D] dark:text-sky-400 text-[11px]" />
-              {w.time_in} - {w.time_out}
-            </span>
+            <div key={w.id || i} className="flex items-center gap-1 leading-tight">
+              <i className="ri-time-line text-gray-400 text-[10px]" />
+              <span>{w.time_in} - {w.time_out}</span>
+            </div>
           ))}
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/60">
+          <p className="text-[10px] font-medium text-gray-500 dark:text-slate-400 leading-tight">
             {Number(totalShiftHours).toFixed(2)} Hours
-          </span>
+          </p>
         </div>
       </td>
 

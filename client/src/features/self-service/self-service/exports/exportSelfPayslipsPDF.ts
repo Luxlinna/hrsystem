@@ -1,4 +1,5 @@
 import type { Employee } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export interface SelfPayslip {
   id: string;
@@ -15,7 +16,7 @@ export function exportSelfPayslipsPDF(
   employee: Employee | null,
   title = "My Payroll & Payslips History"
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const dept = employee?.department || "General";
   const total = payslips.length;
   const totalNet = payslips.reduce((acc, p) => acc + Number(p.net_pay || 0), 0);

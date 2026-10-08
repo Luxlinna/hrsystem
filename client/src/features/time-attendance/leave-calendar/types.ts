@@ -12,6 +12,8 @@ export interface LeaveRequest {
     id?: string;
     first_name: string;
     last_name: string;
+    display_name?: string | null;
+    full_name?: string | null;
     role: string;
     department: string;
     avatar_url: string | null;
@@ -23,6 +25,8 @@ export interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  display_name?: string | null;
+  full_name?: string | null;
   role: string;
   department: string;
   annual_leave_days?: number;

@@ -82,7 +82,7 @@ export function mapRecordToExportRow(
     no: index + 1,
     dateStr: dmy,
     dayOfWeek: day,
-    employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee",
+    employeeName: emp?.display_name?.trim() || emp?.full_name?.trim() || `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee",
     biometricId: bioId,
     position: emp?.position || emp?.role || "Staff Member",
     division: emp?.division || "—",

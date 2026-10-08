@@ -46,12 +46,14 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
     async function load() {
       try {
         const { data } = await supabase.from("employees")
-          .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
+          .select("id, first_name, last_name, display_name, full_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
           .is("deleted_at", null).order("first_name");
         if (data && active) {
           setEmployees(data as any[]);
           const sm: Record<string, string> = {};
-          data.forEach((e: any) => { sm[e.id] = `${e.first_name || ""} ${e.last_name || ""}`.trim(); });
+          data.forEach((e: any) => {
+            sm[e.id] = (e.display_name?.trim() || e.full_name?.trim() || `${e.first_name || ""} ${e.last_name || ""}`).trim();
+          });
           setSupervisorsMap(sm);
         }
       } catch (err) {
@@ -143,7 +145,9 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
                   className="w-full px-3.5 py-2 pr-10 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md text-xs font-medium text-gray-800 dark:text-slate-100 focus:outline-none focus:border-[#0284c7] cursor-pointer appearance-none"
                 >
                   {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
+                    <option key={emp.id} value={emp.id}>
+                      {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name} ${emp.last_name}`}
+                    </option>
                   ))}
                 </select>
                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none text-gray-400">

@@ -138,6 +138,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         backendTelegramOtpEnabled = res.telegramOtpEnabled;
       }
     } catch (apiErr: any) {
+      if (
+        apiErr?.status === 429 ||
+        apiErr?.statusCode === 429 ||
+        apiErr?.message?.includes('Too many') ||
+        apiErr?.message?.includes('wait')
+      ) {
+        const customErr: any = new Error(
+          apiErr.message || 'Too many failed login attempts. Please wait before trying again.'
+        );
+        customErr.status = 429;
+        customErr.statusCode = 429;
+        customErr.retryAfterSeconds = apiErr.retryAfterSeconds || apiErr.details?.retryAfterSeconds;
+        customErr.stage = apiErr.stage || apiErr.details?.stage;
+        throw customErr;
+      }
       if (apiErr?.status === 401 || apiErr?.message?.includes('Invalid') || apiErr?.message?.includes('password')) {
         const errMsg = apiErr?.message || 'Invalid login credentials';
         throw new Error(isPhone ? 'Invalid phone number or password' : errMsg);

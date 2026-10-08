@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { Employee } from "../../types";
+import { getShiftEmployeeName, getShiftEmployeeInitials } from "../../utils";
 
 interface AssignSelectedStaffChipsProps {
   assignEmployeeIds: string[];
@@ -40,9 +41,9 @@ export const AssignSelectedStaffChips = memo(function AssignSelectedStaffChips({
               className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 shadow-2xs"
             >
               <span className="w-4.5 h-4.5 rounded-md bg-[#253C7D]/10 text-[#253C7D] text-[9px] font-bold flex items-center justify-center">
-                {emp.first_name[0]}{emp.last_name[0]}
+                {getShiftEmployeeInitials(emp)}
               </span>
-              <span>{emp.first_name} {emp.last_name}</span>
+              <span>{getShiftEmployeeName(emp)}</span>
               <button
                 type="button"
                 onClick={() => onRemoveId(id)}

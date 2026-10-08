@@ -19,7 +19,7 @@ export function exportAttendanceSummaryCSV(summaries: EmployeeSummaryItem[]): bo
   ];
 
   const rows = summaries.map((s, idx) => {
-    const empName = `${s.first_name || ""} ${s.last_name || ""}`.trim() || "Employee";
+    const empName = s.display_name?.trim() || s.full_name?.trim() || `${s.first_name || ""} ${s.last_name || ""}`.trim() || "Employee";
     const rawBio = s.biometric_user_id || s.employee_code;
     const bName = Array.isArray(s.branches) ? s.branches[0]?.name : (s.branches?.name || s.site || "");
     const bioId = formatBiometricId(rawBio, bName) || "—";

@@ -1,11 +1,12 @@
 import type { Employee, AttendanceRecord } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfAttendancePDF(
   records: AttendanceRecord[],
   employee: Employee | null,
   title = "My Attendance & Clock-In/Out History"
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const dept = employee?.department || "General";
   const total = records.length;
   const totalHours = records.reduce((acc, r) => acc + (Number(r.hours_worked) || 0), 0);

@@ -117,6 +117,8 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
     const q = p.searchQuery.toLowerCase().trim();
     const emp = r.employees;
     const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.toLowerCase();
+    const empDisplayName = (emp?.display_name || "").toLowerCase();
+    const empFullName = (emp?.full_name || "").toLowerCase();
     const empRole = (emp?.role || "").toLowerCase();
     const dept = (emp?.department || "").toLowerCase();
     const notes = (r.notes || "").toLowerCase();
@@ -128,6 +130,8 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
 
     if (
       !empName.includes(q) &&
+      !empDisplayName.includes(q) &&
+      !empFullName.includes(q) &&
       !empRole.includes(q) &&
       !dept.includes(q) &&
       !notes.includes(q) &&

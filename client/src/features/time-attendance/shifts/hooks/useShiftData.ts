@@ -34,7 +34,7 @@ export function useShiftData() {
 
       const empQuery = supabase
         .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
+        .select("id, first_name, last_name, display_name, full_name, department, role, avatar_url, branch_id")
         .is("deleted_at", null)
         .eq("branch_id", targetBranch)
         .order("first_name");
@@ -43,7 +43,7 @@ export function useShiftData() {
 
       const [{ data: s, error: sErr }, { data: a, error: aErr }, { data: b }, { data: e }] = await Promise.all([
         shiftQuery,
-        supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, role, department, avatar_url, branch_id)").is("deleted_at", null),
+        supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, display_name, full_name, role, department, avatar_url, branch_id)").is("deleted_at", null),
         branchQuery,
         empQuery,
       ]);

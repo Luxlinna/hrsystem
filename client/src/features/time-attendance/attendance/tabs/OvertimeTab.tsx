@@ -2,8 +2,9 @@ import { memo, useState, useMemo } from "react";
 import type { OvertimeRecord } from "../types/overtimeTypes";
 import { OVERTIME_STATUS_CONFIG } from "../types/overtimeTypes";
 import { OvertimeFilterBar } from "../components/overtime/OvertimeFilterBar";
-import { formatTime, initials } from "../constants";
+import { formatTime } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface OvertimeTabProps {
   records: OvertimeRecord[];
@@ -45,9 +46,11 @@ export const OvertimeTab = memo(function OvertimeTab({
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+        const empDisplay = (r.employees?.display_name || "").toLowerCase();
+        const empFull = (r.employees?.full_name || "").toLowerCase();
         const reason = (r.reason || "").toLowerCase();
         const remark = (r.remark || "").toLowerCase();
-        if (!empName.includes(q) && !reason.includes(q) && !remark.includes(q)) return false;
+        if (!empName.includes(q) && !empDisplay.includes(q) && !empFull.includes(q) && !reason.includes(q) && !remark.includes(q)) return false;
       }
       return true;
     });
@@ -111,14 +114,14 @@ export const OvertimeTab = memo(function OvertimeTab({
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#253C7D] to-[#17254E] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden shadow-2xs">
                             {emp?.avatar_url ? (
-                              <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+                              <img src={emp.avatar_url} alt={getAttendanceEmployeeName(emp)} className="w-full h-full object-cover" />
                             ) : (
-                              <span>{initials(emp?.first_name, emp?.last_name)}</span>
+                              <span>{getAttendanceEmployeeInitials(emp)}</span>
                             )}
                           </div>
                           <div className="min-w-0 flex flex-col justify-center">
                             <p className="font-bold text-gray-900 dark:text-slate-100 text-sm leading-tight truncate">
-                              {emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}
+                              {getAttendanceEmployeeName(emp, "Unknown")}
                             </p>
                             {emp?.biometric_user_id ? (
                               <div className="mt-1">

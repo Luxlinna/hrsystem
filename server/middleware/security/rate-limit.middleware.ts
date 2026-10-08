@@ -91,16 +91,19 @@ export const generalApiLimiter = createRateLimiter({
 });
 
 /**
- * Strict login rate limiter: 5 attempts per 15 minutes per IP + Email
+ * Login endpoint flood limiter: protects server from automated flood attacks
+ * (Credential lockout with 5 attempts -> 1m -> 5m -> 25m is enforced in authService)
  */
 export const authLoginLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: 'Too many failed login attempts. Please try again after 15 minutes.',
+  windowMs: 60 * 1000,
+  max: 60,
+  message: 'Too many login requests from your network. Please wait a minute before trying again.',
   keyGenerator: (req: Request) => {
-    const ip = req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress || 'unknown';
-    const email = req.body?.email ? String(req.body.email).toLowerCase().trim() : '';
-    return `login:${ip}:${email}`;
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+      return String(Array.isArray(forwarded) ? forwarded[0] : forwarded).split(',')[0]?.trim() || 'unknown';
+    }
+    return req.ip || req.socket.remoteAddress || 'unknown';
   },
 });
 

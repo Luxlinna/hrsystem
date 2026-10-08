@@ -1,7 +1,8 @@
 import { memo } from "react";
 import type { AttendanceRecord } from "../types";
-import { STATUS_CONFIG, formatTime, calcHours, initials } from "../constants";
+import { STATUS_CONFIG, formatTime, calcHours } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface RecordDetailsBodyProps {
   selectedRecord: AttendanceRecord;
@@ -22,12 +23,12 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
             {selectedRecord.employees.avatar_url ? (
               <img src={selectedRecord.employees.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span>{initials(selectedRecord.employees.first_name, selectedRecord.employees.last_name)}</span>
+              <span>{getAttendanceEmployeeInitials(selectedRecord.employees)}</span>
             )}
           </div>
           <div className="min-w-0 flex flex-col justify-center">
             <h4 className="font-extrabold text-gray-900 text-sm leading-snug">
-              {selectedRecord.employees.first_name} {selectedRecord.employees.last_name}
+              {getAttendanceEmployeeName(selectedRecord.employees)}
             </h4>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               {(() => {
@@ -68,37 +69,16 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
       </div>
 
       {/* Check In / Out Time Matrix */}
-      {selectedRecord.break_out || selectedRecord.break_in ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">1. Morning In</span>
-            <p className="text-base font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_in)}</p>
-          </div>
-          <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-100">
-            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">2. Lunch Out</span>
-            <p className="text-base font-black text-amber-900 mt-1">{formatTime(selectedRecord.break_out)}</p>
-          </div>
-          <div className="p-3.5 bg-indigo-50/60 rounded-2xl border border-indigo-100">
-            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">3. Lunch In</span>
-            <p className="text-base font-black text-indigo-900 mt-1">{formatTime(selectedRecord.break_in)}</p>
-          </div>
-          <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">4. Final Out</span>
-            <p className="text-base font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_out)}</p>
-          </div>
+      <div className="grid grid-cols-2 gap-3.5">
+        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check In</span>
+          <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_in)}</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3.5">
-          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check In</span>
-            <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_in)}</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check Out</span>
-            <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_out)}</p>
-          </div>
+        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check Out</span>
+          <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_out)}</p>
         </div>
-      )}
+      </div>
 
       {/* Hours Summary Card */}
       <div className="p-4 bg-[#253C7D]/5 border border-[#253C7D]/15 rounded-2xl flex items-center justify-between">

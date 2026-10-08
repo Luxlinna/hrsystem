@@ -1,15 +1,12 @@
 import { memo } from "react";
 import type { AttendanceRecord, Employee } from "../types";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface Props {
   record: AttendanceRecord;
   employee?: Employee;
   onSelectRecord: (r: AttendanceRecord) => void;
-}
-
-function initials(first?: string, last?: string) {
-  return `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase() || "?";
 }
 
 export const AttendanceRowEmployeeCell = memo(function AttendanceRowEmployeeCell({
@@ -22,15 +19,16 @@ export const AttendanceRowEmployeeCell = memo(function AttendanceRowEmployeeCell
     ? emp.branches[0]?.name
     : emp?.branches?.name || r.work_location?.name || "";
   const bioId = formatBiometricId(rawBio, bName);
+  const empName = getAttendanceEmployeeName(emp);
 
   return (
     <td className="py-2.5 px-3 whitespace-nowrap">
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
           {emp?.avatar_url ? (
-            <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+            <img src={emp.avatar_url} alt={empName} className="w-full h-full object-cover" />
           ) : (
-            <span>{initials(emp?.first_name, emp?.last_name)}</span>
+            <span>{getAttendanceEmployeeInitials(emp)}</span>
           )}
         </div>
         <div className="min-w-0 flex flex-col justify-center">
@@ -39,7 +37,7 @@ export const AttendanceRowEmployeeCell = memo(function AttendanceRowEmployeeCell
             onClick={() => onSelectRecord(r)}
             className="font-bold text-gray-900 dark:text-slate-100 hover:text-[#253C7D] dark:hover:text-sky-400 text-left text-xs leading-snug cursor-pointer truncate max-w-[200px] block hover:underline"
           >
-            {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+            {empName}
           </button>
           {bioId ? (
             <div className="mt-0.5">

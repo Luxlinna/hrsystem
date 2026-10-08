@@ -40,7 +40,7 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
   const filtered = useMemo(() => {
     const q = modalSearch.toLowerCase();
     return employees.filter((emp) => {
-      const name = `${emp.first_name} ${emp.last_name}`.toLowerCase();
+      const name = `${emp.display_name || ""} ${emp.full_name || ""} ${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
       const code = (emp.employee_code || emp.biometric_user_id || "").toLowerCase();
       const dept = (emp.department || "").toLowerCase();
       const matchSearch = !q || name.includes(q) || code.includes(q) || dept.includes(q);
@@ -131,11 +131,15 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
                     className="rounded border-gray-300 text-[#253C7D] cursor-pointer"
                   />
                   <div className="w-7 h-7 rounded-full bg-[#253C7D] text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
-                    {emp.avatar_url ? <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" /> : <span>{emp.first_name?.[0] || "E"}</span>}
+                    {emp.avatar_url ? (
+                      <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{(emp.display_name || emp.full_name || emp.first_name || "E")[0].toUpperCase()}</span>
+                    )}
                   </div>
                   <div>
                     <div className="font-bold">
-                      {emp.first_name} {emp.last_name}
+                      {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name} ${emp.last_name}`}
                       {emp.employee_code && <span className="ml-1.5 text-[10px] font-mono text-gray-400">({emp.employee_code})</span>}
                     </div>
                     <div className="text-[10px] text-gray-400">

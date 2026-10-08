@@ -1,4 +1,5 @@
 import type { Employee } from "../../types";
+import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 
 export function findLineManager(
   employees: Employee[],
@@ -15,8 +16,8 @@ export function findLineManager(
   if (activeEmpId === myEmployee?.id && myApproverName) {
     const found = employees.find(
       (e) =>
-        `${e.first_name || ""} ${e.last_name || ""}`.trim().toLowerCase() ===
-        myApproverName.trim().toLowerCase()
+        getLeaveEmployeeName(e).trim().toLowerCase() === myApproverName.trim().toLowerCase() ||
+        `${e.first_name || ""} ${e.last_name || ""}`.trim().toLowerCase() === myApproverName.trim().toLowerCase()
     );
     if (found) return found;
   }

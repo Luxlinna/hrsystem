@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
+import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import {
   toKhmerNumber,
@@ -145,7 +146,7 @@ export const LeaveCalendarGrid = memo(function LeaveCalendarGrid({
                       key={l.id}
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded truncate ${cfg.badgeBg}`}
                     >
-                      {l.employees?.first_name} ({cfg.label.slice(0, 3)})
+                      {getLeaveEmployeeName(l.employees)} ({cfg.label.slice(0, 3)})
                     </div>
                   );
                 })}

@@ -1,6 +1,7 @@
 import type { LeaveRequest } from "../types";
 import { LEAVE_TYPE_CONFIG } from "../constants";
 import { formatDate } from "../dateUtils";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -12,7 +13,7 @@ export async function exportLeaveXLSX(filteredRequests: LeaveRequest[]): Promise
   }
 
   const data = filteredRequests.map((r) => ({
-    "Employee Name": `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Unknown",
+    "Employee Name": getLeaveEmployeeName(r.employees),
     Department: r.employees?.department || "—",
     Role: r.employees?.role || "—",
     "Leave Type": LEAVE_TYPE_CONFIG[r.leave_type]?.label || r.leave_type,

@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { Link } from "react-router-dom";
 import { isPhoneIdentifier } from "@/lib/phoneUtils";
+import { formatLockoutTimer } from "../loginRateLimiter";
 
 interface PasswordLoginFormProps {
   email: string;
@@ -10,6 +11,10 @@ interface PasswordLoginFormProps {
   showPassword: boolean;
   setShowPassword: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
+  isLocked?: boolean;
+  lockoutSeconds?: number;
+  singleAttemptAllowed?: boolean;
+  attemptsRemaining?: number;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -21,6 +26,10 @@ export const PasswordLoginForm = memo(function PasswordLoginForm({
   showPassword,
   setShowPassword,
   loading,
+  isLocked = false,
+  lockoutSeconds = 0,
+  singleAttemptAllowed = false,
+  attemptsRemaining = 5,
   onSubmit,
 }: PasswordLoginFormProps) {
   const isPhone = isPhoneIdentifier(email);
@@ -78,12 +87,46 @@ export const PasswordLoginForm = memo(function PasswordLoginForm({
         </div>
       </div>
 
+      {isLocked && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2.5 text-amber-800 dark:text-amber-200 text-xs animate-in fade-in duration-200">
+          <i className="ri-alarm-warning-line text-lg text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-[12px]">Too Many Failed Attempts</p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+              Please wait <span className="font-mono font-bold text-amber-900 dark:text-amber-100 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">{formatLockoutTimer(lockoutSeconds)}</span> before trying again.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!isLocked && singleAttemptAllowed && (
+        <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-2 text-blue-800 dark:text-blue-200 text-xs">
+          <i className="ri-information-line text-base text-blue-600 dark:text-blue-400 shrink-0" />
+          <span className="text-[11px] leading-relaxed">
+            You have <strong>1 attempt remaining</strong>. If incorrect, you will be locked out for a longer period.
+          </span>
+        </div>
+      )}
+
       <button
         type="submit"
-        disabled={loading}
-        className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
+        disabled={loading || isLocked}
+        className={`w-full py-2.5 rounded-lg text-[13px] font-semibold transition-all flex items-center justify-center gap-2 ${
+          isLocked
+            ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700"
+            : "bg-[#253C7D] text-white hover:bg-[#1F336A] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+        }`}
       >
-        {loading ? "Signing in..." : "Sign In"}
+        {isLocked ? (
+          <>
+            <i className="ri-lock-2-line text-sm" />
+            <span>Please wait {formatLockoutTimer(lockoutSeconds)}</span>
+          </>
+        ) : loading ? (
+          "Signing in..."
+        ) : (
+          "Sign In"
+        )}
       </button>
     </form>
   );

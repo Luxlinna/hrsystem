@@ -21,7 +21,10 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
   setActiveTab,
 }: MobilePresenceAttendanceProps) {
   const navigate = useNavigate();
-  const employeeName = `${employee.first_name} ${employee.last_name}`.trim();
+  const employeeName =
+    employee.display_name?.trim() ||
+    employee.full_name?.trim() ||
+    `${employee.first_name} ${employee.last_name}`.trim();
   const { can } = usePermissions();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 

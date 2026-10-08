@@ -65,7 +65,7 @@ export function matchAttendanceEmployee(
 
   // Text search: name, BU, full BU ID, role, department
   const tokens = cleanQ.split(/\s+/).filter(Boolean);
-  const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+  const fullName = `${(e as any).display_name || ""} ${(e as any).full_name || ""} ${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
   const role = (e.role || "").toLowerCase();
   const dept = (e.department || "").toLowerCase();
 

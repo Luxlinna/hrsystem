@@ -44,7 +44,7 @@ export function useLeaveCalendarData() {
       const meQuery = applyUserEmployeeFilter(
         supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email"),
+          .select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, branch_id, email"),
         user.email
       );
       const { data: rows } = await meQuery.limit(5);
@@ -58,13 +58,13 @@ export function useLeaveCalendarData() {
         const [empRes, leaveRes] = await Promise.all([
           supabase
             .from("employees")
-            .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
+            .select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id")
             .eq("branch_id", targetBranch)
             .is("deleted_at", null)
             .order("first_name"),
           supabase
             .from("leave_requests")
-            .select("*, employees(id, first_name, last_name, role, department, avatar_url, email, branch_id)")
+            .select("*, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id)")
             .is("deleted_at", null)
             .order("start_date", { ascending: true }),
         ]);
@@ -84,7 +84,7 @@ export function useLeaveCalendarData() {
         setEmployees([myEmp]);
         const { data: rawLeaves } = await supabase
           .from("leave_requests")
-          .select("*, employees(id, first_name, last_name, role, department, avatar_url, email, branch_id)")
+          .select("*, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id)")
           .eq("employee_id", myEmp.id)
           .is("deleted_at", null)
           .order("start_date", { ascending: true });

@@ -1,5 +1,6 @@
 import type { LeaveRequest } from "../types";
 import { LEAVE_TYPE_CONFIG } from "../constants";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 export function exportLeavePDF(filteredRequests: LeaveRequest[], title = "Workforce Leave & Absence Report"): boolean {
   if (filteredRequests.length === 0) {
@@ -14,7 +15,7 @@ export function exportLeavePDF(filteredRequests: LeaveRequest[], title = "Workfo
 
   const rows = filteredRequests
     .map((r) => {
-      const name = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Unknown";
+      const name = getLeaveEmployeeName(r.employees);
       const dept = r.employees?.department || "—";
       const leaveType = LEAVE_TYPE_CONFIG[r.leave_type]?.label || r.leave_type;
       const statusColor =

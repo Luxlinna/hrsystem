@@ -36,7 +36,7 @@ export async function fetchOvertimeRecords(
     .from("overtime_records")
     .select(`
       *,
-      employees:employees!overtime_records_employee_id_fkey(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))
+      employees:employees!overtime_records_employee_id_fkey(id, first_name, last_name, display_name, full_name, department, role, avatar_url, branch_id, branches(id, name))
     `)
     .is("deleted_at", null)
     .order("from_date", { ascending: false })

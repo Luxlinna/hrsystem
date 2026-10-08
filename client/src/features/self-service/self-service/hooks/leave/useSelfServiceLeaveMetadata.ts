@@ -28,7 +28,7 @@ export function useSelfServiceLeaveMetadata({
       try {
         const { data: empData } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id, phone")
+          .select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id, phone")
           .eq("id", employeeId)
           .maybeSingle();
 
@@ -43,18 +43,19 @@ export function useSelfServiceLeaveMetadata({
         if (activeEmp?.reports_to) {
           const { data: mgrData } = await supabase
             .from("employees")
-            .select("id, first_name, last_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id")
+            .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id")
             .eq("id", activeEmp.reports_to)
             .maybeSingle();
           if (mgrData && isMounted) {
             mgr = mgrData as Employee;
-            setMyApproverName(`${mgrData.first_name} ${mgrData.last_name}`.trim());
+            const approver = mgrData.display_name?.trim() || mgrData.full_name?.trim() || `${mgrData.first_name} ${mgrData.last_name}`.trim();
+            setMyApproverName(approver);
           }
         }
 
         const { data: hrStaff } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id")
+          .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id")
           .or("department.ilike.%hr%,role.ilike.%hr%")
           .is("deleted_at", null)
           .order("first_name");
@@ -68,7 +69,7 @@ export function useSelfServiceLeaveMetadata({
 
         const { data: allStaff } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id")
+          .select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id")
           .is("deleted_at", null)
           .order("first_name");
 

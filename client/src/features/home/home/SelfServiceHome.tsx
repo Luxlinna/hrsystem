@@ -10,6 +10,8 @@ interface MyEmployee {
   id: string;
   first_name: string;
   last_name: string;
+  display_name?: string | null;
+  full_name?: string | null;
   role: string;
   department: string;
   avatar_url: string | null;
@@ -38,7 +40,7 @@ export default function SelfServiceHome() {
       const empQuery = applyUserEmployeeFilter(
         supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branches(name)"),
+          .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, branches(name)"),
         user.email
       );
       const { data: rows } = await empQuery.limit(5);
@@ -66,7 +68,9 @@ export default function SelfServiceHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email, can]);
 
-  const displayName = me ? `${me.first_name} ${me.last_name}` : (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
+  const displayName = me
+    ? (me.display_name?.trim() || me.full_name?.trim() || `${me.first_name} ${me.last_name}`.trim())
+    : (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 

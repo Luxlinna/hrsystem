@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { Employee } from "../../types";
+import { getShiftEmployeeName, getShiftEmployeeInitials } from "../../utils";
 
 interface AssignStaffCardProps {
   emp: Employee;
@@ -32,13 +33,13 @@ export const AssignStaffCard = memo(function AssignStaffCard({
           {emp.avatar_url ? (
             <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            `${emp.first_name[0] || ""}${emp.last_name[0] || ""}`.toUpperCase()
+            getShiftEmployeeInitials(emp)
           )}
         </span>
         <div className="min-w-0">
           <div className="flex items-center gap-1">
             <p className="text-xs font-bold text-slate-900 truncate">
-              {emp.first_name} {emp.last_name}
+              {getShiftEmployeeName(emp)}
             </p>
             {hasConflict && (
               <span title="Assigned on this day" className="px-1 py-0.2 bg-amber-100 text-amber-800 text-[8px] font-bold rounded shrink-0">

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { Shift, ShiftAssignment } from "../../types";
-import { calculateHours } from "../../utils";
+import { calculateHours, getShiftEmployeeName, getShiftEmployeeInitials } from "../../utils";
 
 interface ShiftDetailDrawerProps {
   selectedShift: Shift | null;
@@ -156,12 +156,12 @@ export const ShiftDetailDrawer = memo(function ShiftDetailDrawer({
                     {a.employee?.avatar_url ? (
                       <img src={a.employee.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      `${a.employee?.first_name?.[0] || ""}${a.employee?.last_name?.[0] || ""}`.toUpperCase()
+                      getShiftEmployeeInitials(a.employee)
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-[13px] font-semibold text-gray-900 truncate">{a.employee?.first_name} {a.employee?.last_name}</p>
+                      <p className="text-[13px] font-semibold text-gray-900 truncate">{getShiftEmployeeName(a.employee)}</p>
                       {hasConflict && (
                         <span className="px-1 py-0.2 bg-amber-100 text-amber-800 text-[8px] font-bold rounded">Conflict</span>
                       )}

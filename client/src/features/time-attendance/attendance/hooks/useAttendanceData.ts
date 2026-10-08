@@ -166,7 +166,7 @@ export function useAttendanceData(
         if (isLeader) {
           let empQuery = supabase
             .from("employees")
-            .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, status, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
+            .select("id, first_name, last_name, display_name, full_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, status, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
             .is("deleted_at", null)
             .order("first_name");
 
@@ -218,6 +218,7 @@ export function useAttendanceData(
           if (isLineManager && empRecord) {
             const myId = empRecord.id;
             const myName = `${empRecord.first_name || ""} ${empRecord.last_name || ""}`.trim().toLowerCase();
+            const myDisplayName = (empRecord.display_name || empRecord.full_name || myName).trim().toLowerCase();
             const myEmail = (user?.email || "").toLowerCase().trim();
             const myDept = (empRecord.department || "").trim().toLowerCase();
             const myDiv = ((empRecord as any).division || "").trim().toLowerCase();
@@ -225,7 +226,7 @@ export function useAttendanceData(
             empList = empList.filter((e: any) => {
               if (e.id === myId || e.reports_to === myId) return true;
               const eLm = (e.line_manager || "").trim().toLowerCase();
-              if (eLm && (eLm === myName || eLm === myEmail)) return true;
+              if (eLm && (eLm === myName || eLm === myDisplayName || eLm === myEmail)) return true;
               if (myDept && e.department && e.department.trim().toLowerCase() === myDept) return true;
               if (myDiv && e.division && e.division.trim().toLowerCase() === myDiv) return true;
               return false;
@@ -241,7 +242,7 @@ export function useAttendanceData(
           if (ids.length > 0) {
             const { data: recData, error: recErr } = await supabase
               .from("attendance_records")
-              .select("*, employees(id, first_name, last_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
+              .select("*, employees(id, first_name, last_name, display_name, full_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
               .is("deleted_at", null)
               .in("employee_id", ids)
               .order("date", { ascending: false })
@@ -266,7 +267,9 @@ export function useAttendanceData(
             if (dateComp !== 0) return dateComp;
             const bioComp = compareBiometricIds(a.employees?.biometric_user_id, b.employees?.biometric_user_id);
             if (bioComp !== 0) return bioComp;
-            return (a.employees?.first_name || "").localeCompare(b.employees?.first_name || "");
+            const nameA = a.employees?.display_name || a.employees?.full_name || a.employees?.first_name || "";
+            const nameB = b.employees?.display_name || b.employees?.full_name || b.employees?.first_name || "";
+            return nameA.localeCompare(nameB);
           });
 
           if (!isMountedRef.current) return;
@@ -281,7 +284,7 @@ export function useAttendanceData(
             setEmployees([empRecord]);
             const { data: recData } = await supabase
               .from("attendance_records")
-              .select("*, employees(id, first_name, last_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
+              .select("*, employees(id, first_name, last_name, display_name, full_name, department, division, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
               .eq("employee_id", empRecord.id)
               .is("deleted_at", null)
               .order("date", { ascending: false })

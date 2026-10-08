@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import type { LeaveRequest, Employee } from "../types";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 
 export function useLeaveFilters(
   requests: LeaveRequest[],
@@ -84,7 +85,7 @@ export function useLeaveFilters(
     // Direct fallback fetch if request is cross-branch or not yet in array
     supabase
       .from("leave_requests")
-      .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id, reports_to)")
+      .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id)")
       .or(`id.eq.${targetId},employee_id.eq.${targetId}`)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -118,13 +119,17 @@ export function useLeaveFilters(
       if (departmentFilter !== "all" && r.employees?.department !== departmentFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+        const empName = getLeaveEmployeeName(r.employees).toLowerCase();
+        const empFirstLast = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+        const empCode = (r.employees?.employee_code || r.employees?.biometric_user_id || "").toLowerCase();
         const empRole = (r.employees?.role || "").toLowerCase();
         const empDept = (r.employees?.department || "").toLowerCase();
         const leaveType = (r.leave_type || "").toLowerCase();
         const reason = (r.reason || "").toLowerCase();
         if (
           !empName.includes(q) &&
+          !empFirstLast.includes(q) &&
+          !empCode.includes(q) &&
           !empRole.includes(q) &&
           !empDept.includes(q) &&
           !leaveType.includes(q) &&

@@ -26,8 +26,12 @@ export function buildEnrichedAssignments(
     }
     if (!emp && assignmentUser.email && isPhoneSyntheticEmail(assignmentUser.email)) {
       const p = syntheticEmailToPhone(assignmentUser.email);
-      emp = employeeMap.get(p) || employeeMap.get(normalizePhone(p));
+      emp = employeeMap.get(p) || employeeMap.get(normalizePhone(p)) || employeeMap.get(p.replace(/\D/g, ""));
     }
+
+    const empDisplayName = emp
+      ? (emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name || ""} ${emp.last_name || ""}`.trim())
+      : null;
 
     const empBranchId = emp?.branch_id;
     const empSiteId = emp?.default_work_location_id;
@@ -45,7 +49,7 @@ export function buildEnrichedAssignments(
 
     return {
       ...assignmentUser,
-      display_name: assignmentUser.display_name || (emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : null),
+      display_name: empDisplayName || assignmentUser.display_name || null,
       branch_id: finalBranchId,
       branch_name: bName || (site ? branchesList.find((b) => b.id === site.branch_id)?.name : null) || "Headquarters",
       default_work_location_id: finalSiteId,
@@ -67,6 +71,8 @@ export function buildEnrichedEmployees(
       phone: e.phone || null,
       first_name: e.first_name,
       last_name: e.last_name,
+      display_name: e.display_name || null,
+      full_name: e.full_name || null,
       role: e.role,
       department: e.department,
       branch_id: e.branch_id || site?.branch_id || null,

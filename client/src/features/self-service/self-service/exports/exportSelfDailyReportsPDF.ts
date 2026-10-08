@@ -1,11 +1,12 @@
 import type { Employee, WorkLog } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfDailyReportsPDF(
   logs: WorkLog[],
   employee: Employee | null,
   title = "My Daily Work Reports & Activities"
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const dept = employee?.department || "General";
   const total = logs.length;
 

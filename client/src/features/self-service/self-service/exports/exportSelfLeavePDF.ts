@@ -1,11 +1,12 @@
 import type { Employee, LeaveRequest } from "../types";
+import { getSelfServiceEmployeeName } from "../constants";
 
 export function exportSelfLeavePDF(
   leaves: LeaveRequest[],
   employee: Employee | null,
   title = "My Leave Requests & Time-Off History"
 ): boolean {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
   const dept = employee?.department || "General";
   const total = leaves.length;
   const approvedDays = leaves

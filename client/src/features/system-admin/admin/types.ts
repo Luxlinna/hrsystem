@@ -78,6 +78,8 @@ export interface DirectoryEmployee {
   phone?: string | null;
   first_name: string | null;
   last_name: string | null;
+  display_name?: string | null;
+  full_name?: string | null;
   role: string | null;
   department: string | null;
   branch_id?: string | null;

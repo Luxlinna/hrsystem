@@ -1,5 +1,6 @@
 import type { Employee } from "../types";
 import type { SelfBenefitEnrollment } from "./exportSelfBenefitsPDF";
+import { getSelfServiceEmployeeName } from "../constants";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -9,7 +10,7 @@ export async function exportSelfBenefitsXLSX(
   enrollments: SelfBenefitEnrollment[],
   employee: Employee | null
 ): Promise<boolean> {
-  const empName = employee ? `${employee.first_name} ${employee.last_name}` : "Employee";
+  const empName = getSelfServiceEmployeeName(employee);
 
   const data = enrollments.length > 0
     ? enrollments.map((e) => ({

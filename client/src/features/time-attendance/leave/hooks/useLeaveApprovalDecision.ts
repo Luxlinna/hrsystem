@@ -6,6 +6,7 @@ import {
   notifyLeaveFinalDecision,
 } from "../services/leaveNotificationService";
 import { canUserActOnRequest } from "../utils/leaveApprovalChain";
+import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
 import type { LeaveRequest } from "../types";
 
 interface UseLeaveApprovalDecisionProps {
@@ -80,9 +81,7 @@ export function useLeaveApprovalDecision({
       let stageTag = "";
       let toastMessage = "";
 
-      const empName = selectedRequest.employees
-        ? `${selectedRequest.employees.first_name} ${selectedRequest.employees.last_name}`
-        : "Employee";
+      const empName = getLeaveEmployeeName(selectedRequest.employees);
 
       if (!isApprove) {
         finalStatus = "rejected";
@@ -168,7 +167,7 @@ export function useLeaveApprovalDecision({
 
       setToast({ type: "success", message: "Leave request cancelled." });
       setShowCancelModal(false); setCancelTargetRequest(null); setCancelReason("");
-      const empName = cancelTargetRequest.employees ? `${cancelTargetRequest.employees.first_name} ${cancelTargetRequest.employees.last_name}` : "Employee";
+      const empName = getLeaveEmployeeName(cancelTargetRequest.employees);
       logActivity({
         module: "leave", action: "cancelled" as any, entityType: "leave_request",
         entityId: cancelTargetRequest.id, actorName, actorRole,
@@ -196,7 +195,7 @@ export function useLeaveApprovalDecision({
       if (error) throw error;
 
       setToast({ type: "success", message: "Leave request deleted successfully." });
-      const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "Employee";
+      const empName = getLeaveEmployeeName(req.employees);
       logActivity({
         module: "leave",
         action: "deleted",

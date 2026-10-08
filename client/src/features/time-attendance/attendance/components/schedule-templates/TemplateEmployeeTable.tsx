@@ -30,7 +30,8 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
   const filteredAssigned = useMemo(() => {
     const q = empSearch.toLowerCase();
     return assignedEmployees.filter((e) => {
-      const match = !q || `${e.first_name} ${e.last_name}`.toLowerCase().includes(q) ||
+      const empName = (e.display_name || e.full_name || `${e.first_name} ${e.last_name}`).toLowerCase();
+      const match = !q || empName.includes(q) || `${e.first_name} ${e.last_name}`.toLowerCase().includes(q) ||
         (e.employee_code || e.biometric_user_id || "").toLowerCase().includes(q);
       return match && (deptFilter === "all" || e.department?.toLowerCase() === deptFilter.toLowerCase());
     });
@@ -150,9 +151,15 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
                   <td className="py-3 px-3">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-[#253C7D] text-white flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden">
-                        {emp.avatar_url ? <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" /> : <span>{emp.first_name?.[0] || "E"}</span>}
+                        {emp.avatar_url ? (
+                          <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{(emp.display_name || emp.full_name || emp.first_name || "E")[0].toUpperCase()}</span>
+                        )}
                       </div>
-                      <span className="font-bold text-gray-900 dark:text-slate-100">{emp.first_name} {emp.last_name}</span>
+                      <span className="font-bold text-gray-900 dark:text-slate-100">
+                        {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name} ${emp.last_name}`}
+                      </span>
                     </div>
                   </td>
                   <td className="py-3 px-3 text-gray-600 dark:text-slate-300">{emp.department || "General"}</td>

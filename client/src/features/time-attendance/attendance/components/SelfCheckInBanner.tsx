@@ -1,7 +1,8 @@
 import { memo } from "react";
 import type { AttendanceRecord, Employee } from "../types";
-import { formatTime, calcHours, initials } from "../constants";
+import { formatTime } from "../constants";
 import type { Holiday } from "@/services/holidays/holidaysService";
+import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 
 interface SelfCheckInBannerProps {
   myEmployee: Employee | null;
@@ -20,7 +21,7 @@ export const SelfCheckInBanner = memo(function SelfCheckInBanner({
     <div className="bg-gradient-to-r from-[#253C7D] to-[#17254E] rounded-3xl p-5 sm:p-6 text-white shadow-md mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex items-center gap-3.5">
         <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center font-bold text-base border border-white/20">
-          {initials(myEmployee.first_name, myEmployee.last_name)}
+          {getAttendanceEmployeeInitials(myEmployee)}
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -34,7 +35,7 @@ export const SelfCheckInBanner = memo(function SelfCheckInBanner({
             )}
           </div>
           <h3 className="text-base sm:text-lg font-extrabold text-white">
-            Welcome, {myEmployee.first_name} {myEmployee.last_name}
+            Welcome, {getAttendanceEmployeeName(myEmployee)}
           </h3>
           <p className="text-xs text-white/70 mt-0.5">
             {myTodayRecord?.clock_in

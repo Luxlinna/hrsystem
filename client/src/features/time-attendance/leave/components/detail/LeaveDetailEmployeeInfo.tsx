@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { LeaveRequest } from "../../types";
-import { formatDMY } from "../../utils/leaveDisplayUtils";
+import { formatDMY, getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 
 interface LeaveDetailEmployeeInfoProps {
   request: LeaveRequest;
@@ -20,7 +20,7 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
   }>({});
 
   const emp = request.employees;
-  const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee";
+  const empName = getLeaveEmployeeName(emp);
   const effectiveCode = extraEmp.employee_code || emp?.employee_code || emp?.biometric_user_id || "";
 
   useEffect(() => {
@@ -38,10 +38,10 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
           if (data.reports_to) {
             const { data: sup } = await supabase
               .from("employees")
-              .select("first_name, last_name")
+              .select("id, first_name, last_name, display_name, full_name")
               .eq("id", data.reports_to)
               .maybeSingle();
-            if (sup) supervisorName = `${sup.first_name} ${sup.last_name}`.trim();
+            if (sup) supervisorName = getLeaveEmployeeName(sup);
           }
 
           const rawCode = data.employee_code || data.biometric_user_id || "";
@@ -87,7 +87,7 @@ export const LeaveDetailEmployeeInfo = memo(function LeaveDetailEmployeeInfo({
           />
         ) : (
           <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-base flex items-center justify-center border border-gray-200 dark:border-slate-700 shadow-2xs">
-            {emp?.first_name?.[0] || "E"}
+            {getLeaveEmployeeInitials(emp)}
           </div>
         )}
         <div className="min-w-0">

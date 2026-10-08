@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import type { Employee } from "../../types";
+import { getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 
 interface LeaveApproverSearchSelectProps {
   availableEmployees: Employee[];
@@ -29,7 +30,7 @@ export function LeaveApproverSearchSelect({
   const cleanEmployees = useMemo(() => {
     return availableEmployees.filter((e) => {
       const r = (e.role || "").toLowerCase();
-      const n = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+      const n = getLeaveEmployeeName(e).toLowerCase();
       return !(r.includes("super admin") || r.includes("superadmin") || n.includes("superadmin"));
     });
   }, [availableEmployees]);
@@ -38,11 +39,12 @@ export function LeaveApproverSearchSelect({
     if (!search.trim()) return cleanEmployees;
     const q = search.toLowerCase().trim();
     return cleanEmployees.filter((e) => {
-      const name = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+      const name = getLeaveEmployeeName(e).toLowerCase();
+      const firstLast = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
       const role = (e.role || "").toLowerCase();
       const dept = (e.department || "").toLowerCase();
       const code = (e.employee_code || "").toLowerCase();
-      return name.includes(q) || role.includes(q) || dept.includes(q) || code.includes(q);
+      return name.includes(q) || firstLast.includes(q) || role.includes(q) || dept.includes(q) || code.includes(q);
     });
   }, [cleanEmployees, search]);
 
@@ -148,8 +150,8 @@ export function LeaveApproverSearchSelect({
               </div>
             ) : (
               filtered.map((e) => {
-                const name = `${e.first_name || ""} ${e.last_name || ""}`.trim();
-                const initial = (e.first_name?.[0] || "E").toUpperCase();
+                const name = getLeaveEmployeeName(e);
+                const initial = getLeaveEmployeeInitials(e);
                 return (
                   <div
                     key={e.id}

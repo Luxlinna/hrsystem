@@ -31,7 +31,7 @@ export function useTopBar() {
   // Prefer the HR employee record (source of truth) over Supabase Auth metadata,
   // which can drift (e.g. invite flow setting display_name to a role title).
   const displayName =
-    (myEmployee && `${myEmployee.first_name} ${myEmployee.last_name}`.trim()) ||
+    (myEmployee && (myEmployee.display_name?.trim() || myEmployee.full_name?.trim() || `${myEmployee.first_name} ${myEmployee.last_name}`.trim())) ||
     (user?.user_metadata?.display_name as string) ||
     user?.email?.split("@")[0] ||
     "HR Admin";

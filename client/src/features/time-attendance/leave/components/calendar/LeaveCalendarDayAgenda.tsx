@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
 import { formatDateShort } from "../../dateUtils";
+import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import {
   GREGORIAN_MONTHS_KM,
@@ -144,7 +145,7 @@ export const LeaveCalendarDayAgenda = memo(function LeaveCalendarDayAgenda({
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-extrabold text-xs text-gray-900">
-                      {l.employees?.first_name} {l.employees?.last_name}
+                      {getLeaveEmployeeName(l.employees)}
                     </p>
                     <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${cfg.badgeBg}`}>
                       {cfg.label}

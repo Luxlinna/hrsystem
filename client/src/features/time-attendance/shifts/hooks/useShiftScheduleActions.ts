@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { Shift } from "../types";
-import { formatDate, calculateHours } from "../utils";
+import { formatDate, calculateHours, getShiftEmployeeName } from "../utils";
 
 interface UseShiftScheduleActionsProps {
   currentDate: Date;
@@ -90,7 +90,7 @@ export function useShiftScheduleActions({
     const rows = filteredShifts.map((s) => {
       const shiftStaff = assignments
         .filter((a) => a.shift_id === s.id)
-        .map((a) => `${a.employee?.first_name || ""} ${a.employee?.last_name || ""}`.trim())
+        .map((a) => getShiftEmployeeName(a.employee))
         .join("; ");
       const hours = calculateHours(s.start_time, s.end_time);
 
