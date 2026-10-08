@@ -35,7 +35,7 @@ as_app env GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyCh
 echo "$BEFORE -> $(as_app git rev-parse --short HEAD)"
 
 log "Installing libraries"
-as_app npm ci --no-audit --no-fund
+as_app env REDISMS_DISABLE_POSTINSTALL=1 npm ci --no-audit --no-fund
 
 log "Refreshing settings and building the website"
 install -o "$APP_USER" -g "$APP_USER" -m 600 "$ENV_FILE" "$APP_DIR/.env"
