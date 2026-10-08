@@ -22,6 +22,7 @@ interface BackendLoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt?: number;
+  telegramOtpEnabled?: boolean;
   user: {
     id: string;
     email: string;
@@ -120,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let authUserEmail = "";
     let employeeEmail = "";
     let employeePhone = "";
+    let backendTelegramOtpEnabled: boolean | undefined = undefined;
 
     try {
       // 1. Call Express Backend first (checks brute-force rate limiter & credentials)
@@ -132,6 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authUserEmail = res.user?.email || "";
       employeeEmail = res.employee?.email || "";
       employeePhone = res.employee?.phone || "";
+      if (typeof res.telegramOtpEnabled === "boolean") {
+        backendTelegramOtpEnabled = res.telegramOtpEnabled;
+      }
     } catch (apiErr: any) {
       if (apiErr?.status === 401 || apiErr?.message?.includes('Invalid') || apiErr?.message?.includes('password')) {
         const errMsg = apiErr?.message || 'Invalid login credentials';
@@ -157,8 +162,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (employeeEmail ? checkDeviceRemembered(employeeEmail) : false) ||
       (employeePhone ? checkDeviceRemembered(employeePhone) : false);
 
-    if (isTrusted) {
-      // Device is trusted: set Supabase session in browser immediately
+    const isPhoneUser = isPhone || isPhoneSyntheticEmail(resolvedEmail);
+    let skipOtpForPhone = false;
+
+    if (isPhoneUser) {
+      if (backendTelegramOtpEnabled !== undefined) {
+        skipOtpForPhone = !backendTelegramOtpEnabled;
+      } else {
+        // Direct Supabase fallback check from system_settings
+        const { data: otpSetting } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "telegram_otp_enabled")
+          .maybeSingle();
+
+        if (otpSetting?.value === "false") {
+          skipOtpForPhone = true;
+        }
+      }
+    }
+
+    if (isTrusted || skipOtpForPhone) {
+      // Device is trusted OR Phone OTP is disabled: set Supabase session in browser immediately
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -173,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { otpRequired: false };
     }
 
-    // Untrusted device: Send 2FA/OTP code
+    // Untrusted device and OTP enabled: Send 2FA/OTP code
     await sendOTP(resolvedEmail);
     return { otpRequired: true };
   };

@@ -32,10 +32,27 @@ export class AuthService {
       logger.warn('[Auth] Employee database lookup failed during login:', dbErr?.message || dbErr);
     }
 
+    let telegramOtpEnabled = true;
+    try {
+      if (supabaseAdminClient) {
+        const { data: setting } = await supabaseAdminClient
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'telegram_otp_enabled')
+          .maybeSingle();
+        if (setting && setting.value === 'false') {
+          telegramOtpEnabled = false;
+        }
+      }
+    } catch (settingErr: any) {
+      logger.warn('[Auth] Failed to check telegram_otp_enabled setting:', settingErr?.message || settingErr);
+    }
+
     return {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
       expiresAt: data.session.expires_at,
+      telegramOtpEnabled,
       user: {
         id: data.user.id,
         email: data.user.email,

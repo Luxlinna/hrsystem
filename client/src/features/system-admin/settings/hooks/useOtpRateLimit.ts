@@ -8,6 +8,7 @@ export interface OtpConfig {
   otp_codes_per_hour: string;          // default: 3
   otp_wrong_tries_per_code: string;    // default: 3
   otp_resend_wait_seconds: string;     // default: 60
+  telegram_otp_enabled: string;        // default: "true"
 }
 
 const OTP_KEYS: (keyof OtpConfig)[] = [
@@ -15,6 +16,7 @@ const OTP_KEYS: (keyof OtpConfig)[] = [
   "otp_codes_per_hour",
   "otp_wrong_tries_per_code",
   "otp_resend_wait_seconds",
+  "telegram_otp_enabled",
 ];
 
 const DEFAULTS: OtpConfig = {
@@ -22,6 +24,7 @@ const DEFAULTS: OtpConfig = {
   otp_codes_per_hour: "3",
   otp_wrong_tries_per_code: "3",
   otp_resend_wait_seconds: "60",
+  telegram_otp_enabled: "true",
 };
 
 export function useOtpRateLimit(actorName: string) {
@@ -59,18 +62,64 @@ export function useOtpRateLimit(actorName: string) {
   useEffect(() => { load(); }, [load]);
 
   const update = useCallback(<K extends keyof OtpConfig>(key: K, value: string) => {
-    // Only allow positive integers
-    const cleaned = value.replace(/\D/g, "");
+    const cleaned = key === "telegram_otp_enabled" ? value : value.replace(/\D/g, "");
     setConfig((prev) => ({ ...prev, [key]: cleaned }));
     setDirty(true);
   }, []);
+
+  const [togglingTelegramOtp, setTogglingTelegramOtp] = useState(false);
+
+  const toggleTelegramOtp = useCallback(async (enabled: boolean) => {
+    const val = enabled ? "true" : "false";
+    setConfig((prev) => ({ ...prev, telegram_otp_enabled: val }));
+    setTogglingTelegramOtp(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .upsert(
+          {
+            key: "telegram_otp_enabled",
+            value: val,
+            type: "boolean",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+
+      if (error) throw error;
+
+      toast(
+        enabled ? "Telegram OTP Enabled" : "Telegram OTP Disabled",
+        enabled
+          ? "Employees signing in with a phone number will receive a 6-digit code via Telegram bot."
+          : "Phone number OTP is now OFF. Employees signing in with a phone number will log in directly without OTP.",
+        "success"
+      );
+
+      logActivity({
+        module: "settings",
+        action: "updated",
+        entityType: "system_setting",
+        entityId: null,
+        actorName,
+        actorRole: "admin",
+        description: `Phone Number OTP via Telegram Bot ${enabled ? "enabled" : "disabled"}`,
+      });
+    } catch (err: any) {
+      setConfig((prev) => ({ ...prev, telegram_otp_enabled: enabled ? "false" : "true" }));
+      toast("Error", err?.message || "Failed to update Telegram OTP setting.", "error");
+    } finally {
+      setTogglingTelegramOtp(false);
+    }
+  }, [actorName]);
 
   const save = useCallback(async () => {
     setSaving(true);
     try {
       const upserts = OTP_KEYS.map((k) => ({
         key: k,
-        value: config[k] || DEFAULTS[k],
+        value: config[k] !== undefined ? config[k] : DEFAULTS[k],
+        type: k === "telegram_otp_enabled" ? "boolean" : "integer",
         updated_at: new Date().toISOString(),
       }));
 
@@ -99,5 +148,16 @@ export function useOtpRateLimit(actorName: string) {
     }
   }, [config, actorName]);
 
-  return { config, update, load, loading, save, saving, dirty, lastSaved };
+  return {
+    config,
+    update,
+    load,
+    loading,
+    save,
+    saving,
+    dirty,
+    lastSaved,
+    toggleTelegramOtp,
+    togglingTelegramOtp,
+  };
 }

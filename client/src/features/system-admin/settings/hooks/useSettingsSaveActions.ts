@@ -140,7 +140,20 @@ export function useSettingsSaveActions({
   );
 
   const saveAllNotifications = useCallback(
-    () => saveBatch(notificationKeys.map((n) => n.key), "Notification preferences updated."),
+    () =>
+      saveBatch(
+        [
+          ...notificationKeys.map((n) => n.key),
+          "telegram_notify_enabled",
+          "telegram_otp_enabled",
+          "telegram_notifications_chat_id",
+          "telegram_otp_chat_id",
+          "biometric_offline_alert_enabled",
+          "biometric_offline_threshold_minutes",
+          "attendance_notify_scope",
+        ],
+        "Notification and Telegram preferences updated."
+      ),
     [saveBatch]
   );
 

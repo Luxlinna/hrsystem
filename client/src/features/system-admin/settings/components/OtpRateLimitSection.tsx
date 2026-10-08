@@ -53,8 +53,17 @@ export function OtpRateLimitSection() {
   const actorName =
     (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
 
-  const { config, update, loading, save, saving, dirty, lastSaved } =
-    useOtpRateLimit(actorName);
+  const {
+    config,
+    update,
+    loading,
+    save,
+    saving,
+    dirty,
+    lastSaved,
+    toggleTelegramOtp,
+    togglingTelegramOtp,
+  } = useOtpRateLimit(actorName);
 
   if (loading) {
     return (
@@ -78,6 +87,45 @@ export function OtpRateLimitSection() {
             Control how often users can request and attempt one-time passwords. Changes take effect immediately.
           </p>
         </div>
+      </div>
+
+      {/* Telegram Phone OTP Delivery Channel Card */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#229ED9] flex items-center justify-center text-xl shrink-0">
+            <i className="ri-telegram-fill" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-slate-100">
+                Phone Number OTP via Telegram Bot
+              </h4>
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                  config.telegram_otp_enabled !== "false"
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900"
+                    : "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-900"
+                }`}
+              >
+                {config.telegram_otp_enabled !== "false" ? "Enabled (Working)" : "Disabled (Off)"}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+              Controls whether @HRM_OPS_bot sends 6-digit login codes when employees sign in with their phone number.
+            </p>
+          </div>
+        </div>
+
+        <label className={`flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-gray-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 shrink-0 self-start sm:self-auto shadow-2xs ${togglingTelegramOtp ? "opacity-60 pointer-events-none" : ""}`}>
+          <input
+            type="checkbox"
+            disabled={togglingTelegramOtp}
+            checked={config.telegram_otp_enabled !== "false"}
+            onChange={(e) => toggleTelegramOtp(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
+          />
+          <span>{togglingTelegramOtp ? "Saving..." : config.telegram_otp_enabled !== "false" ? "Enabled" : "Disabled"}</span>
+        </label>
       </div>
 
       {/* Config card */}

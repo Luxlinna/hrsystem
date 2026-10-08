@@ -10,6 +10,26 @@ export function resolveAuthEmail(identifier: string): string {
 }
 
 export async function sendOTPService(identifier: string): Promise<void> {
+  const raw = (identifier || "").trim();
+  const isPhone = isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw);
+
+  // Immediate guard: If phone OTP via Telegram bot is disabled by admin, halt immediately
+  if (isPhone) {
+    const { data: otpSetting } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "telegram_otp_enabled")
+      .maybeSingle();
+
+    if (otpSetting?.value === "false") {
+      const errObj: any = new Error(
+        "Phone number OTP via Telegram bot is currently disabled by administrator. Please log in using your email and password."
+      );
+      errObj.telegramOtpDisabled = true;
+      throw errObj;
+    }
+  }
+
   const resolvedEmail = resolveAuthEmail(identifier);
   const { data, error } = await supabase.functions.invoke("send-otp", {
     body: { email: resolvedEmail },
@@ -32,6 +52,9 @@ export async function sendOTPService(identifier: string): Promise<void> {
       errObj.telegramNotConnected = true;
       errObj.botUrl = botUrl || "https://t.me/HRM_OPS_bot?start=connect";
     }
+    if (detail === "telegram_otp_disabled" || msg?.includes("disabled by administrator")) {
+      errObj.telegramOtpDisabled = true;
+    }
     throw errObj;
   }
 
@@ -40,6 +63,9 @@ export async function sendOTPService(identifier: string): Promise<void> {
     if (data.error === "telegram_not_connected" || data.message?.includes("Telegram is not connected")) {
       errObj.telegramNotConnected = true;
       errObj.botUrl = data.bot_url || "https://t.me/HRM_OPS_bot?start=connect";
+    }
+    if (data.error === "telegram_otp_disabled" || data.message?.includes("disabled by administrator")) {
+      errObj.telegramOtpDisabled = true;
     }
     throw errObj;
   }

@@ -8,6 +8,35 @@ interface CacheItem<T> {
 export class CacheService {
   private cache = new Map<string, CacheItem<any>>();
   private timers = new Map<string, NodeJS.Timeout>();
+  private isSubscribed = false;
+
+  constructor() {
+    this.initPubSub();
+  }
+
+  /**
+   * Initializes real-time Pub/Sub cache synchronization across multi-server clusters
+   */
+  public initPubSub(): void {
+    if (this.isSubscribed) return;
+    if (redisService.isAvailable) {
+      this.isSubscribed = true;
+      redisService.subscribe('hrms:cache:sync', (msg) => {
+        try {
+          const payload = JSON.parse(msg);
+          if (payload.action === 'invalidatePrefix' && payload.target) {
+            this.deleteMemoryOnlyPrefix(payload.target);
+          } else if (payload.action === 'delete' && payload.target) {
+            this.deleteMemoryOnly(payload.target);
+          } else if (payload.action === 'clear') {
+            this.clearMemoryOnly();
+          }
+        } catch {
+          // Ignore malformed broadcast messages
+        }
+      });
+    }
+  }
 
   /**
    * Fast L1 (In-Memory) synchronous retrieval
@@ -26,6 +55,7 @@ export class CacheService {
 
   /**
    * Multi-Tier (L1 Memory -> L2 Redis) asynchronous retrieval
+   * All server nodes read from the same global Redis instance
    */
   async getAsync<T>(key: string): Promise<T | null> {
     // 1. Check L1 Memory (0ms)
@@ -34,11 +64,11 @@ export class CacheService {
       return memCached;
     }
 
-    // 2. Check L2 Redis (<2ms)
+    // 2. Check L2 Redis (<2ms shared across all servers)
     if (redisService.isAvailable) {
       const redisCached = await redisService.get<T>(key);
       if (redisCached !== null) {
-        // Populate L1 cache for sub-millisecond future hits
+        // Populate L1 cache on this server node for sub-millisecond future hits
         this.setMemoryOnly(key, redisCached, 60);
         return redisCached;
       }
@@ -48,19 +78,19 @@ export class CacheService {
   }
 
   /**
-   * Set an item in cache with TTL in seconds (writes to both L1 and L2 Redis)
+   * Set an item in cache with TTL in seconds (writes to L1 and Global L2 Redis)
    */
   set<T>(key: string, data: T, ttlSeconds = 60): void {
     this.setMemoryOnly(key, data, ttlSeconds);
 
-    // Asynchronously write to Redis L2
+    // Asynchronously write to Global Redis L2
     if (redisService.isAvailable) {
       redisService.set(key, data, ttlSeconds).catch(() => {});
     }
   }
 
   /**
-   * Write only to L1 memory
+   * Write only to L1 memory on this local node
    */
   private setMemoryOnly<T>(key: string, data: T, ttlSeconds = 60): void {
     if (this.timers.has(key)) {
@@ -94,12 +124,13 @@ export class CacheService {
   }
 
   /**
-   * Invalidate specific key across L1 Memory and L2 Redis
+   * Invalidate specific key across L1 Memory, L2 Redis, and broadcast to all cluster nodes
    */
   delete(key: string): void {
     this.deleteMemoryOnly(key);
     if (redisService.isAvailable) {
       redisService.del(key).catch(() => {});
+      redisService.publish('hrms:cache:sync', JSON.stringify({ action: 'delete', target: key })).catch(() => {});
     }
   }
 
@@ -111,31 +142,44 @@ export class CacheService {
     this.cache.delete(key);
   }
 
-  /**
-   * Invalidate by key prefix across both L1 Memory and L2 Redis (e.g. "attendance:", "http:")
-   */
-  invalidatePrefix(prefix: string): void {
+  private deleteMemoryOnlyPrefix(prefix: string): void {
     for (const key of this.cache.keys()) {
       if (key.startsWith(prefix)) {
         this.deleteMemoryOnly(key);
       }
     }
+  }
+
+  /**
+   * Invalidate by key prefix across L1 Memory, L2 Redis, and broadcast to all cluster nodes
+   */
+  invalidatePrefix(prefix: string): void {
+    this.deleteMemoryOnlyPrefix(prefix);
 
     if (redisService.isAvailable) {
       redisService.delByPattern(`${prefix}*`).catch(() => {});
+      redisService.publish('hrms:cache:sync', JSON.stringify({ action: 'invalidatePrefix', target: prefix })).catch(() => {});
     }
   }
 
+  /**
+   * Clear all cache locally, in Redis, and broadcast to cluster
+   */
   clear(): void {
+    this.clearMemoryOnly();
+
+    if (redisService.isAvailable) {
+      redisService.delByPattern('*').catch(() => {});
+      redisService.publish('hrms:cache:sync', JSON.stringify({ action: 'clear' })).catch(() => {});
+    }
+  }
+
+  private clearMemoryOnly(): void {
     for (const timer of this.timers.values()) {
       clearTimeout(timer);
     }
     this.timers.clear();
     this.cache.clear();
-
-    if (redisService.isAvailable) {
-      redisService.delByPattern('*').catch(() => {});
-    }
   }
 }
 

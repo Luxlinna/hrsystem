@@ -211,6 +211,22 @@ Deno.serve(async (req: Request) => {
       }, 404);
     }
 
+    // Check if phone number OTP via Telegram bot is enabled or disabled
+    if (isPhone) {
+      const { data: otpEnabledSetting } = await admin
+        .from("system_settings")
+        .select("value")
+        .eq("key", "telegram_otp_enabled")
+        .maybeSingle();
+
+      if (otpEnabledSetting && otpEnabledSetting.value === "false") {
+        return json({
+          error: "telegram_otp_disabled",
+          message: "Phone number OTP via Telegram bot is currently disabled by administrator. Please log in using your email and password.",
+        }, 403);
+      }
+    }
+
     // Clear existing unverified OTPs for this identifier
     await admin.from("email_otps").delete().eq("email", normalizedEmail).eq("verified", false);
 

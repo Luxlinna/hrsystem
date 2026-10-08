@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { toast } from "@/components/Toast";
+import { supabase } from "@/lib/supabase";
+import { logActivity } from "@/lib/audit";
 import { sendTelegramMessage } from "@/lib/telegramNotify";
 import {
   ALERT_SOUND_OPTIONS,
@@ -44,6 +46,51 @@ export function NotificationsSettings({
   const [testingNotifTelegram, setTestingNotifTelegram] = useState(false);
   const [testingOtpTelegram, setTestingOtpTelegram] = useState(false);
   const [testingDeviceTelegram, setTestingDeviceTelegram] = useState(false);
+  const [togglingTelegramOtp, setTogglingTelegramOtp] = useState(false);
+
+  const handleToggleTelegramOtp = async (enabled: boolean) => {
+    const val = enabled ? "true" : "false";
+    updateValue("telegram_otp_enabled", val);
+    setTogglingTelegramOtp(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .upsert(
+          {
+            key: "telegram_otp_enabled",
+            value: val,
+            type: "boolean",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+
+      if (error) throw error;
+
+      toast(
+        enabled ? "Telegram OTP Enabled" : "Telegram OTP Disabled",
+        enabled
+          ? "Employees signing in with a phone number will receive a 6-digit code via Telegram bot."
+          : "Phone number OTP is now OFF. Employees signing in with a phone number will log in directly without OTP.",
+        "success"
+      );
+
+      logActivity({
+        module: "settings",
+        action: "updated",
+        entityType: "system_setting",
+        entityId: null,
+        actorName: "Admin",
+        actorRole: "admin",
+        description: `Phone Number OTP via Telegram Bot ${enabled ? "enabled" : "disabled"}`,
+      });
+    } catch (err: any) {
+      updateValue("telegram_otp_enabled", enabled ? "false" : "true");
+      toast("Error", err?.message || "Failed to update Telegram OTP setting.", "error");
+    } finally {
+      setTogglingTelegramOtp(false);
+    }
+  };
 
   const handleTestNotifications = async () => {
     setTestingNotifTelegram(true);
@@ -112,6 +159,16 @@ export function NotificationsSettings({
   const notifKeys = [
     ...notificationKeys.map((n) => n.key),
     "telegram_notify_enabled",
+    "telegram_otp_enabled",
+    "telegram_notifications_chat_id",
+    "telegram_otp_chat_id",
+    "biometric_offline_alert_enabled",
+    "biometric_offline_threshold_minutes",
+  ];
+
+  const telegramKeys = [
+    "telegram_notify_enabled",
+    "telegram_otp_enabled",
     "telegram_notifications_chat_id",
     "telegram_otp_chat_id",
     "biometric_offline_alert_enabled",
@@ -197,7 +254,7 @@ export function NotificationsSettings({
 
       {/* Section 2: Telegram Channels & Bot Routing */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xs space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#229ED9] flex items-center justify-center text-lg shrink-0">
               <i className="ri-telegram-fill" />
@@ -209,15 +266,28 @@ export function NotificationsSettings({
               </p>
             </div>
           </div>
-          <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            <input
-              type="checkbox"
-              checked={getVal("telegram_notify_enabled") === "true"}
-              onChange={(e) => updateValue("telegram_notify_enabled", String(e.target.checked))}
-              className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
-            />
-            <span>Enabled</span>
-          </label>
+          <div className="flex items-center gap-2">
+            {hasChanges(telegramKeys) && (
+              <button
+                type="button"
+                onClick={saveAllNotifications}
+                disabled={saving}
+                className="px-3.5 py-1.5 bg-[#253C7D] dark:bg-blue-600 hover:bg-[#1d3064] text-white text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              >
+                <i className="ri-save-line" />
+                <span>{saving ? "Saving..." : "Save Telegram Settings"}</span>
+              </button>
+            )}
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <input
+                type="checkbox"
+                checked={getVal("telegram_notify_enabled") === "true"}
+                onChange={(e) => updateValue("telegram_notify_enabled", String(e.target.checked))}
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
+              />
+              <span>System Alerts</span>
+            </label>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -260,40 +330,68 @@ export function NotificationsSettings({
           </div>
 
           {/* Channel 2: OTP Group */}
-          <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+          <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  Login OTP Codes Group
+                  Phone Number OTP via Telegram Bot
                 </span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
-                  HRMsystem_OTP_code
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                    getVal("telegram_otp_enabled") !== "false"
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900"
+                      : "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-900"
+                  }`}
+                >
+                  {getVal("telegram_otp_enabled") !== "false" ? "Enabled (Working)" : "Disabled (Off)"}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleTestOtp}
-                disabled={testingOtpTelegram}
-                className="px-3 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs transition-colors disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
-              >
-                <i className="ri-key-2-line text-xs text-amber-600" />
-                <span>{testingOtpTelegram ? "Sending..." : "Test OTP Code"}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <label className={`flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs ${togglingTelegramOtp ? "opacity-60 pointer-events-none" : ""}`}>
+                  <input
+                    type="checkbox"
+                    disabled={togglingTelegramOtp}
+                    checked={getVal("telegram_otp_enabled") !== "false"}
+                    onChange={(e) => handleToggleTelegramOtp(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
+                  />
+                  <span>{togglingTelegramOtp ? "Saving..." : getVal("telegram_otp_enabled") !== "false" ? "Enabled" : "Disabled"}</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleTestOtp}
+                  disabled={testingOtpTelegram || getVal("telegram_otp_enabled") === "false"}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs transition-colors disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+                >
+                  <i className="ri-key-2-line text-xs text-amber-600" />
+                  <span>{testingOtpTelegram ? "Sending..." : "Test OTP Code"}</span>
+                </button>
+              </div>
             </div>
+
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Dedicated exclusively for 6-digit phone login OTP verification codes.
+              When <b>enabled</b>, employees signing in with their phone number receive a 6-digit verification code via @HRM_OPS_bot. When <b>disabled</b>, employees log in directly with their phone number and password without needing an OTP code.
             </p>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="-5356924617"
-                value={getVal("telegram_otp_chat_id") || "-5356924617"}
-                onChange={(e) => updateValue("telegram_otp_chat_id", e.target.value.trim())}
-                className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
-              />
+
+            <div className="space-y-1 pt-1">
+              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                OTP Telegram Group ID (Broadcast Destination)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="-5356924617"
+                  value={getVal("telegram_otp_chat_id") || "-5356924617"}
+                  onChange={(e) => updateValue("telegram_otp_chat_id", e.target.value.trim())}
+                  disabled={getVal("telegram_otp_enabled") === "false"}
+                  className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] disabled:opacity-50"
+                />
+              </div>
             </div>
+
             <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Type <code className="px-1 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded font-mono text-slate-700 dark:text-slate-300">/set_otp</code> in your Telegram group with @HRM_OPS_bot to auto-link.
+              Target Telegram Group ID for broadcast verification codes. Type <code className="px-1 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded font-mono text-slate-700 dark:text-slate-300">/set_otp</code> in your Telegram group with @HRM_OPS_bot to auto-link.
             </p>
           </div>
 

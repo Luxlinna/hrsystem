@@ -1,51 +1,79 @@
+import { logger } from '../config/logger.js';
+
 class RedisService {
   private client: any = null;
   private isConnected = false;
+  private isConnecting = false;
 
   constructor() {
-    this.init();
+    // Lazy or explicit connection via connect()
+  }
+
+  public async connect(): Promise<boolean> {
+    if (this.isConnected && this.client) return true;
+    if (this.isConnecting) return false;
+    this.isConnecting = true;
+    await this.init();
+    this.isConnecting = false;
+    return this.isConnected;
   }
 
   private async init(): Promise<void> {
     const redisUrl = process.env.REDIS_URL;
-    const redisHost = process.env.REDIS_HOST;
-
-    if (!redisUrl && !redisHost) {
-      // Redis not configured; gracefully operates in in-memory mode
-      return;
-    }
+    const redisHost = process.env.REDIS_HOST || '127.0.0.1';
+    const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+    const redisPassword = process.env.REDIS_PASSWORD || undefined;
+    const isTls = (redisUrl && redisUrl.startsWith('rediss://')) || process.env.REDIS_TLS === 'true';
 
     try {
-      // Dynamically load ioredis if installed in environment
       // @ts-ignore
       const ioredisModule = await import('ioredis').catch(() => null);
       if (!ioredisModule) {
+        logger.warn('[Redis] ioredis module not found; running with L1 in-memory cache.');
         return;
       }
 
       const RedisConstructor: any = ioredisModule.default || ioredisModule.Redis || ioredisModule;
-      if (redisUrl) {
-        this.client = new RedisConstructor(redisUrl, {
-          lazyConnect: true,
-          retryStrategy: (times: number) => Math.min(times * 100, 3000),
-          maxRetriesPerRequest: 2,
-          enableOfflineQueue: false,
-        });
+
+      const commonOptions: any = {
+        lazyConnect: true,
+        connectTimeout: 10000,
+        maxRetriesPerRequest: 2,
+        enableOfflineQueue: false,
+        retryStrategy: (times: number) => {
+          if (times > 10) {
+            // After 10 failed connection attempts, back off to 10 seconds
+            return 10000;
+          }
+          return Math.min(times * 200, 3000);
+        },
+      };
+
+      if (isTls) {
+        commonOptions.tls = {
+          rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED === 'true',
+        };
+      }
+
+      let connectionUrl = redisUrl;
+      if (connectionUrl && isTls && connectionUrl.startsWith('redis://')) {
+        connectionUrl = connectionUrl.replace('redis://', 'rediss://');
+      }
+
+      if (connectionUrl) {
+        this.client = new RedisConstructor(connectionUrl, commonOptions);
       } else {
         this.client = new RedisConstructor({
           host: redisHost,
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
-          password: process.env.REDIS_PASSWORD || undefined,
-          lazyConnect: true,
-          retryStrategy: (times: number) => Math.min(times * 100, 3000),
-          maxRetriesPerRequest: 2,
-          enableOfflineQueue: false,
+          port: redisPort,
+          password: redisPassword,
+          ...commonOptions,
         });
       }
 
       this.client.on('connect', () => {
         this.isConnected = true;
-        console.log('✅ [Redis] Connected successfully to Redis server');
+        logger.info('✅ [Redis] Connected successfully to Redis server');
       });
 
       this.client.on('ready', () => {
@@ -54,25 +82,38 @@ class RedisService {
 
       this.client.on('error', (err: any) => {
         this.isConnected = false;
-        console.warn(`⚠️ [Redis] Connection warning: ${err.message}`);
+        logger.warn(`⚠️ [Redis] Connection warning: ${err?.message || err}`);
       });
 
       this.client.on('close', () => {
         this.isConnected = false;
       });
 
-      this.client.connect().catch((err: any) => {
+      await this.client.connect().catch((err: any) => {
         this.isConnected = false;
-        console.warn(`⚠️ [Redis] Initial connection skipped: ${err.message}`);
+        logger.warn(`⚠️ [Redis] Initial connection deferred: ${err?.message || err}`);
       });
     } catch (err: any) {
       this.isConnected = false;
-      console.warn(`⚠️ [Redis] Initialization skipped: ${err.message}`);
+      logger.warn(`⚠️ [Redis] Initialization skipped: ${err?.message || err}`);
     }
   }
 
   public get isAvailable(): boolean {
     return this.isConnected && this.client !== null;
+  }
+
+  /**
+   * Actively ping Redis to verify live responsiveness
+   */
+  public async ping(): Promise<boolean> {
+    if (!this.isAvailable || !this.client) return false;
+    try {
+      const pong = await this.client.ping();
+      return pong === 'PONG';
+    } catch {
+      return false;
+    }
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -95,8 +136,8 @@ class RedisService {
       } else {
         await this.client.set(key, serialized);
       }
-    } catch (err) {
-      console.warn(`⚠️ [Redis] Set key error: ${key}`, err);
+    } catch (err: any) {
+      logger.warn(`⚠️ [Redis] Set key error for "${key}": ${err?.message || err}`);
     }
   }
 
@@ -104,8 +145,8 @@ class RedisService {
     if (!this.isAvailable || !this.client) return;
     try {
       await this.client.del(key);
-    } catch (err) {
-      console.warn(`⚠️ [Redis] Delete key error: ${key}`, err);
+    } catch (err: any) {
+      logger.warn(`⚠️ [Redis] Delete key error for "${key}": ${err?.message || err}`);
     }
   }
 
@@ -124,14 +165,62 @@ class RedisService {
           await pipeline.exec();
         }
       });
-    } catch (err) {
-      console.warn(`⚠️ [Redis] Delete by pattern error: ${pattern}`, err);
+    } catch (err: any) {
+      logger.warn(`⚠️ [Redis] Delete by pattern error for "${pattern}": ${err?.message || err}`);
+    }
+  }
+
+  /**
+   * Publish a message to a Redis channel for multi-server synchronization
+   */
+  async publish(channel: string, message: string): Promise<void> {
+    if (!this.isAvailable || !this.client) return;
+    try {
+      await this.client.publish(channel, message);
+    } catch (err: any) {
+      logger.warn(`⚠️ [Redis PubSub] Failed to publish message: ${err?.message || err}`);
+    }
+  }
+
+  /**
+   * Subscribe to a Redis channel for real-time multi-server cache invalidation
+   */
+  private subClient: any = null;
+  async subscribe(channel: string, onMessage: (msg: string) => void): Promise<void> {
+    if (!this.client) return;
+    try {
+      if (!this.subClient) {
+        this.subClient = this.client.duplicate();
+        await this.subClient.connect().catch(() => {});
+      }
+      await this.subClient.subscribe(channel);
+      this.subClient.on('message', (chan: string, msg: string) => {
+        if (chan === channel) {
+          onMessage(msg);
+        }
+      });
+    } catch (err: any) {
+      logger.warn(`⚠️ [Redis PubSub] Subscription error: ${err?.message || err}`);
     }
   }
 
   async disconnect(): Promise<void> {
+    if (this.subClient) {
+      try {
+        await this.subClient.quit();
+      } catch {
+        this.subClient.disconnect();
+      }
+      this.subClient = null;
+    }
+
     if (this.client) {
-      await this.client.quit().catch(() => {});
+      try {
+        await this.client.quit();
+      } catch {
+        // Force disconnect if quit times out
+        this.client.disconnect();
+      }
       this.client = null;
       this.isConnected = false;
     }
