@@ -32,6 +32,7 @@ export function useAttendanceData(
     if (visibleBranches && visibleBranches.length > 0) return visibleBranches.map((b) => ({ id: b.id, name: b.name }));
     return [];
   });
+  const [divisions, setDivisions] = useState<string[]>(() => attendanceCache.getCachedTableValues("divisions") || []);
   const [depts, setDepts] = useState<string[]>(() => attendanceCache.getCachedTableValues("departments") || []);
   const [positions, setPositions] = useState<string[]>(() => attendanceCache.getCachedTableValues("positions") || []);
   const [employeeTypes, setEmployeeTypes] = useState<string[]>(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
@@ -60,6 +61,7 @@ export function useAttendanceData(
       const [
         cachedBranches,
         cachedWorkLocs,
+        cachedDivisions,
         cachedDepts,
         cachedPositions,
         cachedTypes,
@@ -67,6 +69,7 @@ export function useAttendanceData(
       ] = await Promise.all([
         attendanceCache.getBranches(force),
         attendanceCache.getWorkLocations(force),
+        attendanceCache.getTableValues("divisions", [], force),
         attendanceCache.getTableValues("departments", [], force),
         attendanceCache.getTableValues("positions", [], force),
         Promise.resolve(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]),
@@ -75,6 +78,7 @@ export function useAttendanceData(
       if (!isMountedRef.current) return;
       if (cachedBranches && cachedBranches.length > 0) setBranches(cachedBranches);
       if (cachedWorkLocs && cachedWorkLocs.length > 0) setWorkLocations(cachedWorkLocs);
+      if (cachedDivisions && cachedDivisions.length > 0) setDivisions(cachedDivisions);
       if (cachedDepts && cachedDepts.length > 0) setDepts(cachedDepts);
       if (cachedPositions && cachedPositions.length > 0) setPositions(cachedPositions);
       if (cachedTypes && cachedTypes.length > 0) setEmployeeTypes(cachedTypes);
@@ -352,6 +356,7 @@ export function useAttendanceData(
     setMyEmployee,
     workLocations,
     branches,
+    divisions,
     depts,
     positions,
     employeeTypes,

@@ -158,6 +158,7 @@ export default function AttendancePage() {
           employees: data.employees,
           workLocations: data.workLocations,
           branches: data.branches,
+          divisions: data.divisions,
           departments: data.depts,
           positions: data.positions,
           employeeTypes: data.employeeTypes,

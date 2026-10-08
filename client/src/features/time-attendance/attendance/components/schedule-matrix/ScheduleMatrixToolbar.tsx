@@ -24,6 +24,9 @@ interface ScheduleMatrixToolbarProps {
   workLocations: { id: string; name: string; branch_id: string }[];
   filterBranch?: string;
   setFilterBranch?: (val: string) => void;
+  filterDivision?: string;
+  setFilterDivision?: (val: string) => void;
+  divisionList?: string[];
   positionList: string[];
   employeeTypeList: string[];
   employeeLevelList: string[];
@@ -40,6 +43,9 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
   nextMonth,
   filterBranch,
   setFilterBranch,
+  filterDivision,
+  setFilterDivision,
+  divisionList,
   filterDept,
   setFilterDept,
   filterWorkLocation,
@@ -173,6 +179,8 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
           setFilterBranch={setFilterBranch}
           filterWorkLocation={filterWorkLocation}
           setFilterWorkLocation={setFilterWorkLocation}
+          filterDivision={filterDivision}
+          setFilterDivision={setFilterDivision}
           filterDepartment={filterDept}
           setFilterDepartment={setFilterDept}
           filterRole={filterRole}
@@ -183,6 +191,7 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
           setFilterEmployeeLevel={setFilterEmployeeLevel}
           branches={branches}
           workLocations={workLocations as WorkLocation[]}
+          divisions={divisionList}
           depts={departmentList}
           positions={positionList}
           employeeTypes={employeeTypeList}

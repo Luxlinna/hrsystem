@@ -63,6 +63,7 @@ export default function EmployeesPage() {
         search={emp.search} setSearch={emp.setSearch}
         showFilters={emp.showFilters} setShowFilters={emp.setShowFilters}
         showColumnMenu={emp.showColumnMenu} setShowColumnMenu={emp.setShowColumnMenu}
+        filterDivision={emp.filterDivision} setFilterDivision={emp.setFilterDivision}
         filterDept={emp.filterDept} setFilterDept={emp.setFilterDept}
         filterStatus={emp.filterStatus} setFilterStatus={emp.setFilterStatus}
         filterJobStatus={emp.filterJobStatus} setFilterJobStatus={emp.setFilterJobStatus}
@@ -75,6 +76,7 @@ export default function EmployeesPage() {
         filterDateOption={emp.filterDateOption} setFilterDateOption={emp.setFilterDateOption}
         filterContractType={emp.filterContractType} setFilterContractType={emp.setFilterContractType}
         contractTypes={emp.contractTypes} jobStatuses={emp.jobStatuses}
+        divisions={emp.divisions}
         depts={emp.depts} positions={emp.positions}
         employeeTypes={emp.employeeTypes} employeeLevels={emp.employeeLevels}
         branches={emp.branches} workSites={emp.workSites}

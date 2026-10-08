@@ -14,6 +14,8 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   setShowFilters,
   showColumnMenu,
   setShowColumnMenu,
+  filterDivision = "",
+  setFilterDivision = () => {},
   filterDept,
   setFilterDept,
   filterStatus,
@@ -41,6 +43,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   positions = [],
   employeeTypes,
   employeeLevels,
+  divisions = [],
   depts,
   branches,
   workSites = [],
@@ -154,6 +157,8 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
             setFilterBranch={setFilterBranch}
             filterWorkLocation={filterWorkLocation}
             setFilterWorkLocation={setFilterWorkLocation}
+            filterDivision={filterDivision}
+            setFilterDivision={setFilterDivision}
             filterDept={filterDept}
             setFilterDept={setFilterDept}
             filterRole={filterRole}
@@ -164,6 +169,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
             setFilterEmployeeLevel={setFilterEmployeeLevel}
             branches={branches}
             workSites={workSites}
+            divisions={divisions}
             depts={depts}
             positions={positions}
             employeeTypes={employeeTypes}

@@ -8,6 +8,7 @@ export interface SearchableEmployee {
   phone?: string | null;
   role?: string | null;
   department?: string | null;
+  division?: string | null;
   biometric_user_id?: string | null;
   employee_code?: string | null;
   nssf_number?: string | null;
@@ -28,6 +29,7 @@ export function matchEmployeeSearch(e: SearchableEmployee, query: string): boole
   const phone = (e.phone || "").toLowerCase();
   const role = (e.role || "").toLowerCase();
   const dept = (e.department || "").toLowerCase();
+  const division = (e.division || "").toLowerCase();
   const buName = (e.branches?.name || "").toLowerCase();
   const nssfNum = (e.nssf_number || "").toLowerCase();
 
@@ -58,6 +60,7 @@ export function matchEmployeeSearch(e: SearchableEmployee, query: string): boole
       fullBuId.includes(tok) ||
       role.includes(tok) ||
       dept.includes(tok) ||
+      division.includes(tok) ||
       email.includes(tok) ||
       phone.includes(tok) ||
       rawBio.toLowerCase().includes(tok) ||

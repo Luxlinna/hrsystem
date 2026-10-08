@@ -13,6 +13,7 @@ interface AttendanceControlBarProps {
   singleDate: string; setSingleDate: (date: string) => void;
   fromDate: string; setFromDate: (date: string) => void;
   toDate: string; setToDate: (date: string) => void;
+  divisions?: string[]; filterDivision?: string; setFilterDivision?: (div: string) => void;
   departments: string[]; filterDepartment: string; setFilterDepartment: (dept: string) => void;
   roles?: string[]; filterRole?: string; setFilterRole?: (role: string) => void;
   employmentTypes?: string[]; filterEmploymentType?: string; setFilterEmploymentType?: (type: string) => void;
@@ -29,6 +30,7 @@ interface AttendanceControlBarProps {
 export const AttendanceControlBar = memo(function AttendanceControlBar({
   filteredRecordsCount, searchQuery, setSearchQuery, filterDatePreset, setFilterDatePreset,
   singleDate, setSingleDate, fromDate, setFromDate, toDate, setToDate,
+  divisions = [], filterDivision = "all", setFilterDivision,
   departments, filterDepartment, setFilterDepartment, roles = [], filterRole = "all", setFilterRole,
   employmentTypes = [], filterEmploymentType = "all", setFilterEmploymentType,
   employeeLevels = [], filterEmployeeLevel = "", setFilterEmployeeLevel,
@@ -38,14 +40,14 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   todayYMD,
 }: AttendanceControlBarProps) {
   const isFiltered = Boolean(
-    searchQuery || (filterBranch && filterBranch !== "all") || (filterDepartment && filterDepartment !== "all") || (filterRole && filterRole !== "all") ||
+    searchQuery || (filterBranch && filterBranch !== "all") || (filterDivision && filterDivision !== "all") || (filterDepartment && filterDepartment !== "all") || (filterRole && filterRole !== "all") ||
     (filterEmploymentType && filterEmploymentType !== "all") || Boolean(filterEmployeeLevel) ||
     (filterStatus && filterStatus !== "all") || (filterWorkLocation && filterWorkLocation !== "all") ||
     (filterDatePreset && filterDatePreset !== "all")
   );
 
   const handleResetFilters = () => {
-    setSearchQuery(""); setFilterBranch?.(""); setFilterDepartment("all"); setFilterRole?.("all");
+    setSearchQuery(""); setFilterBranch?.(""); setFilterDivision?.("all"); setFilterDepartment("all"); setFilterRole?.("all");
     setFilterEmploymentType?.("all"); setFilterEmployeeLevel?.(""); setFilterStatus("all");
     setFilterWorkLocation("all"); setFilterDatePreset("all"); setFromDate(""); setToDate(""); setSingleDate(todayYMD);
     if (typeof window !== "undefined") {
@@ -96,6 +98,9 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           />
 
           <AttendanceFilterSelects
+            divisions={divisions}
+            filterDivision={filterDivision}
+            setFilterDivision={setFilterDivision}
             departments={departments}
             filterDepartment={filterDepartment}
             setFilterDepartment={setFilterDepartment}

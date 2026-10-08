@@ -7,6 +7,8 @@ interface EmployeesFilterDropdownProps {
   setFilterBranch: (branch: string) => void;
   filterWorkLocation?: string;
   setFilterWorkLocation?: (loc: string) => void;
+  filterDivision?: string;
+  setFilterDivision?: (division: string) => void;
   filterDept: string;
   setFilterDept: (dept: string) => void;
   filterRole: string;
@@ -17,13 +19,14 @@ interface EmployeesFilterDropdownProps {
   setFilterEmployeeLevel: (level: string) => void;
   branches: Branch[];
   workSites?: { id: string; name: string; branch_id: string }[];
+  divisions?: (string | null | undefined)[];
   depts: (string | null | undefined)[];
   positions?: string[];
   employeeTypes?: string[];
   employeeLevels?: string[];
 }
 
-type ActiveCategory = "bu" | "site" | "department" | "position" | "employee_type" | "employee_level";
+type ActiveCategory = "bu" | "site" | "division" | "department" | "position" | "employee_type" | "employee_level";
 
 type DraftFilters = Record<ActiveCategory, Set<string>>;
 
@@ -35,6 +38,8 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   setFilterBranch,
   filterWorkLocation = "all",
   setFilterWorkLocation = () => {},
+  filterDivision = "",
+  setFilterDivision = () => {},
   filterDept,
   setFilterDept,
   filterRole,
@@ -45,6 +50,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   setFilterEmployeeLevel,
   branches = [],
   workSites = [],
+  divisions = [],
   depts = [],
   positions = [],
   employeeTypes = [],
@@ -57,6 +63,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   const [draftFilters, setDraftFilters] = useState<DraftFilters>(() => ({
     bu: parseSet(filterBranch),
     site: parseSet(filterWorkLocation),
+    division: parseSet(filterDivision),
     department: parseSet(filterDept),
     position: parseSet(filterRole),
     employee_type: parseSet(filterEmployeeType),
@@ -69,13 +76,14 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
       setDraftFilters({
         bu: parseSet(filterBranch),
         site: parseSet(filterWorkLocation),
+        division: parseSet(filterDivision),
         department: parseSet(filterDept),
         position: parseSet(filterRole),
         employee_type: parseSet(filterEmployeeType),
         employee_level: parseSet(filterEmployeeLevel),
       });
     }
-  }, [isOpen, filterBranch, filterWorkLocation, filterDept, filterRole, filterEmployeeType, filterEmployeeLevel]);
+  }, [isOpen, filterBranch, filterWorkLocation, filterDivision, filterDept, filterRole, filterEmployeeType, filterEmployeeLevel]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -90,6 +98,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   const hasActiveFilter = Boolean(
     filterBranch ||
     (filterWorkLocation && filterWorkLocation !== "all") ||
+    filterDivision ||
     filterDept ||
     filterRole ||
     filterEmployeeType ||
@@ -100,6 +109,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
     () => [
       { id: "bu" as const, label: "BU", count: draftFilters.bu.size, active: draftFilters.bu.size > 0 },
       { id: "site" as const, label: "Site", count: draftFilters.site.size, active: draftFilters.site.size > 0 },
+      { id: "division" as const, label: "Division", count: draftFilters.division.size, active: draftFilters.division.size > 0 },
       { id: "department" as const, label: "Department", count: draftFilters.department.size, active: draftFilters.department.size > 0 },
       { id: "position" as const, label: "Position", count: draftFilters.position.size, active: draftFilters.position.size > 0 },
       { id: "employee_type" as const, label: "Employee Type", count: draftFilters.employee_type.size, active: draftFilters.employee_type.size > 0 },
@@ -124,13 +134,34 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
     });
   }, [workSites, branches]);
 
-  const deptOptions = useMemo<FilterOptionItem[]>(
-    () => depts.filter(Boolean).map((d) => ({ id: d as string, label: d as string })),
-    [depts]
+  const divisionOptions = useMemo<FilterOptionItem[]>(() => {
+    const unique = Array.from(
+      new Set((divisions || []).filter(Boolean).map((d) => String(d).trim()))
+    ).filter(Boolean);
+    return unique.sort().map((d) => ({ id: d, label: d }));
+  }, [divisions]);
+
+  const deptOptions = useMemo<FilterOptionItem[]>(() => {
+    const unique = Array.from(
+      new Set((depts || []).filter(Boolean).map((d) => String(d).trim()))
+    ).filter(Boolean);
+    return unique.sort().map((d) => ({ id: d, label: d }));
+  }, [depts]);
+
+  const positionOptions = useMemo<FilterOptionItem[]>(
+    () => positions.filter(Boolean).map((p) => ({ id: p, label: p })),
+    [positions]
   );
-  const positionOptions = useMemo<FilterOptionItem[]>(() => positions.filter(Boolean).map((p) => ({ id: p, label: p })), [positions]);
-  const typeOptions = useMemo<FilterOptionItem[]>(() => employeeTypes.filter(Boolean).map((t) => ({ id: t, label: t.replace(/_/g, " ") })), [employeeTypes]);
-  const levelOptions = useMemo<FilterOptionItem[]>(() => employeeLevels.filter(Boolean).map((l) => ({ id: l, label: l })), [employeeLevels]);
+
+  const typeOptions = useMemo<FilterOptionItem[]>(
+    () => employeeTypes.filter(Boolean).map((t) => ({ id: t, label: t.replace(/_/g, " ") })),
+    [employeeTypes]
+  );
+
+  const levelOptions = useMemo<FilterOptionItem[]>(
+    () => employeeLevels.filter(Boolean).map((l) => ({ id: l, label: l })),
+    [employeeLevels]
+  );
 
   const currentCategoryItems = useMemo<FilterOptionItem[]>(() => {
     switch (activeCategory) {
@@ -138,6 +169,8 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
         return buOptions;
       case "site":
         return siteOptions;
+      case "division":
+        return divisionOptions;
       case "department":
         return deptOptions;
       case "position":
@@ -149,7 +182,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
       default:
         return [];
     }
-  }, [activeCategory, buOptions, siteOptions, deptOptions, positionOptions, typeOptions, levelOptions]);
+  }, [activeCategory, buOptions, siteOptions, divisionOptions, deptOptions, positionOptions, typeOptions, levelOptions]);
 
   const handleToggleItem = useCallback((id: string) => {
     setDraftFilters((prev) => {
@@ -186,6 +219,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   const handleApply = useCallback(() => {
     setFilterBranch(Array.from(draftFilters.bu).join(","));
     setFilterWorkLocation?.(draftFilters.site.size > 0 ? Array.from(draftFilters.site).join(",") : "all");
+    setFilterDivision?.(Array.from(draftFilters.division).join(","));
     setFilterDept(Array.from(draftFilters.department).join(","));
     setFilterRole(Array.from(draftFilters.position).join(","));
     setFilterEmployeeType(Array.from(draftFilters.employee_type).join(","));
@@ -195,6 +229,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
     draftFilters,
     setFilterBranch,
     setFilterWorkLocation,
+    setFilterDivision,
     setFilterDept,
     setFilterRole,
     setFilterEmployeeType,
@@ -235,6 +270,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
             onToggleAll={handleToggleAll}
             onApply={handleApply}
             onReset={handleReset}
+            categoryLabel={categories.find((c) => c.id === activeCategory)?.label}
           />
 
           <div className="w-36 py-1 bg-white">
@@ -268,4 +304,3 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
     </div>
   );
 });
-

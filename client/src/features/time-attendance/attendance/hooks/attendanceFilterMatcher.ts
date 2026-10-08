@@ -3,6 +3,7 @@ import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface MatchParams {
   filterStatus: string;
+  filterDivision?: string;
   filterDepartment: string;
   filterRole: string;
   filterEmploymentType: string;
@@ -35,6 +36,12 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
       });
       if (!matched) return false;
     }
+  }
+
+  if (p.filterDivision && p.filterDivision !== "all") {
+    const divs = p.filterDivision.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
+    const empDiv = (r.employees?.division || "").toLowerCase();
+    if (divs.length > 0 && !divs.includes(empDiv)) return false;
   }
 
   if (p.filterDepartment && p.filterDepartment !== "all") {

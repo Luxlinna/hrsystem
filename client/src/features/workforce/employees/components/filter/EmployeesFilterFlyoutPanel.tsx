@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useMemo, useEffect, useCallback } from "react";
 
 export interface FilterOptionItem {
   id: string;
@@ -14,6 +14,7 @@ interface EmployeesFilterFlyoutPanelProps {
   onToggleAll: () => void;
   onApply: () => void;
   onReset: () => void;
+  categoryLabel?: string;
 }
 
 export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPanel({
@@ -23,50 +24,120 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
   onToggleAll,
   onApply,
   onReset,
+  categoryLabel,
 }: EmployeesFilterFlyoutPanelProps) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [displayLimit, setDisplayLimit] = useState(30);
 
-  const allSelected = items.length > 0 && items.every((i) => selectedSet.has(i.id));
-  const visibleItems = items.slice(0, displayLimit);
-  const hasMore = items.length > displayLimit;
+  // Reset search term and display limit when switching category
+  useEffect(() => {
+    setSearchTerm("");
+    setDisplayLimit(30);
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return items;
+    const q = searchTerm.toLowerCase().trim();
+    return items.filter(
+      (i) =>
+        i.label.toLowerCase().includes(q) ||
+        (i.fullLabel && i.fullLabel.toLowerCase().includes(q))
+    );
+  }, [items, searchTerm]);
+
+  const isFiltering = searchTerm.trim().length > 0;
+  const allSelected =
+    filteredItems.length > 0 && filteredItems.every((i) => selectedSet.has(i.id));
+  const visibleItems = filteredItems.slice(0, displayLimit);
+  const hasMore = filteredItems.length > displayLimit;
+
+  const handleToggleAllOrFiltered = useCallback(() => {
+    if (!isFiltering) {
+      onToggleAll();
+      return;
+    }
+    const allFilteredChecked =
+      filteredItems.length > 0 && filteredItems.every((i) => selectedSet.has(i.id));
+    if (allFilteredChecked) {
+      filteredItems.forEach((i) => {
+        if (selectedSet.has(i.id)) onToggleItem(i.id);
+      });
+    } else {
+      filteredItems.forEach((i) => {
+        if (!selectedSet.has(i.id)) onToggleItem(i.id);
+      });
+    }
+  }, [isFiltering, onToggleAll, filteredItems, selectedSet, onToggleItem]);
 
   return (
     <div className="w-64 py-2 px-2.5 flex flex-col bg-white border-r border-slate-200">
+      {/* Quick Search inside filter category */}
+      <div className="relative mb-2">
+        <i className="ri-search-line absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setDisplayLimit(30);
+          }}
+          placeholder={categoryLabel ? `Search ${categoryLabel.toLowerCase()}...` : "Search..."}
+          className="w-full pl-6.5 pr-6 py-1 text-xs border border-slate-200 rounded bg-slate-50/70 focus:bg-white focus:outline-none focus:border-[#253C7D] text-slate-800 placeholder-slate-400 transition-colors"
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm("")}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+          >
+            <i className="ri-close-line text-xs" />
+          </button>
+        )}
+      </div>
+
       {/* Scrollable Checkbox List */}
-      <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700">
+      <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700">
         {/* 'All' Checkbox */}
         <label className="flex items-center gap-2 px-1.5 py-1 hover:bg-slate-50 rounded cursor-pointer select-none">
           <input
             type="checkbox"
             checked={allSelected}
-            onChange={onToggleAll}
+            onChange={handleToggleAllOrFiltered}
             className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
           />
-          <span className="font-medium text-slate-800">All</span>
+          <span className="font-medium text-slate-800">
+            {isFiltering ? "Select All Matches" : "All"}
+          </span>
         </label>
 
         {/* Item Checkboxes */}
-        {visibleItems.map((item) => {
-          const isChecked = selectedSet.has(item.id);
-          return (
-            <label
-              key={item.id}
-              className={`flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 rounded cursor-pointer select-none ${
-                item.isSubItem ? "pl-5 text-slate-500" : ""
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => onToggleItem(item.id)}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
-              />
-              <span className="truncate text-slate-700" title={item.fullLabel || item.label}>
-                {item.label}
-              </span>
-            </label>
-          );
-        })}
+        {visibleItems.length === 0 ? (
+          <div className="py-4 text-center text-xs text-slate-400">
+            No matching options
+          </div>
+        ) : (
+          visibleItems.map((item) => {
+            const isChecked = selectedSet.has(item.id);
+            return (
+              <label
+                key={item.id}
+                className={`flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 rounded cursor-pointer select-none ${
+                  item.isSubItem ? "pl-5 text-slate-500" : ""
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggleItem(item.id)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
+                />
+                <span className="truncate text-slate-700" title={item.fullLabel || item.label}>
+                  {item.label}
+                </span>
+              </label>
+            );
+          })
+        )}
 
         {/* Load More Button */}
         {hasMore && (
@@ -76,7 +147,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
             className="w-full text-left px-1.5 py-1 text-[11px] text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer font-medium"
           >
             <i className="ri-refresh-line text-xs" />
-            <span>Load More ({visibleItems.length}/{items.length})</span>
+            <span>Load More ({visibleItems.length}/{filteredItems.length})</span>
           </button>
         )}
       </div>

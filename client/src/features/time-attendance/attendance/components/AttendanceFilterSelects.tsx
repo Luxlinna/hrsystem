@@ -4,6 +4,9 @@ import { StatusPillDropdown } from "./filters/StatusPillDropdown";
 import { FilterFlyoutMenu } from "./filters/FilterFlyoutMenu";
 
 interface Props {
+  divisions?: string[];
+  filterDivision?: string;
+  setFilterDivision?: (division: string) => void;
   departments: string[];
   filterDepartment: string;
   setFilterDepartment: (dept: string) => void;
@@ -27,6 +30,9 @@ interface Props {
 }
 
 export const AttendanceFilterSelects = memo(function AttendanceFilterSelects({
+  divisions = [],
+  filterDivision = "all",
+  setFilterDivision = () => {},
   departments = [],
   filterDepartment,
   setFilterDepartment,
@@ -58,6 +64,7 @@ export const AttendanceFilterSelects = memo(function AttendanceFilterSelects({
       <FilterFlyoutMenu
         branches={branches}
         workLocations={workLocations}
+        divisions={divisions}
         depts={departments}
         positions={roles}
         employeeTypes={employmentTypes}
@@ -66,6 +73,8 @@ export const AttendanceFilterSelects = memo(function AttendanceFilterSelects({
         setFilterBranch={setFilterBranch}
         filterWorkLocation={filterWorkLocation}
         setFilterWorkLocation={setFilterWorkLocation}
+        filterDivision={filterDivision}
+        setFilterDivision={setFilterDivision}
         filterDepartment={filterDepartment}
         setFilterDepartment={setFilterDepartment}
         filterRole={filterRole}

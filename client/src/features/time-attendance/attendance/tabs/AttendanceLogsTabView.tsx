@@ -16,6 +16,7 @@ interface Props {
   employees: Employee[];
   workLocations: WorkLocation[];
   branches?: { id: string; name: string }[];
+  divisions?: string[];
   departments?: string[];
   positions?: string[];
   employeeTypes?: string[];
@@ -41,6 +42,7 @@ export const AttendanceLogsTabView = memo(function AttendanceLogsTabView({
   employees,
   workLocations,
   branches = [],
+  divisions,
   departments,
   positions,
   employeeTypes,
@@ -74,6 +76,9 @@ export const AttendanceLogsTabView = memo(function AttendanceLogsTabView({
         setFromDate={filters.setFromDate}
         toDate={filters.toDate}
         setToDate={filters.setToDate}
+        divisions={divisions && divisions.length > 0 ? divisions : filters.divisions}
+        filterDivision={filters.filterDivision}
+        setFilterDivision={filters.setFilterDivision}
         departments={departments && departments.length > 0 ? departments : filters.departments}
         filterDepartment={filters.filterDepartment}
         setFilterDepartment={filters.setFilterDepartment}

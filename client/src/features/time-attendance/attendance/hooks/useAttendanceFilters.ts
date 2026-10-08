@@ -12,6 +12,7 @@ const ATTENDANCE_FILTERS_STORAGE_KEY = "hrm_attendance_filters_v1";
 interface SavedAttendanceFilters {
   filterBranch?: string;
   filterWorkLocation?: string;
+  filterDivision?: string;
   filterDepartment?: string;
   filterRole?: string;
   filterEmploymentType?: string;
@@ -29,6 +30,7 @@ const getSavedAttendanceFilters = (): SavedAttendanceFilters | null => {
     return {
       filterBranch: typeof parsed.filterBranch === "string" ? parsed.filterBranch : "",
       filterWorkLocation: typeof parsed.filterWorkLocation === "string" ? parsed.filterWorkLocation : "all",
+      filterDivision: typeof parsed.filterDivision === "string" ? parsed.filterDivision : "all",
       filterDepartment: typeof parsed.filterDepartment === "string" ? parsed.filterDepartment : "all",
       filterRole: typeof parsed.filterRole === "string" ? parsed.filterRole : "all",
       filterEmploymentType: typeof parsed.filterEmploymentType === "string" ? parsed.filterEmploymentType : "all",
@@ -84,6 +86,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBranch, setFilterBranch] = useState<string>(() => savedFilters?.filterBranch ?? "");
+  const [filterDivision, setFilterDivision] = useState<string>(() => savedFilters?.filterDivision ?? "all");
   const [filterDepartment, setFilterDepartment] = useState<string>(() => savedFilters?.filterDepartment ?? "all");
   const [filterEmployeeId, setFilterEmployeeId] = useState("all");
   const [filterRole, setFilterRole] = useState<string>(() => savedFilters?.filterRole ?? "all");
@@ -112,6 +115,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
       const payload: SavedAttendanceFilters = {
         filterBranch,
         filterWorkLocation,
+        filterDivision,
         filterDepartment,
         filterRole,
         filterEmploymentType,
@@ -127,6 +131,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   }, [
     filterBranch,
     filterWorkLocation,
+    filterDivision,
     filterDepartment,
     filterRole,
     filterEmploymentType,
@@ -228,6 +233,10 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
           if (!matched) return false;
         }
       }
+      if (filterDivision && filterDivision !== "all") {
+        const divList = filterDivision.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+        if (divList.length > 0 && !divList.includes((e.division || "").toLowerCase())) return false;
+      }
       if (filterDepartment !== "all") {
         const deptsList = filterDepartment.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
         if (deptsList.length > 0 && !deptsList.includes((e.department || "").toLowerCase())) return false;
@@ -258,7 +267,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     }
 
     return rawMatches;
-  }, [records, employees, filterStatus, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel, filterEmployeeId, filterWorkLocation, filterBranch, dateRangeBounds, searchQuery, todayYMD]);
+  }, [records, employees, filterStatus, filterDivision, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel, filterEmployeeId, filterWorkLocation, filterBranch, dateRangeBounds, searchQuery, todayYMD]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -273,7 +282,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
       return;
     }
     setPage(1);
-  }, [searchQuery, filterBranch, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize, setPage]);
+  }, [searchQuery, filterBranch, filterDivision, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize, setPage]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -292,6 +301,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   const isFiltered = Boolean(
     searchQuery ||
     (filterBranch && filterBranch !== "all") ||
+    (filterDivision && filterDivision !== "all") ||
     (filterDepartment && filterDepartment !== "all") ||
     (filterRole && filterRole !== "all") ||
     (filterEmploymentType && filterEmploymentType !== "all") ||
@@ -305,6 +315,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   const handleResetFilters = useCallback(() => {
     setSearchQuery("");
     setFilterBranch("");
+    setFilterDivision("all");
     setFilterDepartment("all");
     setFilterRole("all");
     setFilterEmploymentType("all");
@@ -321,9 +332,15 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     }
   }, [todayYMD]);
 
+  const divisions = useMemo(
+    () => Array.from(new Set(employees.map((e) => e.division).filter(Boolean))),
+    [employees]
+  );
+
   return {
     activeTab, setActiveTab, viewMode: viewModeState, setViewMode, searchQuery, setSearchQuery,
     filterBranch, setFilterBranch,
+    filterDivision, setFilterDivision, divisions,
     filterDepartment, setFilterDepartment, filterRole, setFilterRole, roles,
     filterEmploymentType, setFilterEmploymentType, employmentTypes,
     filterEmployeeLevel, setFilterEmployeeLevel,

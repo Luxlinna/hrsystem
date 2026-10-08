@@ -7,6 +7,8 @@ export interface EmployeesFilterBarProps {
   setShowFilters: (show: boolean) => void;
   showColumnMenu: boolean;
   setShowColumnMenu: (show: boolean) => void;
+  filterDivision?: string;
+  setFilterDivision?: (division: string) => void;
   filterDept: string;
   setFilterDept: (dept: string) => void;
   filterStatus: string;
@@ -34,6 +36,7 @@ export interface EmployeesFilterBarProps {
   positions?: string[];
   employeeTypes?: string[];
   employeeLevels?: string[];
+  divisions?: (string | null | undefined)[];
   depts: (string | null | undefined)[];
   branches: Branch[];
   workSites?: { id: string; name: string; branch_id: string }[];

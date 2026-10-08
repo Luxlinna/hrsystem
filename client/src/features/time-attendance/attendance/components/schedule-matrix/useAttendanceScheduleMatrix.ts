@@ -17,6 +17,7 @@ export function useAttendanceScheduleMatrix() {
   const [filterBranch, setFilterBranch] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterWorkLocation, setFilterWorkLocation] = useState("all");
+  const [filterDivision, setFilterDivision] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [filterEmploymentType, setFilterEmploymentType] = useState("all");
   const [filterEmployeeLevel, setFilterEmployeeLevel] = useState("");
@@ -31,6 +32,7 @@ export function useAttendanceScheduleMatrix() {
   const [workLocations, setWorkLocations] = useState<{ id: string; name: string; branch_id: string }[]>(() => {
     return (attendanceCache.getCachedWorkLocations() as any) || [];
   });
+  const [divisionList, setDivisionList] = useState<string[]>(() => attendanceCache.getCachedTableValues("divisions") || []);
   const [positionList, setPositionList] = useState<string[]>(() => attendanceCache.getCachedTableValues("positions") || []);
   const [employeeTypeList, setEmployeeTypeList] = useState<string[]>(["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
   const [employeeLevelList, setEmployeeLevelList] = useState<string[]>(() => attendanceCache.getCachedTableValues("employee_levels") || ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
@@ -41,6 +43,9 @@ export function useAttendanceScheduleMatrix() {
     });
     attendanceCache.getWorkLocations().then((data) => {
       if (data && data.length > 0) setWorkLocations(data as any);
+    });
+    attendanceCache.getTableValues("divisions", []).then((data) => {
+      if (data && data.length > 0) setDivisionList(data);
     });
     attendanceCache.getTableValues("positions", []).then((data) => {
       if (data && data.length > 0) setPositionList(data);
@@ -154,6 +159,12 @@ export function useAttendanceScheduleMatrix() {
           if (!matched) return false;
         }
       }
+      if (filterDivision && filterDivision !== "all") {
+        const emp = rawEmployees.find((e) => e.id === row.id);
+        const divList = filterDivision.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
+        const empDiv = ((emp as any)?.division || "").toLowerCase();
+        if (divList.length > 0 && !divList.includes(empDiv)) return false;
+      }
       if (filterDept && filterDept !== "all") {
         const deptList = filterDept.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
         if (deptList.length > 0 && !deptList.includes((row.department || "").toLowerCase())) return false;
@@ -255,6 +266,7 @@ export function useAttendanceScheduleMatrix() {
     scheduledEmployees,
     unscheduledEmployees,
     departmentList,
+    divisionList,
     branches,
     workLocations,
     positionList,
@@ -264,6 +276,8 @@ export function useAttendanceScheduleMatrix() {
     setSearch,
     filterBranch,
     setFilterBranch,
+    filterDivision,
+    setFilterDivision,
     filterDept,
     setFilterDept,
     filterWorkLocation,

@@ -137,6 +137,7 @@ function matchEmployeeJobStatus(status?: string | null, selected?: string[]): bo
 const EMPLOYEES_FILTERS_STORAGE_KEY = "hrm_employees_filters_v1";
 
 interface SavedEmployeesFilters {
+  filterDivision?: string;
   filterDept?: string;
   filterStatus?: string;
   filterJobStatus?: string[];
@@ -158,6 +159,7 @@ const getSavedEmployeesFilters = (): SavedEmployeesFilters | null => {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return {
+      filterDivision: typeof parsed.filterDivision === "string" ? parsed.filterDivision : "",
       filterDept: typeof parsed.filterDept === "string" ? parsed.filterDept : "",
       filterStatus: typeof parsed.filterStatus === "string" ? parsed.filterStatus : "",
       filterJobStatus: Array.isArray(parsed.filterJobStatus) ? parsed.filterJobStatus : [],
@@ -190,6 +192,7 @@ export function useEmployeesFilters({
   const savedFilters = useMemo(() => getSavedEmployeesFilters(), []);
 
   const [search, setSearch] = useState("");
+  const [filterDivision, setFilterDivision] = useState<string>(() => savedFilters?.filterDivision ?? "");
   const [filterDept, setFilterDept] = useState<string>(() => savedFilters?.filterDept ?? "");
   const [filterStatus, setFilterStatus] = useState<string>(() => savedFilters?.filterStatus ?? "");
   const [filterJobStatus, setFilterJobStatus] = useState<string[]>(() => savedFilters?.filterJobStatus ?? []);
@@ -215,6 +218,7 @@ export function useEmployeesFilters({
       const payload: SavedEmployeesFilters = {
         filterBranch,
         filterWorkLocation,
+        filterDivision,
         filterDept,
         filterRole,
         filterEmployeeType,
@@ -233,6 +237,7 @@ export function useEmployeesFilters({
   }, [
     filterBranch,
     filterWorkLocation,
+    filterDivision,
     filterDept,
     filterRole,
     filterEmployeeType,
@@ -327,6 +332,7 @@ export function useEmployeesFilters({
   }, [workSites, scopedEmployees, currentBranchName]);
 
   const depts = useMemo(() => Array.from(new Set(scopedEmployees.map((e) => e.department).filter(Boolean))), [scopedEmployees]);
+  const divisions = useMemo(() => Array.from(new Set(scopedEmployees.map((e) => e.division).filter(Boolean))), [scopedEmployees]);
   const branchCount = useMemo(() => new Set(scopedEmployees.map((e) => e.branch_id).filter(Boolean)).size, [scopedEmployees]);
   const managers = useMemo(
     () => scopedEmployees.filter((employee) => managerEmails.has(employee.email?.toLowerCase())),
@@ -352,6 +358,13 @@ export function useEmployeesFilters({
     return scopedEmployees
       .filter((e) => {
         const matchesSearch = matchEmployeeSearch(e, search);
+
+        let matchesDivision = true;
+        if (filterDivision) {
+          const divList = filterDivision.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+          matchesDivision = divList.length === 0 || divList.includes((e.division || "").toLowerCase());
+        }
+
         let matchesDept = true;
         if (filterDept) {
           const deptsList = filterDept.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -451,6 +464,7 @@ export function useEmployeesFilters({
 
         return (
           matchesSearch &&
+          matchesDivision &&
           matchesDept &&
           matchesStatus &&
           matchesJobStatus &&
@@ -468,6 +482,7 @@ export function useEmployeesFilters({
   }, [
     scopedEmployees,
     search,
+    filterDivision,
     filterDept,
     filterStatus,
     filterJobStatus,
@@ -534,10 +549,11 @@ export function useEmployeesFilters({
       return;
     }
     setPage(1);
-  }, [search, filterDept, filterStatus, filterJobStatus, filterRole, filterEmployeeType, filterEmployeeLevel, filterDateOption, filterContractType, filterBranch, filterWorkLocation, filterAccount, setPage]);
+  }, [search, filterDivision, filterDept, filterStatus, filterJobStatus, filterRole, filterEmployeeType, filterEmployeeLevel, filterDateOption, filterContractType, filterBranch, filterWorkLocation, filterAccount, setPage]);
 
   return {
     search, setSearch,
+    filterDivision, setFilterDivision,
     filterDept, setFilterDept,
     filterStatus, setFilterStatus,
     filterJobStatus, setFilterJobStatus,
@@ -557,7 +573,7 @@ export function useEmployeesFilters({
     showColumnMenu, setShowColumnMenu,
     visibleColumns, setVisibleColumns,
     viewMode, setViewMode,
-    depts, branchCount, managers, stats,
+    depts, divisions, branchCount, managers, stats,
     filtered, empTotalPages, empPageStart, empPageEnd,
     pagedEmployees, tableGridStyle,
     handleSort, handleExportCSV,

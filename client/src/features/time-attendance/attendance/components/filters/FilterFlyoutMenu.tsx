@@ -9,6 +9,8 @@ interface FilterFlyoutMenuProps {
   setFilterBranch?: (branch: string) => void;
   filterWorkLocation?: string;
   setFilterWorkLocation?: (locId: string) => void;
+  filterDivision?: string;
+  setFilterDivision?: (division: string) => void;
   filterDepartment?: string;
   setFilterDepartment?: (dept: string) => void;
   filterRole?: string;
@@ -19,6 +21,7 @@ interface FilterFlyoutMenuProps {
   setFilterEmployeeLevel?: (level: string) => void;
   branches?: { id: string; name: string }[];
   workLocations?: WorkLocation[];
+  divisions?: string[];
   depts?: string[];
   positions?: string[];
   employeeTypes?: string[];
@@ -26,7 +29,7 @@ interface FilterFlyoutMenuProps {
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-type ActiveCategory = "bu" | "site" | "department" | "position" | "employee_type" | "employee_level";
+type ActiveCategory = "bu" | "site" | "division" | "department" | "position" | "employee_type" | "employee_level";
 
 type DraftFilters = Record<ActiveCategory, Set<string>>;
 
@@ -38,6 +41,8 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   setFilterBranch = () => {},
   filterWorkLocation = "all",
   setFilterWorkLocation = () => {},
+  filterDivision = "all",
+  setFilterDivision = () => {},
   filterDepartment = "all",
   setFilterDepartment = () => {},
   filterRole = "all",
@@ -48,6 +53,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   setFilterEmployeeLevel = () => {},
   branches = [],
   workLocations = [],
+  divisions = [],
   depts = [],
   positions = [],
   employeeTypes = [],
@@ -57,6 +63,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   const { visibleBranches, branches: scopeBranches } = useBranchScope();
   const [fetchedBranches, setFetchedBranches] = useState<{ id: string; name: string }[]>(() => attendanceCache.getCachedBranches() || []);
   const [fetchedWorkLocations, setFetchedWorkLocations] = useState<WorkLocation[]>(() => attendanceCache.getCachedWorkLocations() || []);
+  const [fetchedDivisions, setFetchedDivisions] = useState<string[]>(() => attendanceCache.getCachedTableValues("divisions") || []);
   const [fetchedDepts, setFetchedDepts] = useState<string[]>(() => attendanceCache.getCachedTableValues("departments") || []);
   const [fetchedPositions, setFetchedPositions] = useState<string[]>(() => attendanceCache.getCachedTableValues("positions") || []);
 
@@ -66,6 +73,9 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
     });
     attendanceCache.getWorkLocations().then((data) => {
       if (data && data.length > 0) setFetchedWorkLocations(data);
+    });
+    attendanceCache.getTableValues("divisions", []).then((data) => {
+      if (data && data.length > 0) setFetchedDivisions(data);
     });
     attendanceCache.getTableValues("departments", []).then((data) => {
       if (data && data.length > 0) setFetchedDepts(data);
@@ -102,6 +112,11 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
     return [];
   }, [workLocations, fetchedWorkLocations, scopeBranches]);
 
+  const effectiveDivisions = useMemo(() => {
+    if (divisions && divisions.length > 0) return divisions;
+    return fetchedDivisions;
+  }, [divisions, fetchedDivisions]);
+
   const effectiveDepts = useMemo(() => {
     if (depts && depts.length > 0) return depts;
     return fetchedDepts;
@@ -119,6 +134,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   const [draftFilters, setDraftFilters] = useState<DraftFilters>(() => ({
     bu: parseSet(filterBranch),
     site: parseSet(filterWorkLocation),
+    division: parseSet(filterDivision),
     department: parseSet(filterDepartment),
     position: parseSet(filterRole),
     employee_type: parseSet(filterEmploymentType),
@@ -131,13 +147,14 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
       setDraftFilters({
         bu: parseSet(filterBranch),
         site: parseSet(filterWorkLocation),
+        division: parseSet(filterDivision),
         department: parseSet(filterDepartment),
         position: parseSet(filterRole),
         employee_type: parseSet(filterEmploymentType),
         employee_level: parseSet(filterEmployeeLevel),
       });
     }
-  }, [isOpen, filterBranch, filterWorkLocation, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel]);
+  }, [isOpen, filterBranch, filterWorkLocation, filterDivision, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -153,6 +170,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   const hasActiveFilter = Boolean(
     (filterBranch && filterBranch !== "all") ||
     (filterWorkLocation && filterWorkLocation !== "all") ||
+    (filterDivision && filterDivision !== "all") ||
     (filterDepartment && filterDepartment !== "all") ||
     (filterRole && filterRole !== "all") ||
     (filterEmploymentType && filterEmploymentType !== "all") ||
@@ -163,6 +181,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
     () => [
       { id: "bu" as const, label: "BU", count: draftFilters.bu.size, active: draftFilters.bu.size > 0 },
       { id: "site" as const, label: "Site", count: draftFilters.site.size, active: draftFilters.site.size > 0 },
+      { id: "division" as const, label: "Division", count: draftFilters.division.size, active: draftFilters.division.size > 0 },
       { id: "department" as const, label: "Department", count: draftFilters.department.size, active: draftFilters.department.size > 0 },
       { id: "position" as const, label: "Position", count: draftFilters.position.size, active: draftFilters.position.size > 0 },
       { id: "employee_type" as const, label: "Employee Type", count: draftFilters.employee_type.size, active: draftFilters.employee_type.size > 0 },
@@ -187,13 +206,34 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
     });
   }, [effectiveWorkLocations, effectiveBranches]);
 
-  const deptOptions = useMemo<FilterOptionItem[]>(
-    () => effectiveDepts.filter(Boolean).map((d) => ({ id: d, label: d })),
-    [effectiveDepts]
+  const divisionOptions = useMemo<FilterOptionItem[]>(() => {
+    const unique = Array.from(
+      new Set(effectiveDivisions.filter(Boolean).map((d) => String(d).trim()))
+    ).filter(Boolean);
+    return unique.sort().map((d) => ({ id: d, label: d }));
+  }, [effectiveDivisions]);
+
+  const deptOptions = useMemo<FilterOptionItem[]>(() => {
+    const unique = Array.from(
+      new Set(effectiveDepts.filter(Boolean).map((d) => String(d).trim()))
+    ).filter(Boolean);
+    return unique.sort().map((d) => ({ id: d, label: d }));
+  }, [effectiveDepts]);
+
+  const positionOptions = useMemo<FilterOptionItem[]>(
+    () => positions.filter(Boolean).map((p) => ({ id: p, label: p })),
+    [positions]
   );
-  const positionOptions = useMemo<FilterOptionItem[]>(() => effectivePositions.filter(Boolean).map((p) => ({ id: p, label: p })), [effectivePositions]);
-  const typeOptions = useMemo<FilterOptionItem[]>(() => employeeTypes.filter(Boolean).map((t) => ({ id: t, label: t.replace(/_/g, " ") })), [employeeTypes]);
-  const levelOptions = useMemo<FilterOptionItem[]>(() => employeeLevels.filter(Boolean).map((l) => ({ id: l, label: l })), [employeeLevels]);
+
+  const typeOptions = useMemo<FilterOptionItem[]>(
+    () => employeeTypes.filter(Boolean).map((t) => ({ id: t, label: t.replace(/_/g, " ") })),
+    [employeeTypes]
+  );
+
+  const levelOptions = useMemo<FilterOptionItem[]>(
+    () => employeeLevels.filter(Boolean).map((l) => ({ id: l, label: l })),
+    [employeeLevels]
+  );
 
   const currentCategoryItems = useMemo<FilterOptionItem[]>(() => {
     switch (activeCategory) {
@@ -201,6 +241,8 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
         return buOptions;
       case "site":
         return siteOptions;
+      case "division":
+        return divisionOptions;
       case "department":
         return deptOptions;
       case "position":
@@ -212,7 +254,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
       default:
         return [];
     }
-  }, [activeCategory, buOptions, siteOptions, deptOptions, positionOptions, typeOptions, levelOptions]);
+  }, [activeCategory, buOptions, siteOptions, divisionOptions, deptOptions, positionOptions, typeOptions, levelOptions]);
 
   const handleToggleItem = useCallback((id: string) => {
     setDraftFilters((prev) => {
@@ -249,6 +291,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
   const handleApply = useCallback(() => {
     setFilterBranch(Array.from(draftFilters.bu).join(","));
     setFilterWorkLocation(draftFilters.site.size > 0 ? Array.from(draftFilters.site).join(",") : "all");
+    setFilterDivision(draftFilters.division.size > 0 ? Array.from(draftFilters.division).join(",") : "all");
     setFilterDepartment(draftFilters.department.size > 0 ? Array.from(draftFilters.department).join(",") : "all");
     setFilterRole(draftFilters.position.size > 0 ? Array.from(draftFilters.position).join(",") : "all");
     setFilterEmploymentType(draftFilters.employee_type.size > 0 ? Array.from(draftFilters.employee_type).join(",") : "all");
@@ -259,6 +302,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
     draftFilters,
     setFilterBranch,
     setFilterWorkLocation,
+    setFilterDivision,
     setFilterDepartment,
     setFilterRole,
     setFilterEmploymentType,
@@ -304,6 +348,7 @@ export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
             onToggleAll={handleToggleAll}
             onApply={handleApply}
             onReset={handleReset}
+            categoryLabel={categories.find((c) => c.id === activeCategory)?.label}
           />
 
           <div className="w-36 py-1 bg-white dark:bg-slate-900">
