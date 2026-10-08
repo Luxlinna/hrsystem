@@ -30,9 +30,12 @@ cd "$APP_DIR"
 BEFORE=$(as_app git rev-parse --short HEAD)
 
 log "Downloading the latest code"
-as_app git checkout -- . 2>/dev/null || true
+# Edits made on the server (often as root) must never block a deploy: give the tree back to
+# the app user, then hard-reset to the remote branch instead of pulling.
+chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 as_app env GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
-  git pull --ff-only origin "$BRANCH"
+  git fetch origin "$BRANCH"
+as_app git reset --hard "origin/$BRANCH"
 echo "$BEFORE -> $(as_app git rev-parse --short HEAD)"
 
 log "Installing libraries"
