@@ -80,11 +80,51 @@ export async function saveMovementInfo(
     contract_rate_after_frequency: payload.salaryAfterFreq || "Monthly",
   };
 
-  const isInitialMock = !movement?.id || movement.id.startsWith("initial-");
-  const movId = isInitialMock ? `mov-${Date.now()}` : movement.id;
+  const isUuid = Boolean(movement?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(movement.id));
+  let savedId = movement?.id || "";
+
+  try {
+    if (isUuid && movement?.id) {
+      const { data, error } = await supabase
+        .from("employee_movements")
+        .update({
+          movement_type: movement?.movement_type || inferMovementType(payload.title),
+          title: payload.title,
+          effective_date: payload.effectiveDate,
+          new_values: newValues,
+          remarks: payload.remarks,
+          document_url: docUrl,
+          document_name: docName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", movement.id)
+        .select("id")
+        .single();
+      if (!error && data?.id) savedId = data.id;
+    } else {
+      const { data, error } = await supabase
+        .from("employee_movements")
+        .insert({
+          employee_id: employee.id,
+          movement_type: movement?.movement_type || inferMovementType(payload.title),
+          title: payload.title,
+          effective_date: payload.effectiveDate,
+          previous_values: movement?.previous_values || {},
+          new_values: newValues,
+          remarks: payload.remarks,
+          document_url: docUrl,
+          document_name: docName,
+        })
+        .select("id")
+        .single();
+      if (!error && data?.id) savedId = data.id;
+    }
+  } catch (err) {
+    console.warn("Could not save to employee_movements table:", err);
+  }
 
   const movementRecord: EmployeeMovement = {
-    id: movId,
+    id: savedId || movement?.id || `mov-${Date.now()}`,
     employee_id: employee.id,
     movement_type: movement?.movement_type || inferMovementType(payload.title),
     title: payload.title,
@@ -96,23 +136,6 @@ export async function saveMovementInfo(
     document_name: docName,
     created_at: movement?.created_at || new Date().toISOString(),
   };
-
-  try {
-    await supabase.from("employee_movements").upsert([{
-      id: movId,
-      employee_id: employee.id,
-      movement_type: movementRecord.movement_type,
-      title: movementRecord.title,
-      effective_date: movementRecord.effective_date,
-      previous_values: movementRecord.previous_values,
-      new_values: movementRecord.new_values,
-      remarks: movementRecord.remarks,
-      document_url: docUrl,
-      document_name: docName,
-    }]);
-  } catch (err) {
-    console.warn("Could not save to employee_movements table:", err);
-  }
 
   try {
     const empUpdatePayload: any = {

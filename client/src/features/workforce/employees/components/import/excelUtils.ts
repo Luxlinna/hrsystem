@@ -1,12 +1,12 @@
 import { toast } from "@/components/Toast";
+import { read as xlsxRead, utils as xlsxUtils, writeFile as xlsxWriteFile } from "xlsx";
 import type { Branch } from "../../types";
 import { TEMPLATE_HEADERS, type ParsedEmployeeRow, type ColumnMappingState } from "./types";
 import { extractVal, cleanHtmlString, normalizeGender, normalizeStatus, parseExcelDate, parseSalary, isRowCompletelyEmpty } from "./fieldNormalizer";
 
 export async function downloadEmployeeTemplate(branches: Branch[]) {
   try {
-    const XLSX = await import("xlsx");
-    const ws = XLSX.utils.aoa_to_sheet([
+    const ws = xlsxUtils.aoa_to_sheet([
       TEMPLATE_HEADERS,
       [
         "EMP001", "Sok Dara", "សុខ តារា", "Male", "Mr", "1998-05-20", "010203040",
@@ -16,9 +16,9 @@ export async function downloadEmployeeTemplate(branches: Branch[]) {
       ],
     ]);
     ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(h.length + 4, 16) }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Employee Import Template");
-    XLSX.writeFile(wb, "employee_import_template.xlsx");
+    const wb = xlsxUtils.book_new();
+    xlsxUtils.book_append_sheet(wb, ws, "Employee Import Template");
+    xlsxWriteFile(wb, "employee_import_template.xlsx");
     toast("Template Ready", "Downloaded Employee Import template (.xlsx)", "success");
   } catch (e) {
     console.error(e);
@@ -30,30 +30,82 @@ export async function scanSpreadsheetFile(file: File): Promise<{
   headers: string[];
   rawRows: Record<string, any>[];
 }> {
-  const XLSX = await import("xlsx");
+  // The xlsx alias in vite.config points to src/lib/xlsx.ts (a custom shim).
+  // Its read() is async and accepts ArrayBuffer | Uint8Array only.
   const buffer = await file.arrayBuffer();
-  const wb = await XLSX.read(buffer, { cellDates: true });
+  const wb = await xlsxRead(buffer, { type: "array" });
+
+  if (!wb || !wb.SheetNames || wb.SheetNames.length === 0) {
+    toast("Empty File", "The uploaded file has no sheets.", "error");
+    return { headers: [], rawRows: [] };
+  }
   const firstSheetName = wb.SheetNames[0];
   const worksheet = wb.Sheets[firstSheetName];
-  const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-  if (rawRows.length === 0) {
+  // The custom shim stores data as a 2D array in ws.data (not standard xlsx cell objects)
+  const grid: any[][] = (worksheet?.data as any[][]) || [];
+
+  if (!grid || grid.length === 0) {
     toast("Empty File", "The uploaded sheet contains no data rows.", "error");
     return { headers: [], rawRows: [] };
   }
 
-  const headerSet = new Set<string>();
-  for (const row of rawRows) {
-    for (const k of Object.keys(row)) {
-      if (k && !k.startsWith("__EMPTY") && k.trim() !== "") {
-        headerSet.add(k.trim());
+  // Find header row: search first 10 rows for matching column keywords
+  let headerRowIndex = 0;
+  const keywords = [
+    "employee", "name", "code", "id", "date", "status", "department", "position",
+    "division", "bu", "business", "site", "contract", "salary", "supervisor", "no"
+  ];
+
+  let maxScore = 0;
+  for (let r = 0; r < Math.min(grid.length, 10); r++) {
+    const row = grid[r] || [];
+    let score = 0;
+    for (let c = 0; c < row.length; c++) {
+      const cell = row[c];
+      const s = String(cell || "").toLowerCase().trim();
+      if (keywords.some((kw) => s.includes(kw))) {
+        score++;
       }
+    }
+    if (score > maxScore && score >= 2) {
+      maxScore = score;
+      headerRowIndex = r;
     }
   }
 
-  const headers = Array.from(headerSet);
-  const nonEmptyRows = rawRows.filter((r) => !isRowCompletelyEmpty(r));
-  return { headers, rawRows: nonEmptyRows };
+  const headerRow = grid[headerRowIndex] || [];
+  const rawHeaders: string[] = [];
+  for (let colIdx = 0; colIdx < headerRow.length; colIdx++) {
+    const str = String(headerRow[colIdx] ?? "").trim();
+    rawHeaders.push(str || `col_${colIdx}`);
+  }
+
+  const headers = rawHeaders.filter((h) => h && !h.startsWith("col_"));
+
+  const rawRows: Record<string, any>[] = [];
+  for (let r = headerRowIndex + 1; r < grid.length; r++) {
+    const row = grid[r] || [];
+    let hasAnyVal = false;
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] !== null && row[c] !== undefined && String(row[c]).trim() !== "") {
+        hasAnyVal = true;
+        break;
+      }
+    }
+    if (!hasAnyVal) continue;
+
+    const rowObj: Record<string, any> = {};
+    for (let colIdx = 0; colIdx < Math.max(rawHeaders.length, row.length); colIdx++) {
+      const h = rawHeaders[colIdx] || `col_${colIdx}`;
+      const val = row[colIdx] ?? "";
+      rowObj[h] = val;
+      rowObj[`__col_${colIdx}`] = val;
+    }
+    rawRows.push(rowObj);
+  }
+
+  return { headers, rawRows };
 }
 
 export function transformRowsWithMapping(

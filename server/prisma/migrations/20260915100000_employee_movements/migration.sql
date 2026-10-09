@@ -57,3 +57,10 @@ create policy "Allow update access to employee movements for authenticated users
   to authenticated
   using (true)
   with check (true);
+
+create policy "Allow delete access to employee movements for authenticated users"
+  on employee_movements for delete
+  to authenticated
+  using (true);
+
+grant all on table employee_movements to anon, authenticated, service_role;

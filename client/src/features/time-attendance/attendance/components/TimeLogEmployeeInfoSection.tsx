@@ -20,8 +20,8 @@ export const TimeLogEmployeeInfoSection = memo(function TimeLogEmployeeInfoSecti
   showSalary,
   setShowSalary,
 }: Props) {
-  const activeEmp = emp || empDetail;
-  const fullName = activeEmp ? formatKhmerFullName(activeEmp) : "Unknown Employee";
+  const activeEmp = { ...(emp || {}), ...(empDetail || {}) };
+  const fullName = formatKhmerFullName(activeEmp) || "Unknown Employee";
   const empBioId = formatBiometricId(
     empDetail?.biometric_user_id || emp?.biometric_user_id,
     empDetail?.branches?.name || (emp as any)?.branches?.name

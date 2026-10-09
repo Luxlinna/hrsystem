@@ -1,3 +1,5 @@
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+
 export interface NameFields {
   first_name?: string | null;
   last_name?: string | null;
@@ -6,21 +8,16 @@ export interface NameFields {
 }
 
 /**
- * Returns the proper employee display name, prioritizing `display_name` and `full_name`
- * (e.g. Cambodian Khmer naming order: Last First like "Khoeurn Chem") over
- * raw `first_name last_name`.
+ * Returns the proper employee display name following Cambodian Khmer naming order:
+ * [Last Name] [First Name] (e.g. "Te Senglong", "Khoeurn Chem")
  */
 export function getAttendanceEmployeeName(
   emp?: NameFields | null,
   fallback = "—"
 ): string {
   if (!emp) return fallback;
-  return (
-    emp.display_name?.trim() ||
-    emp.full_name?.trim() ||
-    `${emp.last_name || ""} ${emp.first_name || ""}`.trim() ||
-    fallback
-  );
+  const formatted = formatKhmerFullName(emp);
+  return formatted && formatted !== "—" ? formatted : fallback;
 }
 
 /**

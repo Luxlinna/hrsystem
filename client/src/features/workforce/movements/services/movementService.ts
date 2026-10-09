@@ -13,7 +13,6 @@ import { updateEmployeeOnMovement, persistMovementRecord, recordInitialJoiningMo
 export { getStoredLocalMovements, saveLocalMovement, deleteLocalMovement, recordInitialJoiningMovement };
 
 export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
-  const deletedIds = getDeletedMovementIds();
   try {
     const { data: movData, error: movErr } = await supabase
       .from("employee_movements")
@@ -22,9 +21,10 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
       .order("effective_date", { ascending: false });
 
     if (!movErr && movData && movData.length > 0) {
-      return (movData as EmployeeMovement[]).filter((m) => !deletedIds.has(m.id));
+      return movData as EmployeeMovement[];
     }
 
+    // Fallback if employee_movements table is empty or legacy records exist in audit_logs
     const { data: auditData, error: auditErr } = await supabase
       .from("audit_logs")
       .select("*")
@@ -33,8 +33,7 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
       .order("created_at", { ascending: false });
 
     if (!auditErr && auditData && auditData.length > 0) {
-      const filteredAudit = auditData.filter((a) => !deletedIds.has(a.id) && !deletedIds.has(a.metadata?.id));
-      const employeeIds = Array.from(new Set(filteredAudit.map((a) => a.entity_id).filter(Boolean)));
+      const employeeIds = Array.from(new Set(auditData.map((a) => a.entity_id).filter(Boolean)));
       const empMap = new Map<string, any>();
 
       if (employeeIds.length > 0) {
@@ -51,7 +50,7 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
         });
       }
 
-      const dbMovements: EmployeeMovement[] = filteredAudit.map((a) => {
+      return auditData.map((a) => {
         const meta = a.metadata || {};
         const emp = a.entity_id ? empMap.get(a.entity_id) : null;
         return {
@@ -72,19 +71,12 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
           employees: emp || meta.employee_snapshot || null,
         };
       });
-
-      const local = getStoredLocalMovements();
-      const combined = [...dbMovements];
-      local.forEach((loc) => {
-        if (!combined.some((c) => c.id === loc.id)) combined.push(loc);
-      });
-      return combined.filter((m) => !deletedIds.has(m.id));
     }
 
-    return getStoredLocalMovements();
+    return [];
   } catch (err) {
     console.warn("fetchMovements dynamic fallback:", err);
-    return getStoredLocalMovements();
+    return [];
   }
 }
 
@@ -96,15 +88,24 @@ export async function fetchMovementsByEmployeeId(employeeId: string): Promise<Em
 export async function deleteMovement(id: string): Promise<boolean> {
   try {
     deleteLocalMovement(id);
-    await Promise.allSettled([
-      supabase.from("employee_movements").delete().eq("id", id),
-      supabase.from("employee_movements").update({ deleted_at: new Date().toISOString() }).eq("id", id),
-      supabase.from("audit_logs").delete().eq("id", id),
-    ]);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    if (isUuid) {
+      await Promise.allSettled([
+        supabase.from("employee_movements").update({ deleted_at: new Date().toISOString() }).eq("id", id),
+        supabase.from("employee_movements").delete().eq("id", id),
+        supabase.from("audit_logs").delete().eq("id", id),
+      ]);
+    } else {
+      await Promise.allSettled([
+        supabase.from("audit_logs").delete().eq("metadata->>id", id),
+        supabase.from("audit_logs").delete().eq("id", id),
+      ]);
+    }
     window.dispatchEvent(new CustomEvent("employee-movement-created"));
     return true;
   } catch (err) {
-    console.warn("Delete movement fallback:", err);
+    console.warn("Delete movement error:", err);
     deleteLocalMovement(id);
     window.dispatchEvent(new CustomEvent("employee-movement-created"));
     return true;
@@ -138,8 +139,8 @@ export async function recordEmployeeMovement({
   await updateEmployeeOnMovement(employee.id, employeeUpdates);
 
   const actorName = currentUser?.displayName || currentUser?.email || "HR Admin";
-  const newMovement: EmployeeMovement = {
-    id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+  const tempMovement: EmployeeMovement = {
+    id: "",
     employee_id: employee.id,
     movement_type: form.movement_type,
     title,
@@ -166,8 +167,12 @@ export async function recordEmployeeMovement({
     },
   };
 
-  await persistMovementRecord(newMovement, employee, employeeUpdates, actorName);
-  saveLocalMovement(newMovement);
+  const dbId = await persistMovementRecord(tempMovement, employee, employeeUpdates, actorName);
+  const newMovement: EmployeeMovement = {
+    ...tempMovement,
+    id: dbId || `mov-${Date.now()}`,
+  };
+
   window.dispatchEvent(new CustomEvent("employee-movement-created", { detail: newMovement }));
   return newMovement;
 }

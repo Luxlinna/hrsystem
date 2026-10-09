@@ -84,7 +84,10 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
     "—";
   const contractTypeStr = formatContractType(m, emp);
   const employeeType = newV.employment_type || emp.employment_type || "—";
-  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || emp.reports_to || "—";
+  let supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || emp.reports_to || "—";
+  if (supervisor.toLowerCase() === "pisey pin") supervisor = "Pin Pisey";
+  if (supervisor.toLowerCase() === "senglong te") supervisor = "Te Senglong";
+  if (supervisor.toLowerCase() === "chem khoeurn") supervisor = "Khoeurn Chem";
 
   const rawSalary = newV.new_salary ?? newV.salary ?? emp.basic_salary ?? emp.contract_rate ?? "0";
   const salaryFreq = newV.contract_rate_frequency || emp.contract_rate_frequency || "Monthly";
@@ -118,7 +121,10 @@ export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] 
     "—";
   const department = emp.department || emp.division || "—";
   const role = emp.position || emp.role || emp.employee_level || emp.title || "Staff";
-  const supervisor = emp.line_manager || emp.reports_to || "—";
+  let supervisor = emp.line_manager || emp.reports_to || "—";
+  if (supervisor.toLowerCase() === "pisey pin") supervisor = "Pin Pisey";
+  if (supervisor.toLowerCase() === "senglong te") supervisor = "Te Senglong";
+  if (supervisor.toLowerCase() === "chem khoeurn") supervisor = "Khoeurn Chem";
   const contractType = emp.contract_type || "PERMANENT (UDC)";
   const employeeType = emp.employment_type || "Full Time";
   const rawSalary = emp.basic_salary ?? emp.contract_rate ?? 0;
@@ -126,32 +132,8 @@ export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] 
   const remarks = emp.contract_remark || "";
 
   const joinDate = emp.join_date || emp.start_date || new Date().toISOString().split("T")[0];
-  const probationDate = emp.fdc_end_date || emp.contract_end_date;
 
   const records: EmployeeMovement[] = [];
-
-  if (probationDate && probationDate !== joinDate) {
-    records.push({
-      id: `probation-${emp.id}`,
-      employee_id: emp.id,
-      movement_type: "pass_probation",
-      title: "Pass Probation",
-      effective_date: probationDate,
-      previous_values: {},
-      new_values: {
-        site,
-        department,
-        role,
-        contract_type: contractType,
-        employment_type: employeeType,
-        supervisor,
-        new_salary: rawSalary,
-        salary_after_contract: rawSalaryAfter,
-      },
-      remarks,
-      created_at: new Date().toISOString(),
-    });
-  }
 
   records.push({
     id: `join-${emp.id}`,

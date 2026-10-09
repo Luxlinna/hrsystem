@@ -40,19 +40,29 @@ export const ImportChangeStatusPreview: React.FC<ImportChangeStatusPreviewProps>
       </div>
 
       <div className="w-full overflow-x-auto border border-slate-200 max-h-[50vh]">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-slate-100 sticky top-0 border-b border-slate-200 text-slate-700 font-semibold">
+        <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
+          <thead className="bg-slate-100 sticky top-0 border-b border-slate-200 text-slate-700 font-semibold text-[11px]">
             <tr>
-              <th className="py-2 px-2.5 w-10 text-center">No.</th>
+              <th className="py-2 px-2.5 w-10 text-center">No</th>
               <th className="py-2 px-2.5">Validation</th>
               <th className="py-2 px-2.5">Effective Date</th>
               <th className="py-2 px-2.5">Status Type</th>
-              <th className="py-2 px-2.5">Employee</th>
-              <th className="py-2 px-2.5">Position</th>
+              <th className="py-2 px-2.5">Employee Code</th>
+              <th className="py-2 px-2.5">Employee Name</th>
               <th className="py-2 px-2.5">Division</th>
               <th className="py-2 px-2.5">Department</th>
-              <th className="py-2 px-2.5">Contract</th>
-              <th className="py-2 px-2.5">Rate</th>
+              <th className="py-2 px-2.5">Position</th>
+              <th className="py-2 px-2.5">Business Unit</th>
+              <th className="py-2 px-2.5">Site</th>
+              <th className="py-2 px-2.5">Contract Type</th>
+              <th className="py-2 px-2.5">Contract Date</th>
+              <th className="py-2 px-2.5">Employee Level</th>
+              <th className="py-2 px-2.5">Employee Type</th>
+              <th className="py-2 px-2.5">Supervisor</th>
+              <th className="py-2 px-2.5">Salary</th>
+              <th className="py-2 px-2.5">Salary After Probation</th>
+              <th className="py-2 px-2.5">Remark</th>
+              <th className="py-2 px-2.5">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -85,22 +95,34 @@ export const ImportChangeStatusPreview: React.FC<ImportChangeStatusPreviewProps>
                     </span>
                   )}
                 </td>
-                <td className="py-2 px-2.5 whitespace-nowrap">{r.effectiveDate}</td>
-                <td className="py-2 px-2.5 whitespace-nowrap font-medium">{r.statusType}</td>
-                <td className="py-2 px-2.5">
-                  <p className="font-semibold text-slate-800">{r.employeeName}</p>
-                  <span className="text-[10px] text-slate-400 font-mono">{r.employeeCode}</span>
-                </td>
-                <td className="py-2 px-2.5">{r.position}</td>
+                <td className="py-2 px-2.5">{r.effectiveDate}</td>
+                <td className="py-2 px-2.5 font-medium">{r.statusType}</td>
+                <td className="py-2 px-2.5 font-mono text-[11px]">{r.employeeCode}</td>
+                <td className="py-2 px-2.5 font-semibold text-slate-800">{r.employeeName}</td>
                 <td className="py-2 px-2.5">{r.division}</td>
                 <td className="py-2 px-2.5 font-medium">{r.department}</td>
+                <td className="py-2 px-2.5">{r.position}</td>
+                <td className="py-2 px-2.5">{r.bu}</td>
+                <td className="py-2 px-2.5">{r.site}</td>
                 <td className="py-2 px-2.5">{r.contractType}</td>
-                <td className="py-2 px-2.5 font-mono">{r.rate || "—"}</td>
+                <td className="py-2 px-2.5 text-[11px]">{r.contractDate}</td>
+                <td className="py-2 px-2.5">{r.employeeLevel}</td>
+                <td className="py-2 px-2.5">{r.employeeType}</td>
+                <td className="py-2 px-2.5">{r.supervisor}</td>
+                <td className="py-2 px-2.5 font-mono">{r.salary}</td>
+                <td className="py-2 px-2.5 font-mono">{r.salaryAfterProbation}</td>
+                <td className="py-2 px-2.5 max-w-[150px] truncate" title={r.remarks}>{r.remarks || "—"}</td>
+                <td className="py-2 px-2.5">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                    {r.status || "Recorded"}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
     </div>
   );
 };

@@ -20,7 +20,36 @@ export async function persistMovementRecord(
   employee: MovementEmployeeInput,
   employeeUpdates: Record<string, any>,
   actorName: string
-) {
+): Promise<string | null> {
+  let createdDbId: string | null = null;
+
+  try {
+    const { data, error } = await supabase
+      .from("employee_movements")
+      .insert({
+        employee_id: newMovement.employee_id,
+        movement_type: newMovement.movement_type,
+        title: newMovement.title,
+        effective_date: newMovement.effective_date,
+        previous_values: newMovement.previous_values || {},
+        new_values: newMovement.new_values || {},
+        remarks: newMovement.remarks || null,
+        document_url: newMovement.document_url || null,
+        document_name: newMovement.document_name || null,
+        branch_id: newMovement.branch_id || null,
+        created_by: newMovement.created_by || null,
+        created_by_name: newMovement.created_by_name || null,
+      })
+      .select("id")
+      .single();
+
+    if (!error && data?.id) {
+      createdDbId = data.id;
+    }
+  } catch (err) {
+    console.warn("Could not insert to employee_movements table:", err);
+  }
+
   try {
     await supabase.from("audit_logs").insert({
       module: "employees",
@@ -31,6 +60,7 @@ export async function persistMovementRecord(
       description: `${newMovement.title} for ${formatKhmerFullName(employee)}`,
       branch_id: newMovement.branch_id,
       metadata: {
+        id: createdDbId || newMovement.id,
         movement_type: newMovement.movement_type,
         title: newMovement.title,
         effective_date: newMovement.effective_date,
@@ -57,24 +87,7 @@ export async function persistMovementRecord(
     console.warn("Could not insert to audit_logs:", auditErr);
   }
 
-  try {
-    await supabase.from("employee_movements").insert({
-      employee_id: newMovement.employee_id,
-      movement_type: newMovement.movement_type,
-      title: newMovement.title,
-      effective_date: newMovement.effective_date,
-      previous_values: newMovement.previous_values,
-      new_values: newMovement.new_values,
-      remarks: newMovement.remarks,
-      document_url: newMovement.document_url,
-      document_name: newMovement.document_name,
-      branch_id: newMovement.branch_id,
-      created_by: newMovement.created_by,
-      created_by_name: newMovement.created_by_name,
-    });
-  } catch {
-    // Table may be awaiting migration
-  }
+  return createdDbId;
 }
 
 export async function recordInitialJoiningMovement(

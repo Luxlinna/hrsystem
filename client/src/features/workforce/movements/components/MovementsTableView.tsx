@@ -57,7 +57,7 @@ export const MovementsTableView: React.FC<MovementsTableViewProps> = ({
   return (
     <div className="w-full overflow-x-auto bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
       <table className="w-full text-left text-xs border-collapse">
-        <thead className="bg-white dark:bg-slate-800/60 border-b border-slate-200/90 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 font-semibold">
+        <thead className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200/90 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap text-[11px]">
           <tr>
             <th className="py-2.5 px-3 w-10 text-center">
               <input
@@ -67,18 +67,26 @@ export const MovementsTableView: React.FC<MovementsTableViewProps> = ({
                 className="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
             </th>
-            <th className="py-2.5 px-2 w-12 text-center text-slate-500 dark:text-slate-400 font-medium">No.</th>
-            <th className="py-2.5 px-3 min-w-[130px] select-none">Effective Date</th>
-            <th className="py-2.5 px-3 min-w-[140px] select-none">Status Type</th>
-            <th className="py-2.5 px-3 min-w-[180px] select-none">Employee</th>
-            <th className="py-2.5 px-3 min-w-[140px] select-none">Position</th>
-            <th className="py-2.5 px-3 min-w-[130px] select-none">Division</th>
-            <th className="py-2.5 px-3 min-w-[150px] select-none">Department</th>
-            <th className="py-2.5 px-3 min-w-[120px] select-none">Joining Date</th>
-            <th className="py-2.5 px-3 min-w-[150px] select-none">Contract</th>
-            <th className="py-2.5 px-3 min-w-[120px] select-none">Rate</th>
-            <th className="py-2.5 px-3 min-w-[100px] select-none">Status</th>
-            <th className="py-2.5 px-3 text-center w-14">
+            <th className="py-2.5 px-2 w-10 text-center text-slate-500 font-medium">No</th>
+            <th className="py-2.5 px-3 select-none">Effective date</th>
+            <th className="py-2.5 px-3 select-none">Status Type</th>
+            <th className="py-2.5 px-3 select-none">Employee Code</th>
+            <th className="py-2.5 px-3 select-none">Employee Name</th>
+            <th className="py-2.5 px-3 select-none">Division</th>
+            <th className="py-2.5 px-3 select-none">Department</th>
+            <th className="py-2.5 px-3 select-none">Position</th>
+            <th className="py-2.5 px-3 select-none">Business Unit</th>
+            <th className="py-2.5 px-3 select-none">Site</th>
+            <th className="py-2.5 px-3 select-none">Contract Type</th>
+            <th className="py-2.5 px-3 select-none">Contract Date</th>
+            <th className="py-2.5 px-3 select-none">Employee Level</th>
+            <th className="py-2.5 px-3 select-none">Employee Type</th>
+            <th className="py-2.5 px-3 select-none">Supervisor</th>
+            <th className="py-2.5 px-3 select-none">Salary</th>
+            <th className="py-2.5 px-3 select-none">Salary After Probation</th>
+            <th className="py-2.5 px-3 select-none">Remark</th>
+            <th className="py-2.5 px-3 select-none">Status</th>
+            <th className="py-2.5 px-3 text-center w-12">
               <i className="ri-settings-3-line text-slate-400 text-sm" />
             </th>
           </tr>

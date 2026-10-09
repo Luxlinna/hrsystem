@@ -135,6 +135,7 @@ export function buildMovementChanges(
   if (form.contract_start_date) { next.contract_start_date = form.contract_start_date; employeeUpdates.contract_effective_date = form.contract_start_date; }
   if (form.contract_end_date) { next.contract_end_date = form.contract_end_date; employeeUpdates.contract_end_date = form.contract_end_date; }
   if (form.employee_type) { next.employment_type = form.employee_type; employeeUpdates.employment_type = form.employee_type; }
+  if (form.employee_level) { next.employee_level = form.employee_level; employeeUpdates.employee_level = form.employee_level; }
   if (form.supervisor) { next.supervisor = form.supervisor; employeeUpdates.line_manager = form.supervisor; }
   if (form.salary != null) {
     next.new_salary = form.salary;

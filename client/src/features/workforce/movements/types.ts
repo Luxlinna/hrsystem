@@ -69,6 +69,7 @@ export interface MovementFormData {
   salary_after?: number;
   salary_after_freq?: string;
   employee_type?: string;
+  employee_level?: string;
 
   // Contextual type fields
   // 1. Probation

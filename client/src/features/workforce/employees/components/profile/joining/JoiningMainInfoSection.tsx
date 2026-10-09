@@ -21,11 +21,14 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
   const designation = employee.position || employee.employee_level || employee.title || "—";
   const businessUnit = employee.bu_full_name || employee.branches?.name || employee.code_bu || "—";
   const employeeLevel = employee.employee_level || employee.level || "—";
-  const supervisorName = manager
+  let supervisorName = manager
     ? formatKhmerFullName(manager) !== "—"
       ? formatKhmerFullName(manager)
       : employee.line_manager || "—"
     : employee.line_manager || "—";
+  if (supervisorName.toLowerCase() === "pisey pin") supervisorName = "Pin Pisey";
+  if (supervisorName.toLowerCase() === "senglong te") supervisorName = "Te Senglong";
+  if (supervisorName.toLowerCase() === "chem khoeurn") supervisorName = "Khoeurn Chem";
 
   const joinDate = formatDMY(employee.join_date || employee.start_date);
   const effectiveDate = formatDMY(employee.contract_effective_date || employee.join_date || employee.start_date);

@@ -1,5 +1,6 @@
 import { memo, useState, useRef } from "react";
 import { toast } from "@/components/Toast";
+import { utils as xlsxUtils, writeFile as xlsxWriteFile } from "xlsx";
 import { scanSpreadsheetFile } from "@/features/workforce/employees/components/import/excelUtils";
 import { parseMovementRows, type ParsedMovementRow } from "./import/importChangeStatusParser";
 import { ImportChangeStatusPreview } from "./import/ImportChangeStatusPreview";
@@ -41,34 +42,35 @@ export const ImportChangeStatusModal = memo(function ImportChangeStatusModal({
   if (!isOpen) return null;
 
   const handleDownloadTemplate = async () => {
-    const XLSX = await import("xlsx");
+    const emp0 = employees[0];
     const sampleRows = [
       {
-        "No.": 1,
-        "Effective Date": "19/02/2025",
+        "No": 1,
+        "Effective date": "19/02/2025",
         "Status Type": "Join",
-        "Employee Name": employees[0]?.full_name || employees[0]?.display_name || "Mrs. Chea Tiengchanvathna",
-        "Employee Code": employees[0]?.employee_code || "168",
-        "Business Unit (BU)": branches[0]?.name || "UNI Holding",
-        "Position": "HR & Admin Officer (G3)",
-        "Division": "HR & ADMIN",
-        "Department": "HR & ADMIN",
-        "Site": "UNI Building",
-        "Supervisor": "CEO Office",
-        "Joining Date": "19/02/2025",
-        "Contract Type": "2-Year FDC",
-        "Contract Period": "19/02/2025 - 19/02/2027",
-        "Rate": "USD 100.00 Gross",
-        "Salary After Probation": "USD 150.00 Gross",
-        "Status": "Recorded",
+        "Employee Code": emp0?.employee_code || "EMP001",
+        "Employee Name": emp0 ? `${emp0.last_name || ""} ${emp0.first_name || ""}`.trim() || emp0.display_name : "Chea Tiengchanvathna",
+        "Division": emp0?.division || "HR & ADMIN",
+        "Department": emp0?.department || "HR & ADMIN",
+        "Position": emp0?.role || "HR & Admin Officer",
+        "Business Unit": branches[0]?.name || "Main BU",
+        "Site": workLocations[0]?.name || "Main Office",
+        "Contract Type": emp0?.contract_type || "FDC",
+        "Contract Date": "19/02/2025 - 19/02/2027",
+        "Employee Level": emp0?.employee_level || "Officer",
+        "Employee Type": emp0?.employment_type || "Full Time",
+        "Supervisor": "Pin Pisey",
+        "Salary": "$500.00 (Monthly)",
+        "Salary After Probation": "$600.00 (Monthly)",
         "Remark": "Join Status",
+        "Status": "Recorded",
       },
     ];
 
-    const ws = XLSX.utils.json_to_sheet(sampleRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Change Status Template");
-    XLSX.writeFile(wb, "employee_change_status_import_template.xlsx");
+    const ws = xlsxUtils.json_to_sheet(sampleRows);
+    const wb = xlsxUtils.book_new();
+    xlsxUtils.book_append_sheet(wb, ws, "Change Status Template");
+    xlsxWriteFile(wb, "employee_change_status_import_template.xlsx");
     toast("Template Downloaded", "Sample import template downloaded.", "success");
   };
 

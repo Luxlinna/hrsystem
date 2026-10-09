@@ -49,7 +49,7 @@ export const MovementsExportMenu = memo(function MovementsExportMenu({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        disabled={disabled || movements.length === 0}
+        disabled={disabled}
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
           open
             ? "border-[#253C7D] dark:border-blue-400 text-[#253C7D] dark:text-blue-300 bg-[#253C7D]/5 dark:bg-slate-800"
