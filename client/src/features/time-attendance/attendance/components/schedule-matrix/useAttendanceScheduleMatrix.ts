@@ -201,7 +201,7 @@ export function useAttendanceScheduleMatrix() {
       }
       return true;
     });
-  }, [rosterRows, search, filterBranch, filterDept, filterWorkLocation, filterRole, filterEmploymentType, filterEmployeeLevel, rawEmployees]);
+  }, [rosterRows, search, filterBranch, filterDivision, filterDept, filterWorkLocation, filterRole, filterEmploymentType, filterEmployeeLevel, rawEmployees]);
 
   const scheduledEmployees = useMemo(
     () => filteredRoster.filter((r) => r.hasSchedule),

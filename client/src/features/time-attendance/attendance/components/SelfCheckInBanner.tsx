@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { AttendanceRecord, Employee } from "../types";
-import { formatTime } from "../constants";
+import { formatTime, calcHours } from "../constants";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import { getAttendanceEmployeeName, getAttendanceEmployeeInitials } from "../utils/employeeNameUtils";
 

@@ -320,7 +320,7 @@ export function useAttendanceData(
         }
       }
     },
-    [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee, cacheKey, permsLoading, records.length]
+    [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee, cacheKey, permsLoading, records.length, loadReferenceData]
   );
 
   useEffect(() => {

@@ -9,7 +9,7 @@ import { ImportChangeStatusModal } from "./components/ImportChangeStatusModal";
 import { EditMovementInfoModal } from "@/features/workforce/employees/components/overview/movements/EditMovementInfoModal";
 import { useMovementsData } from "./hooks/useMovementsData";
 import { useMovementsFilter } from "./hooks/useMovementsFilter";
-import { deleteMovement } from "./services/movementService";
+import { deleteMovement, deleteMovements } from "./services/movementService";
 import { toast } from "@/components/Toast";
 import type { EmployeeMovement } from "./types";
 
@@ -35,7 +35,7 @@ export default function MovementsPage() {
   const [filterEmployeeLevel, setFilterEmployeeLevel] = useState<string>("");
   const [showSalary, setShowSalary] = useState<boolean>(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectAll, setSelectAll] = useState<boolean>(false);
+  const [deletingBulk, setDeletingBulk] = useState<boolean>(false);
 
   const [showRecordModal, setShowRecordModal] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
@@ -48,15 +48,16 @@ export default function MovementsPage() {
     filterDivision, filterDept, filterRole, filterEmployeeType, filterEmployeeLevel,
   });
 
+  const allSelected = filteredMovements.length > 0 && filteredMovements.every((m) => selectedIds.has(m.id));
+  const isIndeterminate = selectedIds.size > 0 && !allSelected;
+
   const handleSelectAll = useCallback(() => {
-    if (selectAll) {
+    if (allSelected || selectedIds.size > 0) {
       setSelectedIds(new Set());
-      setSelectAll(false);
     } else {
       setSelectedIds(new Set(filteredMovements.map((m) => m.id)));
-      setSelectAll(true);
     }
-  }, [selectAll, filteredMovements]);
+  }, [allSelected, selectedIds.size, filteredMovements]);
 
   const handleSelectOne = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -69,7 +70,34 @@ export default function MovementsPage() {
   const handleDelete = async (m: EmployeeMovement) => {
     await deleteMovement(m.id);
     toast("Record Deleted", "Change status record deleted successfully.", "success");
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(m.id);
+      return next;
+    });
     await loadData();
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${count} selected change status record${count === 1 ? "" : "s"}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingBulk(true);
+    try {
+      await deleteMovements(Array.from(selectedIds));
+      toast("Records Deleted", `${count} change status record${count === 1 ? "" : "s"} deleted successfully.`, "success");
+      setSelectedIds(new Set());
+      await loadData();
+    } catch (err) {
+      console.error("Bulk delete error:", err);
+      toast("Delete Failed", "Failed to delete selected change status records.", "error");
+    } finally {
+      setDeletingBulk(false);
+    }
   };
 
   if (selectedMovement) {
@@ -111,7 +139,41 @@ export default function MovementsPage() {
         branches={branches as any} workSites={workLocations as any}
         divisions={divisions} depts={departments} positions={positions}
         employeeTypes={employeeTypes} employeeLevels={employeeLevels}
+        selectedCount={selectedIds.size}
+        onBulkDelete={handleBulkDelete}
+        isDeleting={deletingBulk}
       />
+
+      {selectedIds.size > 0 && (
+        <div className="bg-[#253C7D]/8 dark:bg-[#253C7D]/20 border border-[#253C7D]/25 dark:border-[#253C7D]/40 rounded px-4 py-2.5 my-3 flex items-center justify-between animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <i className="ri-checkbox-multiple-line text-[#253C7D] dark:text-blue-300 text-sm" />
+            <span className="text-xs font-semibold text-[#253C7D] dark:text-blue-200">
+              {selectedIds.size} change status record{selectedIds.size === 1 ? "" : "s"} selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={deletingBulk}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-rose-300 dark:border-rose-500/50 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800 text-xs font-medium rounded hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+            >
+              <i className="ri-delete-bin-line text-xs" />
+              <span>{deletingBulk ? "Deleting..." : `Delete Selected (${selectedIds.size})`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 text-xs font-medium rounded hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shadow-2xs"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white border-t border-slate-100 overflow-hidden">
         {loading ? (
@@ -122,8 +184,11 @@ export default function MovementsPage() {
         ) : (
           <MovementsTableView
             movements={filteredMovements}
-            selectedIds={selectedIds} selectAll={selectAll}
-            showSalary={showSalary} onSelectAll={handleSelectAll}
+            selectedIds={selectedIds}
+            selectAll={allSelected}
+            isIndeterminate={isIndeterminate}
+            showSalary={showSalary}
+            onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}
             onSelectMovement={(m) => setSelectedMovement(m)}
             onEditMovement={(m) => setEditingMovement(m)}

@@ -12,7 +12,7 @@ import {
   clearUserActivity,
   clearAllAuthSessionData,
 } from "./authTypes";
-import { isPhoneIdentifier } from "@/lib/phoneUtils";
+import { isPhoneIdentifier, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 import { resolveAuthEmail, sendOTPService, verifyOTPService } from "./authOtpService";
 import { api } from "@/shared/lib/apiClient";
 

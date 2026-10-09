@@ -5,12 +5,13 @@ import {
   getStoredLocalMovements,
   saveLocalMovement,
   deleteLocalMovement,
+  deleteLocalMovements,
   getDeletedMovementIds,
 } from "./movementStorage";
 import { buildMovementChanges, type MovementEmployeeInput } from "./movementPayloadBuilder";
 import { updateEmployeeOnMovement, persistMovementRecord, recordInitialJoiningMovement } from "./movementDbSync";
 
-export { getStoredLocalMovements, saveLocalMovement, deleteLocalMovement, recordInitialJoiningMovement };
+export { getStoredLocalMovements, saveLocalMovement, deleteLocalMovement, deleteLocalMovements, recordInitialJoiningMovement };
 
 export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
   try {
@@ -107,6 +108,40 @@ export async function deleteMovement(id: string): Promise<boolean> {
   } catch (err) {
     console.warn("Delete movement error:", err);
     deleteLocalMovement(id);
+    window.dispatchEvent(new CustomEvent("employee-movement-created"));
+    return true;
+  }
+}
+
+export async function deleteMovements(ids: string[]): Promise<boolean> {
+  if (!ids || ids.length === 0) return true;
+  try {
+    deleteLocalMovements(ids);
+    const uuids = ids.filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+    const nonUuids = ids.filter((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+    const promises: Promise<any>[] = [];
+    if (uuids.length > 0) {
+      promises.push(
+        Promise.resolve(supabase.from("employee_movements").update({ deleted_at: new Date().toISOString() }).in("id", uuids)),
+        Promise.resolve(supabase.from("employee_movements").delete().in("id", uuids)),
+        Promise.resolve(supabase.from("audit_logs").delete().in("id", uuids)),
+      );
+    }
+    if (nonUuids.length > 0) {
+      nonUuids.forEach((id) => {
+        promises.push(
+          Promise.resolve(supabase.from("audit_logs").delete().eq("metadata->>id", id)),
+          Promise.resolve(supabase.from("audit_logs").delete().eq("id", id)),
+        );
+      });
+    }
+    await Promise.allSettled(promises);
+    window.dispatchEvent(new CustomEvent("employee-movement-created"));
+    return true;
+  } catch (err) {
+    console.warn("Delete movements bulk error:", err);
+    deleteLocalMovements(ids);
     window.dispatchEvent(new CustomEvent("employee-movement-created"));
     return true;
   }

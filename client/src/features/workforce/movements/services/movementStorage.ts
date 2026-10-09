@@ -57,3 +57,17 @@ export function deleteLocalMovement(id: string) {
   }
 }
 
+export function deleteLocalMovements(ids: string[]) {
+  try {
+    const set = getDeletedMovementIds();
+    ids.forEach((id) => set.add(id));
+    localStorage.setItem(DELETED_MOVEMENTS_KEY, JSON.stringify(Array.from(set)));
+    const current = getStoredLocalMovements();
+    const idSet = new Set(ids);
+    const updated = current.filter((m) => !idSet.has(m.id));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.error("Failed to delete movements locally:", err);
+  }
+}
+

@@ -85,11 +85,18 @@ export const MovementsTableRow: React.FC<MovementsTableRowProps> = ({
         isSelected ? "bg-[#253C7D]/5 dark:bg-[#253C7D]/15" : ""
       }`}
     >
-      <td className="py-2.5 px-3 text-center">
+      <td
+        className="py-2.5 px-3 text-center cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectOne?.(m.id);
+        }}
+      >
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => onSelectOne?.(m.id)}
+          onClick={(e) => e.stopPropagation()}
           className="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
         />
       </td>

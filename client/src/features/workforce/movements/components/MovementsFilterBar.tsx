@@ -38,6 +38,9 @@ interface MovementsFilterBarProps {
   onEmployeeTypeChange?: (val: string) => void;
   filterEmployeeLevel?: string;
   onEmployeeLevelChange?: (val: string) => void;
+  selectedCount?: number;
+  onBulkDelete?: () => void;
+  isDeleting?: boolean;
   branches?: Branch[];
   workSites?: { id: string; name: string; branch_id: string }[];
   divisions?: string[];
@@ -62,6 +65,7 @@ export const MovementsFilterBar: React.FC<MovementsFilterBarProps> = (props) => 
     onEmployeeTypeChange = () => {}, filterEmployeeLevel = "",
     onEmployeeLevelChange = () => {}, branches = [], workSites = [],
     divisions = [], depts = [], positions = [], employeeTypes = [], employeeLevels = [],
+    selectedCount = 0, onBulkDelete, isDeleting = false,
   } = props;
 
   return (
@@ -81,6 +85,19 @@ export const MovementsFilterBar: React.FC<MovementsFilterBarProps> = (props) => 
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
+          {selectedCount > 0 && onBulkDelete && (
+            <button
+              type="button"
+              onClick={onBulkDelete}
+              disabled={isDeleting}
+              className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-800 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+              title="Delete selected records"
+            >
+              <i className="ri-delete-bin-line text-xs" />
+              <span>{isDeleting ? "Deleting..." : `Delete (${selectedCount})`}</span>
+            </button>
+          )}
+
           <button type="button" onClick={onOpenImport} className="w-7 h-7 rounded border border-slate-300 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 flex items-center justify-center text-sm cursor-pointer" title="Import Data">
             <i className="ri-download-2-line text-xs text-[#253C7D]" />
           </button>

@@ -6,6 +6,7 @@ interface MovementsTableViewProps {
   movements: EmployeeMovement[];
   selectedIds?: Set<string>;
   selectAll?: boolean;
+  isIndeterminate?: boolean;
   showSalary?: boolean;
   onSelectAll?: () => void;
   onSelectOne?: (id: string) => void;
@@ -18,6 +19,7 @@ export const MovementsTableView: React.FC<MovementsTableViewProps> = ({
   movements,
   selectedIds = new Set(),
   selectAll = false,
+  isIndeterminate = false,
   showSalary = false,
   onSelectAll,
   onSelectOne,
@@ -63,6 +65,9 @@ export const MovementsTableView: React.FC<MovementsTableViewProps> = ({
               <input
                 type="checkbox"
                 checked={selectAll}
+                ref={(el) => {
+                  if (el) el.indeterminate = Boolean(isIndeterminate);
+                }}
                 onChange={onSelectAll}
                 className="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />

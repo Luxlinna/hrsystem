@@ -226,7 +226,7 @@ export function useTrainingData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, isLeader, myEmployee, user?.email]);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     fetchData();

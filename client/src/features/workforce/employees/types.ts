@@ -404,6 +404,9 @@ export interface ReportEntry {
   role: string;
   id: string;
   email?: string;
+  department?: string;
+  employee_code?: string;
+  avatar_url?: string;
 }
 
 export interface VisibleColumns {

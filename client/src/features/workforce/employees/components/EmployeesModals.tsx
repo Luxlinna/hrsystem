@@ -29,7 +29,14 @@ interface EmployeesModalsProps {
   phoneAccountEmployee: any | null;
   roles: any[];
   onClosePhoneAccount: () => void;
-  onSetUpPhoneUser: (pass: string, role: string) => Promise<void>;
+  onSetUpPhoneUser: (data: {
+    employeeId: string;
+    phone: string;
+    password?: string;
+    displayName: string;
+    roleId?: string | number | null;
+    sendInvite?: boolean;
+  }) => Promise<boolean | string>;
 
   showImportModal: boolean;
   actorName: string;

@@ -20,7 +20,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
   const department = employee.department || employee.division || "—";
   const designation = employee.position || employee.employee_level || employee.title || "—";
   const businessUnit = employee.bu_full_name || employee.branches?.name || employee.code_bu || "—";
-  const employeeLevel = employee.employee_level || employee.level || "—";
+  const employeeLevel = employee.employee_level || (employee as any).level || "—";
   let supervisorName = manager
     ? formatKhmerFullName(manager) !== "—"
       ? formatKhmerFullName(manager)
