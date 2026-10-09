@@ -2,6 +2,7 @@ import { memo, useMemo, useState } from "react";
 import type { OnboardingRequest, OnboardingDoc, HireDocument } from "../../types";
 import { STAGES } from "../../constants";
 import { getOverallProgress } from "../../onboardingUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import { OnboardingStageColumn } from "./OnboardingStageColumn";
 import { OnboardingCardHeader } from "./OnboardingCardHeader";
 import { SetupRequirementsModal } from "@/components/modals/SetupRequirementsModal";
@@ -56,7 +57,7 @@ export const OnboardingCard = memo(function OnboardingCard({
 }: OnboardingCardProps) {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const emp = request.employees;
-  const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+  const fullName = formatKhmerFullName(emp);
   const overallProgress = getOverallProgress(request, documents);
   const currentStageIdx = STAGES.findIndex((s) => s.key === request.stage);
 

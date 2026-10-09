@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, memo } from "react";
 import type { Employee } from "../../types";
 import { useBranchScope } from "@/context/BranchContext";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface Props {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
   const filtered = useMemo(() => {
     const q = modalSearch.toLowerCase();
     return employees.filter((emp) => {
-      const name = `${emp.display_name || ""} ${emp.full_name || ""} ${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
+      const name = formatKhmerFullName(emp).toLowerCase();
       const code = (emp.employee_code || emp.biometric_user_id || "").toLowerCase();
       const dept = (emp.department || "").toLowerCase();
       const matchSearch = !q || name.includes(q) || code.includes(q) || dept.includes(q);
@@ -139,7 +140,7 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
                   </div>
                   <div>
                     <div className="font-bold">
-                      {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name} ${emp.last_name}`}
+                      {formatKhmerFullName(emp)}
                       {emp.employee_code && <span className="ml-1.5 text-[10px] font-mono text-gray-400">({emp.employee_code})</span>}
                     </div>
                     <div className="text-[10px] text-gray-400">

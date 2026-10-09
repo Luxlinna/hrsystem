@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Employee, LeaveTypePolicy } from "@/features/time-attendance/leave/types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface UseLeaveMetadataParams {
   employeeId: string;
@@ -48,7 +49,7 @@ export function useSelfServiceLeaveMetadata({
             .maybeSingle();
           if (mgrData && isMounted) {
             mgr = mgrData as Employee;
-            const approver = mgrData.display_name?.trim() || mgrData.full_name?.trim() || `${mgrData.first_name} ${mgrData.last_name}`.trim();
+            const approver = formatKhmerFullName(mgrData);
             setMyApproverName(approver);
           }
         }

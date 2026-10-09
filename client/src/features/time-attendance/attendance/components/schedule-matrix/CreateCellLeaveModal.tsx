@@ -52,7 +52,7 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
           setEmployees(data as any[]);
           const sm: Record<string, string> = {};
           data.forEach((e: any) => {
-            sm[e.id] = (e.display_name?.trim() || e.full_name?.trim() || `${e.first_name || ""} ${e.last_name || ""}`).trim();
+            sm[e.id] = (e.display_name?.trim() || e.full_name?.trim() || `${e.last_name || ""} ${e.first_name || ""}`).trim();
           });
           setSupervisorsMap(sm);
         }
@@ -146,7 +146,7 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
                 >
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name} ${emp.last_name}`}
+                      {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.last_name} ${emp.first_name}`}
                     </option>
                   ))}
                 </select>

@@ -99,7 +99,7 @@ export function useOutsideWorkMissionForm({
     if (missionType) taskDesc = `Type: ${missionType} (${missionFor.toUpperCase()})\n\n${taskDesc}`;
     if (remark.trim()) taskDesc += `\n\nRemark: ${remark.trim()}`;
     if (otherTeamMembers.length > 0) {
-      taskDesc += `\n\nTeam: ${otherTeamMembers.map((e) => `${e.first_name} ${e.last_name}`).join(", ")}`;
+      taskDesc += `\n\nTeam: ${otherTeamMembers.map((e) => `${e.last_name} ${e.first_name}`).join(", ")}`;
     }
     if (uploadedUrl) taskDesc += `\n\nAttachment: ${uploadedUrl}`;
     else if (attachmentFile) taskDesc += `\n\nAttachment: ${attachmentFile.name}`;

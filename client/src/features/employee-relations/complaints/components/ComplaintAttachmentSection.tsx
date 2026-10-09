@@ -41,7 +41,7 @@ export const ComplaintAttachmentSection = memo(function ComplaintAttachmentSecti
 
   return (
     <div className="pt-2">
-      <div className="text-sm font-bold text-[#0284c7] uppercase tracking-wide">
+      <div className="text-sm font-bold text-[#253C7D] uppercase tracking-wide">
         ATTACHMENT INFO
       </div>
       <div className="border-b border-slate-200 mt-2 mb-6" />
@@ -74,20 +74,20 @@ export const ComplaintAttachmentSection = memo(function ComplaintAttachmentSecti
             onClick={() => !uploading && fileInputRef.current?.click()}
             className={`border border-dashed rounded px-4 py-2.5 text-xs cursor-pointer transition-colors flex items-center justify-center gap-2 ${
               dragOver
-                ? "border-sky-500 bg-sky-50/50"
+                ? "border-[#253C7D] bg-slate-50"
                 : "border-slate-300 hover:border-slate-400 bg-white"
             }`}
           >
             {uploading ? (
               <div className="flex items-center gap-2 text-slate-500 font-medium">
-                <div className="w-3.5 h-3.5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
                 <span>Uploading to AWS S3...</span>
               </div>
             ) : (
               <>
                 <i className="ri-upload-cloud-line text-sm text-slate-400" />
                 <span className="text-slate-600">Drop file here or</span>
-                <span className="text-[#0284c7] font-semibold hover:underline">
+                <span className="text-[#253C7D] font-semibold hover:underline">
                   Browse
                 </span>
 

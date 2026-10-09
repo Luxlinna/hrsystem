@@ -7,7 +7,7 @@ const getXLSX = async () => {
 export async function exportBenefitEnrollmentsXLSX(enrollments: Enrollment[]): Promise<boolean> {
   const data = enrollments.length > 0
     ? enrollments.map((e) => {
-        const empName = e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : "—";
+        const empName = e.employees ? `${e.employees.last_name} ${e.employees.first_name}` : "—";
         const dept = e.employees?.department || "—";
         const role = e.employees?.role || "—";
         const planName = e.benefit_plans?.name || "—";

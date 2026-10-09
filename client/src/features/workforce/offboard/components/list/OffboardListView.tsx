@@ -2,6 +2,8 @@ import { memo } from "react";
 import type { Offboarding } from "../../types";
 import { STATUS_CONFIG } from "../../constants";
 import { initials } from "../../offboardUtils";
+import { formatDMY } from "@/features/workforce/employees/dateUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface OffboardListViewProps {
   offboardings: Offboarding[];
@@ -36,7 +38,7 @@ export const OffboardListView = memo(function OffboardListView({
           <tbody className="divide-y divide-gray-100">
             {offboardings.map((o) => {
               const emp = o.employees;
-              const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+              const fullName = emp ? formatKhmerFullName(emp) : "Unknown Staff";
               const statusCfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.notice_period;
               const completedTasks = (o.tasks || []).filter((t) => t.status === "completed").length;
               const totalTasks = (o.tasks || []).length;
@@ -60,7 +62,7 @@ export const OffboardListView = memo(function OffboardListView({
                   </td>
 
                   <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-900">
-                    {o.last_day ? new Date(o.last_day).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                    {formatDMY(o.last_day)}
                   </td>
 
                   <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate">

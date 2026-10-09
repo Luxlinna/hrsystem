@@ -22,7 +22,7 @@ export const PayrollCardItem = memo(function PayrollCardItem({
   onDeleteRecord,
 }: PayrollCardItemProps) {
   const emp = record.employees;
-  const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Employee";
+  const empName = emp ? `${emp.last_name} ${emp.first_name}` : "Unknown Employee";
   const statusCfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.processed;
 
   return (

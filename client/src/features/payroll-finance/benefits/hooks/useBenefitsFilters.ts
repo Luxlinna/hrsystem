@@ -37,7 +37,7 @@ export function useBenefitsFilters(plans: BenefitPlan[], enrollments: Enrollment
       if (enrollDeptFilter !== "all" && e.employees?.department !== enrollDeptFilter) return false;
       if (enrollSearchQuery) {
         const q = enrollSearchQuery.toLowerCase();
-        const empName = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.toLowerCase();
+        const empName = `${e.employees?.last_name || ""} ${e.employees?.first_name || ""}`.toLowerCase();
         const roleName = (e.employees?.role || "").toLowerCase();
         const planName = (e.benefit_plans?.name || "").toLowerCase();
         if (!empName.includes(q) && !roleName.includes(q) && !planName.includes(q)) return false;

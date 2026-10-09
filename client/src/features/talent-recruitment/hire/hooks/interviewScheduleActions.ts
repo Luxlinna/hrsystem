@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { Interview, Candidate, Job } from "../types";
 import { notifyInterviewScheduledOrCompleted } from "../services/notifications/recruitmentEventTriggers";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 const isUuid = (str?: string | null) =>
   !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
@@ -58,7 +59,7 @@ export async function executeSaveInterview(params: {
   const matchedJob = jobs.find((j) => j.id === matchedCand?.job_posting_id);
   const recruiterId = matchedCand?.assigned_recruiter_id || null;
   const recruiterName = matchedCand?.assigned_recruiter
-    ? `${matchedCand.assigned_recruiter.first_name} ${matchedCand.assigned_recruiter.last_name}`
+    ? formatKhmerFullName(matchedCand.assigned_recruiter)
     : null;
 
   const panelIds = interviewForm.interviewer_ids || (selectedInterviewerId ? [selectedInterviewerId] : []);

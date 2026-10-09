@@ -1,5 +1,6 @@
 import type { Employee } from "../types";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface DisciplinaryEmployeeSectionProps {
   searchableEmployees: any[];
@@ -50,12 +51,12 @@ export function DisciplinaryEmployeeSection({
               {selectedEmp.avatar_url ? (
                 <img src={selectedEmp.avatar_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
               ) : (
-                <span>{selectedEmp.first_name[0]}{selectedEmp.last_name[0]}</span>
+                <span>{selectedEmp.last_name?.[0] || selectedEmp.first_name?.[0] || "?"}</span>
               )}
             </div>
             <div className="min-w-0">
               <div className="font-bold text-gray-900 dark:text-white truncate">
-                {selectedEmp.first_name} {selectedEmp.last_name}
+                {formatKhmerFullName(selectedEmp)}
               </div>
               <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                 {selectedEmp.role} &bull; {selectedEmp.department}

@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 import type { EmployeeFamilyMemberItem } from "../../../types";
 
 interface PersonalFamilyMemberRowProps {
@@ -60,10 +61,9 @@ export const PersonalFamilyMemberRow = memo(function PersonalFamilyMemberRow({
         </select>
       </td>
       <td className="py-2 px-2.5">
-        <input
-          type="date"
+        <DatePickerDMY
           value={member.date_of_birth}
-          onChange={(e) => onUpdate(idx, { ...member, date_of_birth: e.target.value })}
+          onChange={(iso) => onUpdate(idx, { ...member, date_of_birth: iso })}
           className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
         />
       </td>
@@ -129,8 +129,7 @@ export const PersonalFamilyMemberRow = memo(function PersonalFamilyMemberRow({
               title="View on AWS S3"
             >
               <i className="ri-file-text-line text-blue-500" />
-              <span className="truncate">View on AWS S3</span>
-              <i className="ri-external-link-line text-[9px]" />
+              <span className="truncate">View</span>
             </a>
             <button
               type="button"

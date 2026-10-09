@@ -60,7 +60,7 @@ export async function submitMissionTask(params: MissionSubmitParams) {
   if (missionType) taskDesc = `Type: ${missionType} (${missionFor.toUpperCase()})\n\n${taskDesc}`;
   if (remark.trim()) taskDesc += `\n\nRemark: ${remark.trim()}`;
   if (selectedOthers.length > 0) {
-    taskDesc += `\n\nTeam: ${selectedOthers.map((o) => `${o.first_name} ${o.last_name}`).join(", ")}`;
+    taskDesc += `\n\nTeam: ${selectedOthers.map((o) => `${o.last_name} ${o.first_name}`).join(", ")}`;
   }
   if (uploadedUrl) taskDesc += `\n\nAttachment: ${uploadedUrl}`;
   else if (attachmentFile) taskDesc += `\n\nAttachment: ${attachmentFile.name}`;

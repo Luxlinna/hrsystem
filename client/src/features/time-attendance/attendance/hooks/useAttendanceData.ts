@@ -217,7 +217,7 @@ export function useAttendanceData(
           let empList = ((team as unknown as Employee[]) || []).filter((e) => !isExitStaff(e));
           if (isLineManager && empRecord) {
             const myId = empRecord.id;
-            const myName = `${empRecord.first_name || ""} ${empRecord.last_name || ""}`.trim().toLowerCase();
+            const myName = `${empRecord.last_name || ""} ${empRecord.first_name || ""}`.trim().toLowerCase();
             const myDisplayName = (empRecord.display_name || empRecord.full_name || myName).trim().toLowerCase();
             const myEmail = (user?.email || "").toLowerCase().trim();
             const myDept = (empRecord.department || "").trim().toLowerCase();

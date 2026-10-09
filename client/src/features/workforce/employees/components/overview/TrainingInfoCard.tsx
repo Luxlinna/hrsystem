@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Employee } from "../../types";
+import { formatDMY } from "../../dateUtils";
 
 interface EnrollmentItem {
   id: string;
@@ -186,7 +187,7 @@ export const TrainingInfoCard: React.FC<TrainingInfoCardProps> = ({ employee, on
                         {en.status || "Enrolled"}
                       </span>
                       <span className="text-[10px] font-mono text-gray-400 block mt-1">
-                        {en.enrolled_at ? new Date(en.enrolled_at).toLocaleDateString() : "—"}
+                        {formatDMY(en.enrolled_at)}
                       </span>
                     </div>
                   </div>

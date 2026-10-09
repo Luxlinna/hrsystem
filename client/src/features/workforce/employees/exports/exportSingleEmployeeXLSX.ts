@@ -1,6 +1,8 @@
 import type { Employee } from "../types";
 import { supabase } from "@/lib/supabase";
 import { formatDMY } from "../dateUtils";
+import { formatKhmerFullName } from "../nameUtils";
+import { resolveReportEmploymentStatus } from "../constants";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -10,14 +12,14 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
   const XLSX = await getXLSX();
   const wb = XLSX.utils.book_new();
 
-  const fullName = e.full_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "Employee";
+  const fullName = formatKhmerFullName(e);
   const empCode = e.employee_code || e.id.slice(0, 8);
   const position = e.position || e.role || "Staff";
   const department = e.department || "—";
   const branchName = e.branches?.name || e.code_bu || "Headquarters";
   const siteName = e.work_locations?.name || e.working_location || "Main Office";
   const joinDate = e.join_date || e.start_date || "—";
-  const status = (e.status || "active").replace(/_/g, " ").toUpperCase();
+  const status = resolveReportEmploymentStatus(e.status);
   const currency = e.contract_rate_currency || "USD";
   const salaryFreq = e.tax_salary_frequency || e.contract_rate_frequency || "Monthly";
   const contractEnd = e.contract_end_date || e.fdc_end_date || "Continuous";
@@ -39,7 +41,7 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
       .eq("id", managerTarget)
       .maybeSingle();
     if (mgr) {
-      managerName = mgr.full_name || `${mgr.first_name || ""} ${mgr.last_name || ""}`.trim() || "—";
+      managerName = formatKhmerFullName(mgr);
     }
   } else if (e.line_manager && !isUuid(e.line_manager)) {
     managerName = e.line_manager;
@@ -119,7 +121,7 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
     [],
     ["--- EMPLOYMENT & ORGANIZATIONAL TERMS ---"],
     ["Business Unit", branchName, "Division", e.division || "—"],
-    ["Department", department, "Job Title / Designation", position],
+    ["Department", department, "Position", position],
     ["Employee Level", e.employee_level || "—", "Employment Type", e.employment_type || "Full Time"],
     ["Work Site Location", siteName, "Line Manager / Reports To", managerName],
     ["Biometric ID", e.biometric_user_id || "—", "Employment Status", status],
@@ -168,7 +170,7 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
   dossierRows.push([]);
 
   dossierRows.push(["--- PRIOR WORK EXPERIENCE ---"]);
-  dossierRows.push(["No.", "Company Name", "Position / Designation", "Period", "Reason for Leaving"]);
+  dossierRows.push(["No.", "Company Name", "Position", "Period", "Reason for Leaving"]);
   if (e.employment_history && e.employment_history.length > 0) {
     e.employment_history.forEach((em, idx) => {
       dossierRows.push([idx + 1, em.company_name || "—", em.designation || (em as any).position || "—", `${em.start_date || "—"} to ${em.end_date || "—"}`, em.reason_for_leaving || "—"]);

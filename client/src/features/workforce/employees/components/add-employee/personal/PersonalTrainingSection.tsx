@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 import type { PersonalSectionProps } from "./types";
 
 export const PersonalTrainingSection = memo(function PersonalTrainingSection({
@@ -46,6 +47,12 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
     onChange("training_history", updated);
   };
 
+  const updateField = (idx: number, field: string, val: string) => {
+    const updated = [...(form.training_history || [])];
+    updated[idx] = { ...updated[idx], [field]: val };
+    onChange("training_history", updated);
+  };
+
   return (
     <div className="pt-6 border-t border-slate-200 w-full">
       <div className="flex items-center justify-between mb-2.5">
@@ -85,11 +92,7 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
                     <input
                       type="text"
                       value={train.institue}
-                      onChange={(e) => {
-                        const updated = [...(form.training_history || [])];
-                        updated[idx] = { ...updated[idx], institue: e.target.value };
-                        onChange("training_history", updated);
-                      }}
+                      onChange={(e) => updateField(idx, "institue", e.target.value)}
                       placeholder="Institute / Organization"
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:border-[#253C7D]"
                     />
@@ -98,36 +101,22 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
                     <input
                       type="text"
                       value={train.subject}
-                      onChange={(e) => {
-                        const updated = [...(form.training_history || [])];
-                        updated[idx] = { ...updated[idx], subject: e.target.value };
-                        onChange("training_history", updated);
-                      }}
+                      onChange={(e) => updateField(idx, "subject", e.target.value)}
                       placeholder="Subject / Course"
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:border-[#253C7D]"
                     />
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="date"
+                    <DatePickerDMY
                       value={train.start_date}
-                      onChange={(e) => {
-                        const updated = [...(form.training_history || [])];
-                        updated[idx] = { ...updated[idx], start_date: e.target.value };
-                        onChange("training_history", updated);
-                      }}
+                      onChange={(iso) => updateField(idx, "start_date", iso)}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
                     />
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="date"
+                    <DatePickerDMY
                       value={train.end_date}
-                      onChange={(e) => {
-                        const updated = [...(form.training_history || [])];
-                        updated[idx] = { ...updated[idx], end_date: e.target.value };
-                        onChange("training_history", updated);
-                      }}
+                      onChange={(iso) => updateField(idx, "end_date", iso)}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
                     />
                   </td>
@@ -135,11 +124,7 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
                     <input
                       type="text"
                       value={train.remark}
-                      onChange={(e) => {
-                        const updated = [...(form.training_history || [])];
-                        updated[idx] = { ...updated[idx], remark: e.target.value };
-                        onChange("training_history", updated);
-                      }}
+                      onChange={(e) => updateField(idx, "remark", e.target.value)}
                       placeholder="Remark"
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
                     />
@@ -148,7 +133,7 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
                     {uploadingIdx === idx ? (
                       <div className="flex items-center gap-1.5 text-blue-600 text-[10px] font-bold py-1">
                         <i className="ri-loader-4-line animate-spin text-sm" />
-                        <span>Uploading to AWS S3...</span>
+                        <span>Uploading...</span>
                       </div>
                     ) : train.attachment ? (
                       <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-blue-50/70 border border-blue-200/80">
@@ -157,21 +142,14 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1 text-[10px] font-bold text-[#253C7D] hover:underline truncate max-w-[140px]"
-                          title="View on AWS S3"
                         >
                           <i className="ri-file-text-line text-blue-500" />
-                          <span className="truncate">View on AWS S3</span>
-                          <i className="ri-external-link-line text-[10px]" />
+                          <span className="truncate">View</span>
                         </a>
                         <button
                           type="button"
-                          onClick={() => {
-                            const updated = [...(form.training_history || [])];
-                            updated[idx] = { ...updated[idx], attachment: "" };
-                            onChange("training_history", updated);
-                          }}
+                          onClick={() => updateField(idx, "attachment", "")}
                           className="text-slate-400 hover:text-rose-600 cursor-pointer text-xs"
-                          title="Remove attachment"
                         >
                           <i className="ri-close-line" />
                         </button>
@@ -201,15 +179,12 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="py-6 text-center text-slate-400 font-medium">
-                  Empty Tranning Histories
-                </td>
+                <td colSpan={7} className="py-6 text-center text-slate-400 font-medium">Empty Tranning Histories</td>
                 <td className="py-6 text-center">
                   <button
                     type="button"
                     onClick={handleAdd}
                     className="w-5 h-5 mx-auto rounded-full border border-sky-400 text-sky-500 hover:bg-sky-50 flex items-center justify-center text-xs cursor-pointer"
-                    title="Add Tranning History"
                   >
                     <i className="ri-add-line" />
                   </button>

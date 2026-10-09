@@ -46,7 +46,7 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
         const diffDays = Math.ceil((new Date(e.due_date).getTime() - new Date(todayStr).getTime()) / (1000 * 3600 * 24));
         const isDueSoon = diffDays >= 0 && diffDays <= 7 && e.status !== "completed";
 
-        const empName = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.trim() || "Learner";
+        const empName = `${e.employees?.last_name || ""} ${e.employees?.first_name || ""}`.trim() || "Learner";
         const cTitle = e.training_courses?.title || "Course";
 
         events.push({
@@ -65,7 +65,7 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
 
       // 2. Completed / Certified Dates
       if (e.completed_at) {
-        const empName = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.trim() || "Learner";
+        const empName = `${e.employees?.last_name || ""} ${e.employees?.first_name || ""}`.trim() || "Learner";
         const cTitle = e.training_courses?.title || "Course";
 
         events.push({

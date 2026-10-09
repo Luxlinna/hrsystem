@@ -62,7 +62,7 @@ export const CreateMissionModal = memo(function CreateMissionModal({
           setEmployees(data as any[]);
           const sm: Record<string, string> = {};
           data.forEach((e: any) => {
-            sm[e.id] = (e.display_name?.trim() || e.full_name?.trim() || `${e.first_name || ""} ${e.last_name || ""}`).trim();
+            sm[e.id] = (e.display_name?.trim() || e.full_name?.trim() || `${e.last_name || ""} ${e.first_name || ""}`).trim();
           });
           setSupervisorsMap(sm);
         }
@@ -137,7 +137,7 @@ export const CreateMissionModal = memo(function CreateMissionModal({
                 <select value={selectedEmpId} onChange={(e) => setSelectedEmpId(e.target.value)} required className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-md text-xs focus:outline-none focus:border-sky-500 cursor-pointer">
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.display_name?.trim() || e.full_name?.trim() || `${e.first_name} ${e.last_name}`} ({e.employee_code || e.biometric_user_id || "No Code"})
+                      {e.display_name?.trim() || e.full_name?.trim() || `${e.last_name} ${e.first_name}`} ({e.employee_code || e.biometric_user_id || "No Code"})
                     </option>
                   ))}
                 </select>

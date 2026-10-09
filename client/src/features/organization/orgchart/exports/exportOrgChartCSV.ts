@@ -17,11 +17,11 @@ export function exportOrgChartCSV(employees: Employee[], branchName?: string): b
 
   const rows = employees.map((e) => {
     const mgr = e.reports_to ? employeeMap.get(e.reports_to) : null;
-    const mgrName = mgr ? `${mgr.first_name} ${mgr.last_name}` : "Executive (None)";
+    const mgrName = mgr ? `${mgr.last_name} ${mgr.first_name}` : "Executive (None)";
     const directReportsCount = employees.filter((x) => x.reports_to === e.id).length;
 
     return [
-      `"${e.first_name} ${e.last_name}"`,
+      `"${e.last_name} ${e.first_name}"`,
       `"${e.role.replace(/"/g, '""')}"`,
       `"${(e.department || "General").replace(/"/g, '""')}"`,
       `"${(e.branches?.name || branchName || "Main Branch").replace(/"/g, '""')}"`,

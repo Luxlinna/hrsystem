@@ -164,7 +164,7 @@ export function useBiometricDevices(branchId: string) {
         }
 
         const numericPin = parseInt(pin, 10) || pin;
-        const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || `User ${pin}`;
+        const fullName = `${emp.last_name || ""} ${emp.first_name || ""}`.trim() || `User ${pin}`;
         // Clean special characters for ZKTeco ASCII / UTF-8
         const cleanName = fullName.replace(/[\t\r\n]/g, " ").slice(0, 24);
 

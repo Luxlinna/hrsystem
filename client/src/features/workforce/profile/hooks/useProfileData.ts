@@ -5,6 +5,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 import type { MyEmployee, DirectReport } from "../types";
 
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+
 export function useProfileData() {
   const { user } = useAuth();
   const { role, loading: roleLoading, can, isSuperAdmin } = usePermissions();
@@ -83,7 +85,7 @@ export function useProfileData() {
             const { data: cand } = await candQuery;
             if (cand) {
               const recruiterName = cand.assigned_recruiter
-                ? `${cand.assigned_recruiter.first_name || ""} ${cand.assigned_recruiter.last_name || ""}`.trim()
+                ? formatKhmerFullName(cand.assigned_recruiter)
                 : null;
 
               const { data: apps } = await supabase
@@ -132,7 +134,7 @@ export function useProfileData() {
 
       // Sync display name from employees table (HR database is source of truth)
       if (myEmp?.first_name || myEmp?.last_name) {
-        const hrName = [myEmp.first_name, myEmp.last_name].filter(Boolean).join(" ");
+        const hrName = formatKhmerFullName(myEmp);
         setDisplayName(hrName);
       }
 
@@ -142,7 +144,7 @@ export function useProfileData() {
           .select("first_name, last_name")
           .eq("id", myEmp.reports_to)
           .maybeSingle();
-        if (mgr) setManagerName(`${mgr.first_name} ${mgr.last_name}`);
+        if (mgr) setManagerName(formatKhmerFullName(mgr));
       }
 
       if (myEmp?.id) {

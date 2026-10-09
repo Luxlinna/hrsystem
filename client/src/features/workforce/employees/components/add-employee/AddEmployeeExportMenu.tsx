@@ -24,7 +24,7 @@ export const AddEmployeeExportMenu: React.FC<AddEmployeeExportMenuProps> = memo(
     }, [isOpen]);
 
     const getExportPayload = () => {
-      const name = form.full_name?.trim() || `${form.first_name || ""} ${form.last_name || ""}`.trim() || "Employee";
+      const name = form.full_name?.trim() || `${form.last_name || ""} ${form.first_name || ""}`.trim() || "Employee";
       return {
         ...form,
         id: form.employee_code || form.biometric_user_id || "NEW",

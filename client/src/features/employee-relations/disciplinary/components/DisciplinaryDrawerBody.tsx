@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { DisciplinaryRecord } from "../types";
 import { TYPE_CONFIG } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import {
   exportDisciplinaryXLSX,
   exportDisciplinaryCSV,
@@ -29,13 +30,13 @@ export const DisciplinaryDrawerBody = memo(function DisciplinaryDrawerBody({
             <img src={emp.avatar_url} alt="" className="w-11 h-11 rounded-2xl object-cover shrink-0" />
           ) : (
             <div className="w-11 h-11 rounded-2xl bg-[#253C7D] text-white flex items-center justify-center text-sm font-black shrink-0">
-              {emp.first_name[0]}{emp.last_name[0]}
+              {emp.last_name?.[0] || emp.first_name?.[0] || "?"}
             </div>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1">
               <p className="text-sm font-black text-gray-900 dark:text-white truncate">
-                {emp.first_name} {emp.last_name}
+                {formatKhmerFullName(emp)}
               </p>
               {emp.employee_id && (
                 <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 shrink-0">

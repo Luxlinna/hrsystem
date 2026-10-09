@@ -75,7 +75,7 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
 
   const handleConfirmApproval = async () => {
     setProcessing(true);
-    const approverName = currentEmployee ? `${currentEmployee.first_name} ${currentEmployee.last_name}` : "Management";
+    const approverName = currentEmployee ? `${currentEmployee.last_name} ${currentEmployee.first_name}` : "Management";
 
     let targetBookingId = booking.id;
     const isSynthetic = booking.id.startsWith("training-");
@@ -201,7 +201,7 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-gray-400">Requested By:</span>
-            <span className="font-bold text-gray-900">{booking.employees?.first_name} {booking.employees?.last_name}</span>
+            <span className="font-bold text-gray-900">{booking.employees?.last_name} {booking.employees?.first_name}</span>
           </div>
         </div>
 

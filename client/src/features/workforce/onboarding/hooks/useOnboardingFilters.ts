@@ -33,7 +33,7 @@ export function useOnboardingFilters(
         if (branchFilter !== "all" && (r.employees as any)?.branch_id !== branchFilter) return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
-          const fullName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+          const fullName = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.toLowerCase();
           const role = (r.employees?.role || "").toLowerCase();
           const dept = (r.employees?.department || "").toLowerCase();
           const branch = (r.employees?.branches?.name || "").toLowerCase();
@@ -45,8 +45,8 @@ export function useOnboardingFilters(
       })
       .sort((a, b) => {
         if (sortBy === "name") {
-          const nameA = `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`;
-          const nameB = `${b.employees?.first_name || ""} ${b.employees?.last_name || ""}`;
+          const nameA = `${a.employees?.last_name || ""} ${a.employees?.first_name || ""}`;
+          const nameB = `${b.employees?.last_name || ""} ${b.employees?.first_name || ""}`;
           return nameA.localeCompare(nameB);
         }
         if (sortBy === "progress") {

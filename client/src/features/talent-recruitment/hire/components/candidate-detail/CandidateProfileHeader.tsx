@@ -81,7 +81,7 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
               )}
               {candidate.assigned_recruiter && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-50 border border-purple-100 font-bold text-purple-700">
-                  <i className="ri-user-star-line text-purple-500" /> Recruiter: {candidate.assigned_recruiter.first_name} {candidate.assigned_recruiter.last_name}
+                  <i className="ri-user-star-line text-purple-500" /> Recruiter: {candidate.assigned_recruiter.last_name} {candidate.assigned_recruiter.first_name}
                 </span>
               )}
               {candSla && candidate.stage !== "hired" && candidate.stage !== "rejected" && (

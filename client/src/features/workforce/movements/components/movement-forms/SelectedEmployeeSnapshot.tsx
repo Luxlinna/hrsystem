@@ -33,7 +33,7 @@ export const SelectedEmployeeSnapshot: React.FC<Props> = ({ employee, branchName
         )}
         <div>
           <div className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-            <span>{employee.first_name} {employee.last_name}</span>
+            <span>{employee.last_name} {employee.first_name}</span>
           </div>
           <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
             {employee.role || "Staff"} &bull; {employee.department || "General"}

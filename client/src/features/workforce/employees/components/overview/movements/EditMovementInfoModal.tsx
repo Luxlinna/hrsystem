@@ -165,7 +165,7 @@ export const EditMovementInfoModal: React.FC<Props> = ({
       newV.bu ||
       employee.branches?.name ||
       employee.bu_full_name ||
-      employee.company ||
+      (employee as any).company ||
       employee.code_bu ||
       "";
     setBu(initialBu);
@@ -188,7 +188,7 @@ export const EditMovementInfoModal: React.FC<Props> = ({
     const initialSup = newV.supervisor || newV.line_manager || employee.line_manager || "";
     setSupervisor(initialSup);
 
-    const initialSalaryType = newV.salary_type || employee.contract_rate_type || "Gross";
+    const initialSalaryType = newV.salary_type || (employee as any).contract_rate_type || "Gross";
     setSalaryType(initialSalaryType);
 
     const rawSal =
@@ -205,7 +205,8 @@ export const EditMovementInfoModal: React.FC<Props> = ({
     const map = new Map<string, BranchOption>();
     buList.forEach((b) => { if (b.name) map.set(b.name.trim().toLowerCase(), { id: b.id, name: b.name.trim() }); });
     if (employee.branches?.name) map.set(employee.branches.name.trim().toLowerCase(), { id: employee.branches.name, name: employee.branches.name.trim() });
-    if (employee.company && !map.has(employee.company.trim().toLowerCase())) map.set(employee.company.trim().toLowerCase(), { id: employee.company, name: employee.company.trim() });
+    const empComp = (employee as any).company;
+    if (empComp && !map.has(empComp.trim().toLowerCase())) map.set(empComp.trim().toLowerCase(), { id: empComp, name: empComp.trim() });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [buList, employee]);
 
@@ -344,19 +345,19 @@ export const EditMovementInfoModal: React.FC<Props> = ({
                 <div className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded bg-slate-50/70 dark:bg-slate-800/70 flex items-center justify-between shadow-2xs">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-600 dark:text-slate-300 uppercase shrink-0">
-                      {employee.first_name?.[0] || ""}{employee.last_name?.[0] || ""}
+                      {employee.last_name?.[0] || ""}{employee.first_name?.[0] || ""}
                     </div>
                     <div>
                       <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                        {employee.first_name} {employee.last_name}
+                        {employee.last_name} {employee.first_name}
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        {employee.branches?.name || employee.bu_full_name || employee.company || employee.code_bu || "HQ"} · {employee.department || "General"} · {employee.role || employee.position || "Staff"}
+                        {employee.branches?.name || employee.bu_full_name || (employee as any).company || employee.code_bu || "HQ"} · {employee.department || "General"} · {employee.role || employee.position || "Staff"}
                       </div>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-slate-400 bg-slate-200/60 dark:bg-slate-700 px-2 py-0.5 rounded">
-                    {employee.employee_id || employee.biometric_user_id || "ID"}
+                    {employee.employee_code || (employee as any).employee_id || employee.biometric_user_id || "ID"}
                   </span>
                 </div>
               </div>

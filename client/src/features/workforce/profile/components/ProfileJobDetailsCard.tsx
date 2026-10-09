@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { MyEmployee } from "../types";
 import { STATUS_STYLES } from "../constants";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
+import { formatDMY } from "@/features/workforce/employees/dateUtils";
 
 interface ProfileJobDetailsCardProps {
   employee: MyEmployee | null;
@@ -59,11 +60,7 @@ export const ProfileJobDetailsCard = memo(function ProfileJobDetailsCard({
           <div className="flex items-center justify-between px-4 py-3 bg-white">
             <span className="text-[12px] text-gray-500">Joined</span>
             <span className="text-[13px] font-medium text-gray-900 text-right">
-              {new Date(employee.join_date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {formatDMY(employee.join_date)}
               {tenure !== null && (
                 <span className="text-gray-400">
                   {" "}

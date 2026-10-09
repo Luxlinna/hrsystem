@@ -1,5 +1,6 @@
 import type { DisciplinaryRecord } from "../types";
 import { formatDateDMY, formatMultilinePreview } from "../utils/formatters";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return "";
@@ -13,7 +14,7 @@ function escapeHtml(str: string | null | undefined): string {
 
 export function generateWarningLetterHtml(record: DisciplinaryRecord, profile?: any): string {
   const emp = profile || record.employees;
-  const empName = emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : "Sin Thearith";
+  const empName = emp ? formatKhmerFullName(emp) : "Sin Thearith";
   const empCode = profile?.employee_code || profile?.biometric_user_id || record.employees?.employee_id || "3783";
   const avatarUrl = profile?.avatar_url || record.employees?.avatar_url;
 
@@ -23,7 +24,7 @@ export function generateWarningLetterHtml(record: DisciplinaryRecord, profile?: 
 
   const supervisor =
     profile?.line_manager ||
-    (profile?.manager ? `${profile.manager.first_name} ${profile.manager.last_name}` : "Unknown");
+    (profile?.manager ? formatKhmerFullName(profile.manager) : "Unknown");
 
   const empType = profile?.employment_type ? profile.employment_type.toUpperCase() : "FULL-TIME";
   const contractType = profile?.contract_type ? profile.contract_type.toUpperCase() : "PERMANENT (UDC)";
@@ -360,7 +361,7 @@ export function generateWarningLetterHtml(record: DisciplinaryRecord, profile?: 
             <div class="info-lbl">Employee Code / លេខកូដបុគ្គលិក</div>
             <div style="height:10px;"></div>
             <div class="info-val">${escapeHtml(designation)}</div>
-            <div class="info-lbl">Designation / មុខតំណែង</div>
+            <div class="info-lbl">Position / មុខតំណែង</div>
             <div style="height:10px;"></div>
             <div class="info-val" style="text-transform:uppercase;">${escapeHtml(department)}</div>
             <div class="info-lbl">Department / នាយកដ្ឋាន</div>

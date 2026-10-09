@@ -42,7 +42,7 @@ export const BuCeoApprovalPanel = memo(function BuCeoApprovalPanel({
             onChange={(e) => setCheckTerms(e.target.checked)}
             className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
           />
-          <span>Designation ({offer.job_title}) and department ({offer.department}) approved for BU operations</span>
+          <span>Position ({offer.job_title}) and department ({offer.department}) approved for BU operations</span>
         </label>
         <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
           <input

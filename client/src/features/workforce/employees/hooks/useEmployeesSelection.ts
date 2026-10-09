@@ -56,7 +56,7 @@ export function useEmployeesSelection({
         const empDisplayName =
           emp.display_name?.trim() ||
           emp.full_name?.trim() ||
-          `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+          `${emp.last_name || ""} ${emp.first_name || ""}`.trim();
         const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role || "", empDisplayName);
         if (ok) successCount++;
       }

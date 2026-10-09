@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import type { OnboardingRequest } from "../types";
 import { STAGES } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface UseOnboardingStageTransitionsProps {
   actorName: string;
@@ -27,7 +28,7 @@ export function useOnboardingStageTransitions({
       } else {
         setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "approved" } : r)));
         setExpandedRequest(req.id);
-        const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "new hire";
+        const empName = formatKhmerFullName(req.employees);
         toast("Onboarding Approved", `${empName} approved! Step 1 (Document Collection) is now unlocked.`, "success");
         logActivity({
           module: "onboarding",
@@ -101,7 +102,7 @@ export function useOnboardingStageTransitions({
       } else {
         await supabase.from("employees").update({ status: "active" }).eq("id", req.employee_id);
         setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "completed", stage: "complete" } : r)));
-        const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "new hire";
+        const empName = formatKhmerFullName(req.employees);
         toast("Onboarding Completed", `${empName} has graduated and status is active!`, "success");
         logActivity({
           module: "onboarding",

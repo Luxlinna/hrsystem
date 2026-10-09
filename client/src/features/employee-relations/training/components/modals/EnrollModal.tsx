@@ -71,7 +71,7 @@ export const EnrollModal = memo(function EnrollModal({
   const filteredEmployees = branchScopedEmployees.filter((e) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase().trim();
-    const name = `${e.first_name} ${e.last_name}`.toLowerCase();
+    const name = `${e.last_name} ${e.first_name}`.toLowerCase();
     const dept = (e.department || "").toLowerCase();
     return name.includes(q) || dept.includes(q);
   });

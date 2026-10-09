@@ -32,7 +32,7 @@ export const TaskDetailActivityTimeline = memo(function TaskDetailActivityTimeli
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold text-gray-800">
-                  {a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "User"}
+                  {a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : "User"}
                 </span>
                 <span className="text-[10px] text-gray-400">{formatRelative(a.created_at)}</span>
               </div>

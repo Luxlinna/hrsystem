@@ -29,7 +29,7 @@ export const ToolsAccessMatrixView = memo(function ToolsAccessMatrixView({
       if (deptFilter !== "All" && e.department !== deptFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase().trim();
-        const fullName = `${e.first_name} ${e.last_name}`.toLowerCase();
+        const fullName = `${e.last_name} ${e.first_name}`.toLowerCase();
         const dept = (e.department || "").toLowerCase();
         const role = (e.role || "").toLowerCase();
         return fullName.includes(q) || dept.includes(q) || role.includes(q);
@@ -94,7 +94,7 @@ export const ToolsAccessMatrixView = memo(function ToolsAccessMatrixView({
           </thead>
           <tbody className="divide-y divide-gray-50">
             {filteredEmployees.map((emp) => {
-              const empName = `${emp.first_name} ${emp.last_name}`;
+              const empName = `${emp.last_name} ${emp.first_name}`;
               return (
                 <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors">
                   {/* Sticky employee column */}

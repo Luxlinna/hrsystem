@@ -116,7 +116,7 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
   if (p.searchQuery.trim()) {
     const q = p.searchQuery.toLowerCase().trim();
     const emp = r.employees;
-    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.toLowerCase();
+    const empName = `${emp?.last_name || ""} ${emp?.first_name || ""}`.toLowerCase();
     const empDisplayName = (emp?.display_name || "").toLowerCase();
     const empFullName = (emp?.full_name || "").toLowerCase();
     const empRole = (emp?.role || "").toLowerCase();

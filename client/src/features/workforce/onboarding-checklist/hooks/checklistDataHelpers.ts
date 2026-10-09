@@ -27,7 +27,7 @@ export function filterHrStaff(st: any[], branchList: any[]) {
     const role = (emp.role || "").trim().toLowerCase();
     if (/(^|\b)(hr|recruiter|recruitment|talent|human\s*resources?)(\b|$)/i.test(role) || /super\s*admin/i.test(role)) return true;
 
-    const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
+    const fullName = `${emp.last_name || ""} ${emp.first_name || ""}`.toLowerCase();
     if (/hr\s*admin|hr\s*ops|recruiter/i.test(fullName)) return true;
 
     return false;

@@ -109,14 +109,6 @@ export function getJobStatusBadge(status?: string | null): {
   lifecycleColor: string;
 } {
   const st = (status || "active").toLowerCase().trim();
-  if (st === "onboarding" || st.includes("not") || st === "pending") {
-    return {
-      jobStatus: "Not Employed Yet",
-      jobColor: "bg-[#e67e22] dark:bg-amber-600",
-      lifecycleStatus: "Onboarding",
-      lifecycleColor: "bg-[#e67e22] dark:bg-amber-600",
-    };
-  }
   if (st === "inactive" || st === "exited" || st === "terminated" || st === "resigned") {
     return {
       jobStatus: "Exited",
@@ -147,6 +139,23 @@ export function getJobStatusBadge(status?: string | null): {
     lifecycleStatus: "Active",
     lifecycleColor: "bg-[#20c997] dark:bg-emerald-600",
   };
+}
+
+export function resolveReportEmploymentStatus(status?: string | null): string {
+  const st = (status || "active").toLowerCase().trim();
+  if (st === "onboarding" || st.includes("not") || st === "pending" || st === "active") {
+    return "ACTIVE";
+  }
+  if (st === "inactive" || st === "exited" || st === "terminated" || st === "resigned") {
+    return "INACTIVE";
+  }
+  if (st === "suspended" || st.includes("black")) {
+    return "SUSPENDED";
+  }
+  if (st === "on_leave") {
+    return "ON LEAVE";
+  }
+  return st.replace(/_/g, " ").toUpperCase();
 }
 
 export function getBranchCode(branchName: string): string {
@@ -272,7 +281,7 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   first_name: "",
   last_name: "",
   display_name: "",
-  display_name_format: "first_last",
+  display_name_format: "last_first",
   foreign_name: "",
   foreign_name_format: "last_first",
   employee_code: "",

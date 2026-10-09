@@ -61,7 +61,7 @@ export function useTrainingFilters({ courses, enrollments }: UseTrainingFiltersP
       }
       if (searchQuery) {
         const emp = e.employees;
-        const name = emp ? `${emp.first_name} ${emp.last_name}`.toLowerCase() : "";
+        const name = emp ? `${emp.last_name} ${emp.first_name}`.toLowerCase() : "";
         const course = e.training_courses?.title.toLowerCase() || "";
         if (
           !name.includes(searchQuery.toLowerCase()) &&

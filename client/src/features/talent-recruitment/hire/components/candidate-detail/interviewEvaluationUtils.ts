@@ -144,7 +144,7 @@ export function extractInterviewerSlots(
 
   const panel = iv?.notes ? parseInterviewPanelFromNotes(iv.notes) : null;
   const primaryName = iv?.employees
-    ? `${iv.employees.first_name || ""} ${iv.employees.last_name || ""}`.trim()
+    ? `${iv.employees.last_name || ""} ${iv.employees.first_name || ""}`.trim()
     : (fallbackName || "");
 
   if (primaryName) {

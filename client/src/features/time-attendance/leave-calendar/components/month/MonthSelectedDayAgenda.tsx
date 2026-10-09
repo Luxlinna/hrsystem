@@ -63,7 +63,7 @@ export const MonthSelectedDayAgenda = memo(function MonthSelectedDayAgenda({
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-extrabold text-xs text-gray-900">
-                      {l.employees?.first_name} {l.employees?.last_name}
+                      {l.employees?.last_name} {l.employees?.first_name}
                     </p>
                     <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${cfg.badgeBg}`}>
                       {cfg.label}

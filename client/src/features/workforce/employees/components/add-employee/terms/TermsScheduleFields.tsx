@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface TermsScheduleFieldsProps {
   form: EmployeeFormState;
@@ -62,15 +63,14 @@ export const TermsScheduleFields = memo(function TermsScheduleFields({
         <label className="block text-xs font-extrabold text-slate-700 mb-1">
           Start Date / Joining Date <span className="text-rose-500">*</span>
         </label>
-        <input
-          type="date"
+        <DatePickerDMY
           required
           value={form.start_date || form.join_date}
-          onChange={(e) => {
-            onChange("start_date", e.target.value);
-            onChange("join_date", e.target.value);
+          onChange={(val) => {
+            onChange("start_date", val);
+            onChange("join_date", val);
             if (!form.contract_effective_date) {
-              onChange("contract_effective_date", e.target.value);
+              onChange("contract_effective_date", val);
             }
           }}
           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"

@@ -32,7 +32,7 @@ export function matchLeaveEmployee(e: Employee, query: string): boolean {
 
   const displayName = (e.display_name || "").toLowerCase();
   const empFullName = (e.full_name || "").toLowerCase();
-  const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+  const fullName = `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase();
   const role = (e.role || "").toLowerCase();
   const dept = (e.department || "").toLowerCase();
 

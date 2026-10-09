@@ -64,7 +64,7 @@ export const PendingBookingsQueue = memo(function PendingBookingsQueue({
           const room = roomMap.get(b.room_id);
           const roomFloor = getRoomFloor(room);
           const isVIP = roomFloor === 5;
-          const bookerName = `${b.employees?.first_name || ""} ${b.employees?.last_name || ""}`.trim() || b.booked_by || "Employee";
+          const bookerName = `${b.employees?.last_name || ""} ${b.employees?.first_name || ""}`.trim() || b.booked_by || "Employee";
           const dept = b.employees?.department || "General";
 
           return (

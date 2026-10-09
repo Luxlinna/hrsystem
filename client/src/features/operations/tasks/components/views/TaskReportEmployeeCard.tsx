@@ -33,7 +33,7 @@ export const TaskReportEmployeeCard = memo(function TaskReportEmployeeCard({
   onSelectTask,
 }: TaskReportEmployeeCardProps) {
   const { employee: emp, tasks: empTasks, total, done, inProg, todo, outsideWorkCount, completionRate } = rep;
-  const empName = `${emp.first_name} ${emp.last_name}`;
+  const empName = `${emp.last_name} ${emp.first_name}`;
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-2xs space-y-4 hover:border-gray-300 transition-colors">

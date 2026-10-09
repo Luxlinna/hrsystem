@@ -1,100 +1,142 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useBranchScope } from "@/context/BranchContext";
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MovementsHeader } from "./components/MovementsHeader";
-import { MovementsStatsRow } from "./components/MovementsStatsRow";
 import { MovementsFilterBar } from "./components/MovementsFilterBar";
 import { MovementsTableView } from "./components/MovementsTableView";
 import { CreateChangeStatusModal } from "@/features/workforce/employees/components/CreateChangeStatusModal";
-import { MovementDetailModal } from "./components/MovementDetailModal";
+import { ViewEmployeeChangeStatusDetail } from "./components/ViewEmployeeChangeStatusDetail";
+import { ImportChangeStatusModal } from "./components/ImportChangeStatusModal";
+import { EditMovementInfoModal } from "@/features/workforce/employees/components/overview/movements/EditMovementInfoModal";
 import { useMovementsData } from "./hooks/useMovementsData";
-import type { EmployeeMovement, MovementType } from "./types";
+import { useMovementsFilter } from "./hooks/useMovementsFilter";
+import { deleteMovement } from "./services/movementService";
+import { toast } from "@/components/Toast";
+import type { EmployeeMovement } from "./types";
 
 export default function MovementsPage() {
-  const { selectedBranchId, targetBranch } = useBranchScope();
-  const { movements, employees, branches, loading, loadData } = useMovementsData();
+  const navigate = useNavigate();
+  const {
+    movements, employees, branches, workLocations, departments,
+    divisions, positions, employeeTypes, employeeLevels,
+    contractTypes, jobStatuses, loading, loadData,
+  } = useMovementsData();
 
-  // Filters
   const [search, setSearch] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<MovementType | "all">("all");
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [filterDateOption, setFilterDateOption] = useState<string>("all");
+  const [filterContractType, setFilterContractType] = useState<string[]>([]);
+  const [filterJobStatus, setFilterJobStatus] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [filterBranch, setFilterBranch] = useState<string>("");
+  const [filterWorkLocation, setFilterWorkLocation] = useState<string>("all");
+  const [filterDivision, setFilterDivision] = useState<string>("");
+  const [filterDept, setFilterDept] = useState<string>("");
+  const [filterRole, setFilterRole] = useState<string>("");
+  const [filterEmployeeType, setFilterEmployeeType] = useState<string>("");
+  const [filterEmployeeLevel, setFilterEmployeeLevel] = useState<string>("");
+  const [showSalary, setShowSalary] = useState<boolean>(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState<boolean>(false);
 
-  // Sync selected branch with topbar BU
-  useEffect(() => {
-    const activeBu = selectedBranchId && !selectedBranchId.startsWith("site:") ? selectedBranchId : targetBranch;
-    if (activeBu && !selectedBranch) setSelectedBranch(activeBu);
-  }, [selectedBranchId, targetBranch, selectedBranch]);
-
-  // Modals
   const [showRecordModal, setShowRecordModal] = useState<boolean>(false);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [selectedMovement, setSelectedMovement] = useState<EmployeeMovement | null>(null);
+  const [editingMovement, setEditingMovement] = useState<EmployeeMovement | null>(null);
 
-  // Filtered movements
-  const filteredMovements = useMemo(() => {
-    return movements.filter((m) => {
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const emp = m.employees;
-        const nameMatch = emp ? `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(q) : false;
-        const roleMatch = emp?.role?.toLowerCase().includes(q) || false;
-        const deptMatch = emp?.department?.toLowerCase().includes(q) || false;
-        const idMatch = m.employee_id?.toLowerCase().includes(q) || m.id.toLowerCase().includes(q);
-        const titleMatch = m.title.toLowerCase().includes(q);
+  const filteredMovements = useMovementsFilter({
+    movements, search, selectedStatus, filterDateOption,
+    filterContractType, filterJobStatus, filterBranch, filterWorkLocation,
+    filterDivision, filterDept, filterRole, filterEmployeeType, filterEmployeeLevel,
+  });
 
-        if (!nameMatch && !roleMatch && !deptMatch && !idMatch && !titleMatch) return false;
-      }
+  const handleSelectAll = useCallback(() => {
+    if (selectAll) {
+      setSelectedIds(new Set());
+      setSelectAll(false);
+    } else {
+      setSelectedIds(new Set(filteredMovements.map((m) => m.id)));
+      setSelectAll(true);
+    }
+  }, [selectAll, filteredMovements]);
 
-      if (selectedType !== "all" && m.movement_type !== selectedType) return false;
-      if (selectedBranch && m.branch_id !== selectedBranch && m.employees?.branch_id !== selectedBranch) return false;
-
-      return true;
+  const handleSelectOne = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
     });
-  }, [movements, search, selectedType, selectedBranch]);
+  }, []);
+
+  const handleDelete = async (m: EmployeeMovement) => {
+    await deleteMovement(m.id);
+    toast("Record Deleted", "Change status record deleted successfully.", "success");
+    await loadData();
+  };
+
+  if (selectedMovement) {
+    return (
+      <ViewEmployeeChangeStatusDetail
+        movement={selectedMovement}
+        onBack={() => setSelectedMovement(null)}
+      />
+    );
+  }
+
+  const editEmp = editingMovement?.employees ? (editingMovement.employees as any) : employees[0] || {};
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 animate-in fade-in-50">
+    <div className="min-h-screen bg-white p-4 sm:p-6 font-sans">
       <MovementsHeader
         movements={filteredMovements}
         onOpenRecordModal={() => setShowRecordModal(true)}
+        onOpenSettings={() => navigate("/employees/settings")}
       />
-
-      <MovementsStatsRow movements={filteredMovements} />
 
       <MovementsFilterBar
-        search={search}
-        onSearchChange={setSearch}
-        selectedType={selectedType}
-        onTypeChange={setSelectedType}
-        selectedBranch={selectedBranch}
-        onBranchChange={setSelectedBranch}
-        branches={branches}
-        totalFiltered={filteredMovements.length}
+        search={search} onSearchChange={setSearch}
+        selectedStatus={selectedStatus} onStatusChange={setSelectedStatus}
+        showSalary={showSalary} onToggleSalary={() => setShowSalary(!showSalary)}
+        onOpenImport={() => setShowImportModal(true)}
+        movements={filteredMovements}
+        filterDateOption={filterDateOption} onDateOptionChange={setFilterDateOption}
+        filterContractType={filterContractType} onContractTypeChange={setFilterContractType}
+        filterJobStatus={filterJobStatus} onJobStatusChange={setFilterJobStatus}
+        contractTypes={contractTypes} jobStatuses={jobStatuses}
+        filterBranch={filterBranch} onBranchChange={setFilterBranch}
+        filterWorkLocation={filterWorkLocation} onWorkLocationChange={setFilterWorkLocation}
+        filterDivision={filterDivision} onDivisionChange={setFilterDivision}
+        filterDept={filterDept} onDeptChange={setFilterDept}
+        filterRole={filterRole} onRoleChange={setFilterRole}
+        filterEmployeeType={filterEmployeeType} onEmployeeTypeChange={setFilterEmployeeType}
+        filterEmployeeLevel={filterEmployeeLevel} onEmployeeLevelChange={setFilterEmployeeLevel}
+        branches={branches as any} workSites={workLocations as any}
+        divisions={divisions} depts={departments} positions={positions}
+        employeeTypes={employeeTypes} employeeLevels={employeeLevels}
       />
 
-      {loading ? (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-12 text-center shadow-sm">
-          <i className="ri-loader-4-line animate-spin text-2xl text-[#253C7D] dark:text-indigo-400 mb-2 inline-block" />
-          <div className="text-xs font-semibold text-gray-500">Loading movement records...</div>
-        </div>
-      ) : (
-        <MovementsTableView
-          movements={filteredMovements}
-          onSelectMovement={(m) => setSelectedMovement(m)}
-        />
+      <div className="bg-white border-t border-slate-100 overflow-hidden">
+        {loading ? (
+          <div className="py-20 text-center text-xs text-slate-400">
+            <div className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            Loading change status records...
+          </div>
+        ) : (
+          <MovementsTableView
+            movements={filteredMovements}
+            selectedIds={selectedIds} selectAll={selectAll}
+            showSalary={showSalary} onSelectAll={handleSelectAll}
+            onSelectOne={handleSelectOne}
+            onSelectMovement={(m) => setSelectedMovement(m)}
+            onEditMovement={(m) => setEditingMovement(m)}
+            onDeleteMovement={handleDelete}
+          />
+        )}
+      </div>
+
+      <CreateChangeStatusModal isOpen={showRecordModal} onClose={() => setShowRecordModal(false)} employees={employees} branches={branches} onSuccess={loadData} />
+      <ImportChangeStatusModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} employees={employees} branches={branches} workLocations={workLocations} movements={movements} onSuccess={loadData} />
+      {editingMovement && (
+        <EditMovementInfoModal open={Boolean(editingMovement)} onClose={() => setEditingMovement(null)} employee={editEmp} movement={editingMovement} onSaved={() => { setEditingMovement(null); loadData(); }} />
       )}
-
-      <CreateChangeStatusModal
-        isOpen={showRecordModal}
-        onClose={() => setShowRecordModal(false)}
-        employees={employees}
-        branches={branches}
-        onSuccess={loadData}
-      />
-
-      <MovementDetailModal
-        movement={selectedMovement}
-        onClose={() => setSelectedMovement(null)}
-      />
     </div>
   );
 }

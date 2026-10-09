@@ -1,5 +1,6 @@
 import { memo } from "react";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 import type { EmployeeOption, CreateOffboardingForm } from "../../types";
 import { EXIT_REASONS } from "../../constants";
 
@@ -60,11 +61,10 @@ export const CreateOffboardingModal = memo(function CreateOffboardingModal({
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
               Effective Last Working Day *
             </label>
-            <input
-              type="date"
+            <DatePickerDMY
               required
               value={newForm.last_day}
-              onChange={(e) => setNewForm({ ...newForm, last_day: e.target.value })}
+              onChange={(iso) => setNewForm({ ...newForm, last_day: iso })}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
             />
           </div>

@@ -13,8 +13,8 @@ export const BranchStaffRow = memo(function BranchStaffRow({
   employee: emp,
   branchName,
 }: BranchStaffRowProps) {
-  const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Unnamed Staff";
-  const initials = `${emp.first_name?.[0] || ""}${emp.last_name?.[0] || ""}`.toUpperCase() || "E";
+  const fullName = `${emp.last_name || ""} ${emp.first_name || ""}`.trim() || "Unnamed Staff";
+  const initials = `${emp.last_name?.[0] || ""}${emp.first_name?.[0] || ""}`.toUpperCase() || "E";
   const statusMeta = getStaffStatusMeta(emp.status);
   const locationName = emp.work_locations?.name || "Main Office";
 

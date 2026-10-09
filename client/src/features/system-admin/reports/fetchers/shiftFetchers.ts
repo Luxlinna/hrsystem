@@ -47,7 +47,7 @@ export const fetchShiftsReport = async (config: ReportConfig): Promise<ReportRes
 
     if (shiftAssigns.length > 0) {
       shiftAssigns.forEach((a: any) => {
-        const empName = `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`.trim() || "Assigned Staff";
+        const empName = `${a.employees?.last_name || ""} ${a.employees?.first_name || ""}`.trim() || "Assigned Staff";
         const empDept = a.employees?.department || s.department || "—";
         const empBranch = a.employees?.branches?.name || branchName;
         const isDeleted = Boolean(a.deleted_at || s.deleted_at);

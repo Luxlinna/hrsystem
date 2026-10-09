@@ -27,7 +27,7 @@ export const exportTasksPDF = (tasks: Task[], title = "Workforce Tasks & Field A
 
   const rows = tasks
     .map((t) => {
-      const assignee = t.employees ? `${t.employees.first_name} ${t.employees.last_name}` : "Unassigned";
+      const assignee = t.employees ? `${t.employees.last_name} ${t.employees.first_name}` : "Unassigned";
       const dept = t.employees?.department || "—";
       const sBadge = statusBadges[t.status] || { bg: "#f1f5f9", color: "#475569", label: t.status };
       const pBadge = priorityBadges[t.priority] || { bg: "#f1f5f9", color: "#475569", label: t.priority };

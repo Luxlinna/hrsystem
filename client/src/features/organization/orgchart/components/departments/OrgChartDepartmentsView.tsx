@@ -61,11 +61,11 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
         const matchesDept = g.department.toLowerCase().includes(q);
         const filteredLeads = g.leads.filter(
           (e) =>
-            `${e.first_name} ${e.last_name} ${e.role}`.toLowerCase().includes(q)
+            `${e.last_name} ${e.first_name} ${e.role}`.toLowerCase().includes(q)
         );
         const filteredMembers = g.members.filter(
           (e) =>
-            `${e.first_name} ${e.last_name} ${e.role}`.toLowerCase().includes(q)
+            `${e.last_name} ${e.first_name} ${e.role}`.toLowerCase().includes(q)
         );
 
         if (matchesDept) return g;
@@ -142,7 +142,7 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
                           )}
                           <div>
                             <p className="text-xs font-bold text-gray-900 dark:text-slate-100">
-                              {lead.first_name} {lead.last_name}
+                              {lead.last_name} {lead.first_name}
                             </p>
                             <p className="text-[11px] text-amber-900 dark:text-amber-200 font-medium">{lead.role}</p>
                           </div>
@@ -186,7 +186,7 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
                           )}
                           <div className="truncate">
                             <p className="text-xs font-semibold text-gray-900 dark:text-slate-100 truncate">
-                              {member.first_name} {member.last_name}
+                              {member.last_name} {member.first_name}
                             </p>
                             <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">{member.role}</p>
                           </div>

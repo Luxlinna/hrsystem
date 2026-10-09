@@ -19,7 +19,7 @@ export const TaskCard = memo(function TaskCard({
   const priority = PRIORITY_META[task.priority] || PRIORITY_META.medium;
   const overdue = isOverdue(task);
   const assigneeName = task.employees
-    ? `${task.employees.first_name} ${task.employees.last_name}`
+    ? `${task.employees.last_name} ${task.employees.first_name}`
     : "Unassigned";
 
   const handleDragStart = (e: React.DragEvent) => {

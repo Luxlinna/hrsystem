@@ -32,18 +32,8 @@ export default function EmployeesPage() {
   if (emp.isPartnerBranchBlocked) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
-        <EmployeesHeader
-          branchCount={emp.branchCount}
-          canManage={false}
-          onOpenAddModal={() => {}}
-          canManageSettings={canManageEmployeeSettings}
-          onOpenSettings={() => navigate("/employees/settings")}
-        />
-        <PartnerBranchPrivacyShield
-          moduleName="Employee Directory"
-          userBranchName={emp.userBranchName}
-          hasNoBranch={!emp.userBranchId}
-        />
+        <EmployeesHeader branchCount={emp.branchCount} canManage={false} onOpenAddModal={() => {}} canManageSettings={canManageEmployeeSettings} onOpenSettings={() => navigate("/employees/settings")} />
+        <PartnerBranchPrivacyShield moduleName="Employee Directory" userBranchName={emp.userBranchName} hasNoBranch={!emp.userBranchId} />
       </div>
     );
   }
@@ -76,16 +66,14 @@ export default function EmployeesPage() {
         filterDateOption={emp.filterDateOption} setFilterDateOption={emp.setFilterDateOption}
         filterContractType={emp.filterContractType} setFilterContractType={emp.setFilterContractType}
         contractTypes={emp.contractTypes} jobStatuses={emp.jobStatuses}
-        divisions={emp.divisions}
-        depts={emp.depts} positions={emp.positions}
+        divisions={emp.divisions} depts={emp.depts} positions={emp.positions}
         employeeTypes={emp.employeeTypes} employeeLevels={emp.employeeLevels}
         branches={emp.branches} workSites={emp.workSites}
         visibleColumns={emp.visibleColumns} setVisibleColumns={emp.setVisibleColumns}
         viewMode={emp.viewMode} setViewMode={emp.setViewMode}
         employees={emp.filtered} accountStatus={emp.accountStatus}
         onOpenImport={() => pageState.setShowImportModal(true)}
-        showSalary={pageState.showSalary}
-        setShowSalary={pageState.handleToggleSalary}
+        showSalary={pageState.showSalary} setShowSalary={pageState.handleToggleSalary}
       />
 
       <SelectedActionsBar
@@ -163,39 +151,24 @@ export default function EmployeesPage() {
       />
 
       <EmployeesModals
-        showAddModal={emp.showAddModal}
-        editingEmployeeId={emp.editingEmployeeId}
-        form={emp.form}
-        setForm={emp.setForm}
-        branches={emp.branches}
-        managers={emp.managers}
-        submitting={emp.submitting}
-        isSuperAdmin={emp.isSuperAdmin}
-        onCloseAddModal={emp.handleCloseModal}
-        onAddEmployee={emp.handleAddEmployee}
+        showAddModal={emp.showAddModal} editingEmployeeId={emp.editingEmployeeId}
+        form={emp.form} setForm={emp.setForm}
+        branches={emp.branches} managers={emp.managers}
+        submitting={emp.submitting} isSuperAdmin={emp.isSuperAdmin}
+        onCloseAddModal={emp.handleCloseModal} onAddEmployee={emp.handleAddEmployee}
         showChangeStatusModal={pageState.showChangeStatusModal}
         changeStatusEmployeeId={pageState.changeStatusEmployeeId}
-        onCloseChangeStatus={() => {
-          pageState.setShowChangeStatusModal(false);
-          pageState.setChangeStatusEmployeeId("");
-        }}
+        onCloseChangeStatus={() => { pageState.setShowChangeStatusModal(false); pageState.setChangeStatusEmployeeId(""); }}
         employees={emp.allEmployees && emp.allEmployees.length > 0 ? emp.allEmployees : emp.filtered}
-        depts={emp.depts}
-        divisions={emp.divisions}
-        positions={emp.positions}
+        depts={emp.depts} divisions={emp.divisions} positions={emp.positions}
         onLoadEmployees={emp.loadEmployees}
-        phoneAccountEmployee={emp.phoneAccountEmployee}
-        roles={emp.roles}
+        phoneAccountEmployee={emp.phoneAccountEmployee} roles={emp.roles}
         onClosePhoneAccount={() => emp.setPhoneAccountEmployee(null)}
         onSetUpPhoneUser={emp.setUpPhoneUser}
-        showImportModal={pageState.showImportModal}
-        actorName={emp.actorName}
-        roleName={emp.roleName}
+        showImportModal={pageState.showImportModal} actorName={emp.actorName} roleName={emp.roleName}
         onCloseImport={() => pageState.setShowImportModal(false)}
-        showPinModal={pageState.showPinModal}
-        onClosePinModal={() => pageState.setShowPinModal(false)}
-        onPinSuccess={() => pageState.setShowSalary(true)}
-        userEmail={user?.email}
+        showPinModal={pageState.showPinModal} onClosePinModal={() => pageState.setShowPinModal(false)}
+        onPinSuccess={() => pageState.setShowSalary(true)} userEmail={user?.email}
       />
     </div>
   );

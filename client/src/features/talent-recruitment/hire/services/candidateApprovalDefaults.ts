@@ -4,6 +4,7 @@ import {
   formatInterviewEndTime,
   extractFeedbackFromInterviews,
 } from "../utils/interviewPanelHelper";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function generateApprovalFormNumber(): string {
   const year = new Date().getFullYear();
@@ -56,7 +57,7 @@ export function initCandidateApproval(
           }
 
           const empName = iv.employees
-            ? `${iv.employees.first_name} ${iv.employees.last_name}`.trim()
+            ? formatKhmerFullName(iv.employees)
             : actorName;
 
           const pos =
@@ -115,7 +116,7 @@ export function initCandidateApproval(
     business_unit: reqDetails?.businessUnit || job?.branches?.name || defaultBu,
     department: resolvedDept,
     hiring_manager: reqDetails?.hiringManager || (candidate.assigned_recruiter
-      ? `${candidate.assigned_recruiter.first_name} ${candidate.assigned_recruiter.last_name}`
+      ? formatKhmerFullName(candidate.assigned_recruiter)
       : "Hiring Manager"),
     current_salary: reqDetails?.currentSalary || "",
     expectation_salary: reqDetails?.expectationSalary || expectationSalaryStr,

@@ -7,6 +7,7 @@ import { useOnboardingCalculations } from "./useOnboardingCalculations";
 import { useOnboardingFilters } from "./useOnboardingFilters";
 import { useOnboardingMutations } from "./useOnboardingMutations";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function useOnboarding() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export function useOnboarding() {
       .then(({ data: rows }) => {
         const data = rows && rows.length > 0 ? rows[0] : null;
         if (data && (data.first_name || data.last_name)) {
-          setCurrentEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+          setCurrentEmployeeName(formatKhmerFullName(data));
         }
       });
   }, [user?.email]);
@@ -36,8 +37,11 @@ export function useOnboarding() {
     currentEmployeeName ||
     (user?.user_metadata?.display_name as string) ||
     (user?.user_metadata?.full_name as string) ||
-    (user?.user_metadata?.first_name && user?.user_metadata?.last_name
-      ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+    (user?.user_metadata?.first_name || user?.user_metadata?.last_name
+      ? formatKhmerFullName({
+          first_name: user.user_metadata.first_name,
+          last_name: user.user_metadata.last_name,
+        })
       : "") ||
     (user?.email ? user.email.split("@")[0] : "Admin User");
 

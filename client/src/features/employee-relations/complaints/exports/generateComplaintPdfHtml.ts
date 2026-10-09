@@ -1,5 +1,6 @@
 import type { ComplaintSuggestion } from "../types";
 import { formatDateDMY, formatMultilinePreview } from "@/features/employee-relations/disciplinary/utils/formatters";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return "";
@@ -26,7 +27,7 @@ export function generateComplaintPdfHtml(item: ComplaintSuggestion, branchName?:
     item.show_identity === false
       ? "Anonymous (Identity Protected / អនាមិក)"
       : item.employees
-      ? `${item.employees.first_name} ${item.employees.last_name} (${item.employees.role || "Staff"} • ${item.employees.department || "General"})`
+      ? `${formatKhmerFullName(item.employees)} (${item.employees.role || "Staff"} • ${item.employees.department || "General"})`
       : item.recorded_by || "Employee";
 
   const detailText = formatMultilinePreview(item.details);
@@ -170,7 +171,7 @@ export function generateComplaintPdfHtml(item: ComplaintSuggestion, branchName?:
     <!-- Signatures -->
     <div class="signatures-block">
       <div>
-        <div class="sig-line">${item.show_identity === false ? "ANONYMOUS" : escapeHtml(item.employees ? `${item.employees.first_name} ${item.employees.last_name}` : (item.recorded_by || "Submitter"))}</div>
+        <div class="sig-line">${item.show_identity === false ? "ANONYMOUS" : escapeHtml(item.employees ? `${item.employees.last_name} ${item.employees.first_name}` : (item.recorded_by || "Submitter"))}</div>
         <div class="sig-role">Submitter / អ្នកដាក់ពាក្យ</div>
       </div>
       <div>

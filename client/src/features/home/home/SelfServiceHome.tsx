@@ -69,7 +69,7 @@ export default function SelfServiceHome() {
   }, [user?.email, can]);
 
   const displayName = me
-    ? (me.display_name?.trim() || me.full_name?.trim() || `${me.first_name} ${me.last_name}`.trim())
+    ? (me.display_name?.trim() || me.full_name?.trim() || `${me.last_name} ${me.first_name}`.trim())
     : (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";

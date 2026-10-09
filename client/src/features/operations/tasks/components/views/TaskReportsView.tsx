@@ -53,7 +53,7 @@ export const TaskReportsView = memo(function TaskReportsView({
         const q = search.toLowerCase().trim();
         const matchTitle = t.title.toLowerCase().includes(q);
         const matchDesc = (t.description || "").toLowerCase().includes(q);
-        const matchAssignee = `${t.employees?.first_name || ""} ${t.employees?.last_name || ""}`.toLowerCase().includes(q);
+        const matchAssignee = `${t.employees?.last_name || ""} ${t.employees?.first_name || ""}`.toLowerCase().includes(q);
         if (!matchTitle && !matchDesc && !matchAssignee) return false;
       }
 
@@ -91,7 +91,7 @@ export const TaskReportsView = memo(function TaskReportsView({
         // Top bar text search
         if (search.trim()) {
           const q = search.toLowerCase().trim();
-          const name = `${e.first_name} ${e.last_name}`.toLowerCase();
+          const name = `${e.last_name} ${e.first_name}`.toLowerCase();
           const dept = (e.department || "").toLowerCase();
           if (!name.includes(q) && !dept.includes(q)) return false;
         }
@@ -99,7 +99,7 @@ export const TaskReportsView = memo(function TaskReportsView({
         // Toolbar local report search
         if (reportSearch.trim()) {
           const q = reportSearch.toLowerCase().trim();
-          const name = `${e.first_name} ${e.last_name}`.toLowerCase();
+          const name = `${e.last_name} ${e.first_name}`.toLowerCase();
           const dept = (e.department || "").toLowerCase();
           if (!name.includes(q) && !dept.includes(q)) return false;
         }

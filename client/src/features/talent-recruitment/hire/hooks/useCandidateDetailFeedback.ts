@@ -156,7 +156,7 @@ export function useCandidateDetailFeedback({
           const fbNames = panelMatch
             ? panelMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
             : feedbackInterview.employees
-            ? [`${feedbackInterview.employees.first_name} ${feedbackInterview.employees.last_name}`.trim()]
+            ? [`${feedbackInterview.employees.last_name} ${feedbackInterview.employees.first_name}`.trim()]
             : [];
           const panelIdsMatch = (feedbackInterview.notes || "").match(/\[PanelIds:\s*(.*?)\]/i);
           const fbIds = panelIdsMatch

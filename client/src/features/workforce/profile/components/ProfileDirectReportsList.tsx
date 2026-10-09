@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { DirectReport } from "../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface ProfileDirectReportsListProps {
   directReports: DirectReport[];
@@ -20,13 +21,14 @@ export const ProfileDirectReportsList = memo(function ProfileDirectReportsList({
       </label>
       <div className="mt-2 border border-gray-100 rounded-xl divide-y divide-gray-50 shadow-2xs">
         {directReports.map((r) => {
-          const rInitials = `${r.first_name[0]}${r.last_name[0]}`.toUpperCase();
+          const rInitials = `${r.last_name?.[0] || ""}${r.first_name?.[0] || ""}`.toUpperCase() || "?";
+          const fullName = formatKhmerFullName(r);
           const content = (
             <div className="flex items-center gap-3 px-4 py-3">
               {r.avatar_url ? (
                 <img
                   src={r.avatar_url}
-                  alt={r.first_name}
+                  alt={fullName}
                   className="w-8 h-8 rounded-lg object-cover shrink-0"
                 />
               ) : (
@@ -36,7 +38,7 @@ export const ProfileDirectReportsList = memo(function ProfileDirectReportsList({
               )}
               <div className="min-w-0">
                 <p className="text-[13px] font-medium text-gray-900 truncate">
-                  {r.first_name} {r.last_name}
+                  {fullName}
                 </p>
                 <p className="text-[11px] text-gray-500 truncate">{r.role}</p>
               </div>

@@ -1,12 +1,13 @@
 import type { EmployeeExit } from "../types";
 import { EXIT_TYPE_CONFIG, REASON_TYPE_CONFIG } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export async function exportExitXLSX(exits: EmployeeExit[]): Promise<void> {
   const XLSX = await import("xlsx");
 
   const data = exits.map((ex, i) => ({
     "No": i + 1,
-    "Employee Name": `${ex.employees?.first_name ?? ""} ${ex.employees?.last_name ?? ""}`.trim(),
+    "Employee Name": formatKhmerFullName(ex.employees),
     "Department": ex.employees?.department ?? "",
     "Role": ex.employees?.role ?? "",
     "Exit Type": EXIT_TYPE_CONFIG[ex.exit_type]?.label ?? ex.exit_type,

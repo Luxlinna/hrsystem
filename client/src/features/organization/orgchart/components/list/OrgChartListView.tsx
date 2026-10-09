@@ -46,12 +46,12 @@ export const OrgChartListView = memo(function OrgChartListView({
                       <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
                     ) : (
                       <div className={`w-8 h-8 rounded-full ${deptColor} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                        {emp.first_name?.[0]}{emp.last_name?.[0]}
+                        {emp.last_name?.[0]}{emp.first_name?.[0]}
                       </div>
                     )}
                     <div>
                       <Link to={`/employees/${emp.id}`} className="text-[13px] font-semibold text-gray-900 dark:text-slate-100 hover:text-[#253C7D] dark:hover:text-sky-400 transition-colors">
-                        {emp.first_name} {emp.last_name}
+                        {emp.last_name} {emp.first_name}
                       </Link>
                       <p className="text-[11px] text-gray-500 dark:text-slate-400">{emp.role}</p>
                     </div>
@@ -67,7 +67,7 @@ export const OrgChartListView = memo(function OrgChartListView({
                 <td className="px-5 py-3 text-[13px] text-gray-600 dark:text-slate-300">
                   {manager ? (
                     <Link to={`/employees/${manager.id}`} className="hover:text-[#253C7D] dark:hover:text-sky-400 transition-colors">
-                      {manager.first_name} {manager.last_name}
+                      {manager.last_name} {manager.first_name}
                     </Link>
                   ) : (
                     <span className="text-gray-400 dark:text-slate-500">— Top level</span>

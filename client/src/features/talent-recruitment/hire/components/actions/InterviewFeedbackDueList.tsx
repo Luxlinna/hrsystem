@@ -81,7 +81,7 @@ export const InterviewFeedbackDueList = memo(function InterviewFeedbackDueList({
                       {iv.employees && (
                         <span>
                           <i className="ri-user-follow-line mr-1 text-gray-400" />
-                          Interviewer: {iv.employees.first_name} {iv.employees.last_name}
+                          Interviewer: {iv.employees.last_name} {iv.employees.first_name}
                         </span>
                       )}
                     </div>

@@ -24,7 +24,7 @@ export const fetchOnboardingReport = async (config: ReportConfig): Promise<Repor
 
   const mapped = (data || [])
     .map((r: any) => {
-      const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim();
+      const empName = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim();
       const totalDocs = r.onboarding_documents?.length || 0;
       const verifiedDocs = (r.onboarding_documents || []).filter((d: any) => d.status === "complete").length;
       const docProgress = totalDocs > 0 ? `${verifiedDocs}/${totalDocs} verified` : "0 verified";
@@ -88,7 +88,7 @@ export const fetchOnboardingTasksReport = async (config: ReportConfig): Promise<
   const mapped = (data || [])
     .map((r: any) => {
       const emp = r.onboarding_requests?.employees;
-      const candidateName = emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : "—";
+      const candidateName = emp ? `${emp.last_name || ""} ${emp.first_name || ""}`.trim() : "—";
       const isDone = Boolean(r.completed);
       const isDeleted = Boolean(r.deleted_at);
 

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { compareBiometricIds } from "@/lib/biometricUtils";
 import type { Branch, Employee, DisciplinaryRecord } from "../types";
 
 interface UseDisciplinaryDataProps {
@@ -35,32 +36,46 @@ export function useDisciplinaryData({
       const branchList = (bData as Branch[]) || [];
       setBranches(branchList);
 
-      // 2. Fetch valid employees dynamically scoped to BU
-      let empQuery = supabase
+      // 2. Fetch all employees across the full directory
+      const { data: empData, error: empErr } = await supabase
         .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url, branch_id, biometric_user_id, status, branches(id, name)")
-        .is("deleted_at", null);
-
-      if (targetBranch && targetBranch !== "all") {
-        empQuery = empQuery.eq("branch_id", targetBranch);
-      }
-
-      const { data: empData, error: empErr } = await empQuery.order("first_name");
+        .select(
+          "id, first_name, last_name, display_name, full_name, kh_name, department, role, position, avatar_url, branch_id, biometric_user_id, employee_code, status, branches(id, name)"
+        )
+        .is("deleted_at", null)
+        .order("first_name", { ascending: true })
+        .limit(2000);
 
       if (empErr) console.warn("Disciplinary employees query error:", empErr);
 
       const rawEmpList = empData || [];
-      const empList: Employee[] = rawEmpList.map((e: any) => ({
-        id: e.id,
-        first_name: e.first_name,
-        last_name: e.last_name,
-        department: e.department || "General",
-        role: e.role || "Staff",
-        avatar_url: e.avatar_url,
-        branch_id: e.branch_id,
-        employee_id: e.biometric_user_id || e.id.substring(0, 8).toUpperCase(),
-        branches: Array.isArray(e.branches) ? e.branches[0] : e.branches,
-      }));
+      const empList: Employee[] = rawEmpList.map((e: any) => {
+        const fullName =
+          e.display_name?.trim() ||
+          e.full_name?.trim() ||
+          `${e.last_name || ""} ${e.first_name || ""}`.trim() ||
+          "Employee";
+        return {
+          id: e.id,
+          first_name: e.first_name,
+          last_name: e.last_name,
+          display_name: e.display_name,
+          full_name: fullName,
+          kh_name: e.kh_name,
+          department: e.department || "General",
+          role: e.position || e.role || "Staff",
+          avatar_url: e.avatar_url,
+          branch_id: e.branch_id,
+          employee_id: e.biometric_user_id || e.employee_code || e.id.substring(0, 8).toUpperCase(),
+          branches: Array.isArray(e.branches) ? e.branches[0] : e.branches,
+        };
+      });
+
+      empList.sort((a, b) => {
+        const idComp = compareBiometricIds(a.employee_id, b.employee_id);
+        if (idComp !== 0) return idComp;
+        return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+      });
 
       setEmployees(empList);
       const empIds = empList.map((e) => e.id);

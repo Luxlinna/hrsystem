@@ -50,7 +50,7 @@ export function useHiringModalData(isOpen: boolean, formData: EditHiringFormData
             }
           }
           if (!matchedAssignment) {
-            const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim().toLowerCase();
+            const fullName = `${emp.last_name || ""} ${emp.first_name || ""}`.trim().toLowerCase();
             matchedAssignment = assignments.find(
               (a) => a.display_name && a.display_name.trim().toLowerCase() === fullName
             );

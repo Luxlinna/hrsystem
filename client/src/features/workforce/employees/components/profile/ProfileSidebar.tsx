@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { ReportEntry } from "../../types";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface ProfileSidebarProps {
   manager: ReportEntry | null;
@@ -40,12 +41,11 @@ export const ProfileSidebar = memo(function ProfileSidebar({
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer border border-gray-100/60"
           >
             <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#253C7D] flex items-center justify-center font-bold">
-              {manager.first_name[0]}
-              {manager.last_name[0]}
+              {(manager.last_name?.[0] || manager.first_name?.[0] || "?")}
             </div>
             <div>
               <p className="text-[13px] font-semibold text-gray-900 group-hover:text-[#253C7D] transition-colors">
-                {manager.first_name} {manager.last_name}
+                {formatKhmerFullName(manager)}
               </p>
               <p className="text-[11px] text-gray-500">{manager.role} — Direct Manager</p>
             </div>
@@ -85,12 +85,11 @@ export const ProfileSidebar = memo(function ProfileSidebar({
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs">
-                  {r.first_name[0]}
-                  {r.last_name[0]}
+                  {(r.last_name?.[0] || r.first_name?.[0] || "?")}
                 </div>
                 <div>
                   <p className="text-[13px] font-medium text-gray-900">
-                    {r.first_name} {r.last_name}
+                    {formatKhmerFullName(r)}
                   </p>
                   <p className="text-[11px] text-gray-500">{r.role}</p>
                 </div>

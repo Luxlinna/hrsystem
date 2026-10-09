@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import type { EmployeeExit } from "../types";
 
 function parseExitRow(row: any): EmployeeExit {
@@ -39,6 +41,8 @@ function parseExitRow(row: any): EmployeeExit {
 
 export function useExitData() {
   const { targetBranch, userBranchId, isPartnerBranchBlocked } = useBranchScope();
+  const { isEmployee, isAdmin, isSuperAdmin, isLineManager } = usePermissions();
+  const { employee: myEmployee } = useMyEmployee();
   const activeBranch = targetBranch || userBranchId || null;
   const [exits, setExits] = useState<EmployeeExit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,31 +55,32 @@ export function useExitData() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const empJoin = activeBranch && !isPartnerBranchBlocked ? "employees!inner" : "employees";
     let query = supabase
       .from("employee_exits")
       .select(
-        `*, ${empJoin}(first_name, last_name, role, department, avatar_url, branch_id, biometric_user_id, employee_code, contract_type, branches(id, name))`
+        "*, employees(first_name, last_name, role, department, avatar_url, branch_id, biometric_user_id, employee_code, contract_type, start_date, join_date, contract_effective_date, branches(id, name))"
       )
       .or("status.neq.cancelled,status.is.null")
       .order("last_working_day", { ascending: false });
 
-    // Scope to branch via joined employees
-    if (activeBranch && !isPartnerBranchBlocked) {
+    // If regular employee, scope to their own record
+    if (isEmployee && !isAdmin && !isSuperAdmin && !isLineManager && myEmployee?.id) {
+      query = query.eq("employee_id", myEmployee.id);
+    } else if (isPartnerBranchBlocked && activeBranch) {
       query = query.eq("employees.branch_id", activeBranch);
     }
 
     const { data, error } = await query;
     if (!error) setExits(((data as any[]) || []).map(parseExitRow));
     setLoading(false);
-  }, [activeBranch, isPartnerBranchBlocked]);
+  }, [activeBranch, isPartnerBranchBlocked, isEmployee, isAdmin, isSuperAdmin, isLineManager, myEmployee?.id]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   // ── Filtered exits ──────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return exits.filter((ex) => {
-      const empName = `${ex.employees?.first_name ?? ""} ${ex.employees?.last_name ?? ""}`.toLowerCase();
+      const empName = `${ex.employees?.last_name ?? ""} ${ex.employees?.first_name ?? ""}`.toLowerCase();
       const buName = (ex.employees?.branches?.name ?? "").toLowerCase();
       const q = searchQuery.trim().toLowerCase();
       if (q && !empName.includes(q) && !ex.employee_id?.toLowerCase().includes(q) && !buName.includes(q)) return false;

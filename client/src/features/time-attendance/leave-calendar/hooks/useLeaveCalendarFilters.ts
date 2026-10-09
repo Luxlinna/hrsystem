@@ -27,7 +27,7 @@ export function useLeaveCalendarFilters(leaves: LeaveRequest[], employees: Emplo
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const fullName = `${l.employees?.first_name || ""} ${l.employees?.last_name || ""}`.toLowerCase();
+        const fullName = `${l.employees?.last_name || ""} ${l.employees?.first_name || ""}`.toLowerCase();
         const dept = (l.employees?.department || "").toLowerCase();
         const roleName = (l.employees?.role || "").toLowerCase();
         const reason = (l.reason || "").toLowerCase();

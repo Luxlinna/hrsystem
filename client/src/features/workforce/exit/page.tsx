@@ -4,16 +4,15 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
-
 import { useExitData } from "./hooks/useExitData";
 import { useExitMutations } from "./hooks/useExitMutations";
 import { useExitPermission } from "./hooks/useExitPermission";
 import { useExitFormOptions } from "./hooks/useExitFormOptions";
 import { ExitHeader } from "./components/ExitHeader";
-import { ExitStatsRow } from "./components/ExitStatsRow";
 import { ExitFilterBar } from "./components/ExitFilterBar";
 import { ExitTable } from "./components/ExitTable";
 import { ExitFormModal } from "./components/ExitFormModal";
+import { ExitInterviewModal } from "./components/ExitInterviewModal";
 import { exportExitCSV } from "./exports/exportExitCSV";
 import { exportExitXLSX } from "./exports/exportExitXLSX";
 import { EMPTY_EXIT_FORM, exitToFormState, type EmployeeExit, type ExitFormState } from "./types";
@@ -21,7 +20,7 @@ import { EMPTY_EXIT_FORM, exitToFormState, type EmployeeExit, type ExitFormState
 export default function ExitPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { role } = usePermissions();
+  const { role, isAdmin, isSuperAdmin, canEdit, can } = usePermissions();
   const { canManageExitSettings } = useExitPermission();
   const { exitTypes } = useExitFormOptions();
   const { isPartnerBranchBlocked, targetBranch, userBranchId, userBranchName, branches } = useBranchScope();
@@ -33,51 +32,42 @@ export default function ExitPage() {
   const actorName = (user?.user_metadata?.full_name as string) || (user?.user_metadata?.display_name as string) || user?.email || "";
   const actorRole = role?.name || (user?.user_metadata?.role as string) || "";
 
-  // Data hook
+  const [showSalary, setShowSalary] = useState(false);
+  const [filterReasonType, setFilterReasonType] = useState("all");
+
   const {
-    filtered,
-    loading,
-    stats,
-    searchQuery,
-    setSearchQuery,
-    filterExitType,
-    setFilterExitType,
-    filterDateFrom,
-    setFilterDateFrom,
-    filterDateTo,
-    setFilterDateTo,
-    loadData,
+    filtered, loading, searchQuery, setSearchQuery,
+    filterExitType, setFilterExitType, loadData,
   } = useExitData();
 
-  // Mutations hook
   const {
-    saving,
-    createExit,
-    updateExit,
-    deleteExit,
-    uploadDocument,
+    saving, createExit, updateExit, deleteExit, uploadDocument,
   } = useExitMutations({ loadData, actorName, actorRole });
 
-  // Modal & Form state
   const [showModal, setShowModal] = useState(false);
   const [editingExit, setEditingExit] = useState<EmployeeExit | null>(null);
+  const [interviewExit, setInterviewExit] = useState<EmployeeExit | null>(null);
   const [form, setForm] = useState<ExitFormState>(EMPTY_EXIT_FORM);
 
-  // Open modal to create
+  const canManage = canEdit || isAdmin || isSuperAdmin;
+  const canViewEmployees = can("employees");
+  const canViewChangeStatus = can("change-statuses") || can("movements") || can("employees");
+  const canViewWarnings = can("warnings");
+  const canViewComplaints = can("complaints");
+
   const handleOpenRecord = useCallback(() => {
+    if (!canManage) return;
     setEditingExit(null);
     setForm(EMPTY_EXIT_FORM);
     setShowModal(true);
-  }, []);
+  }, [canManage]);
 
-  // Open modal to edit
   const handleEdit = useCallback((exit: EmployeeExit) => {
     setEditingExit(exit);
     setForm(exitToFormState(exit));
     setShowModal(true);
   }, []);
 
-  // Delete
   const handleDelete = useCallback(
     async (id: string) => {
       if (window.confirm("Are you sure you want to delete this exit record?")) {
@@ -87,16 +77,10 @@ export default function ExitPage() {
     [deleteExit]
   );
 
-  // Submit modal form
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      let success = false;
-      if (editingExit) {
-        success = await updateExit(editingExit.id, form);
-      } else {
-        success = await createExit(form);
-      }
+      const success = editingExit ? await updateExit(editingExit.id, form) : await createExit(form);
       if (success) {
         setShowModal(false);
         setEditingExit(null);
@@ -106,65 +90,64 @@ export default function ExitPage() {
     [editingExit, form, updateExit, createExit]
   );
 
-  // Exports
   const handleExportCSV = useCallback(() => exportExitCSV(filtered), [filtered]);
   const handleExportXLSX = useCallback(() => exportExitXLSX(filtered), [filtered]);
 
+  const displayedExits = filterReasonType === "all"
+    ? filtered
+    : filtered.filter((ex) => ex.reason_type === filterReasonType);
+
   if (isPartnerBranchBlocked) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-        <PartnerBranchPrivacyShield
-          moduleName="Exit Management"
-          userBranchName={targetBranch || ""}
-          hasNoBranch={false}
-        />
+      <div className="min-h-screen bg-white dark:bg-slate-900 p-4 sm:p-6 font-sans">
+        <PartnerBranchPrivacyShield moduleName="Exit Management" userBranchName={targetBranch || ""} hasNoBranch={false} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Header */}
+    <div className="min-h-screen bg-white dark:bg-slate-900 p-4 sm:p-6 font-sans">
       <ExitHeader
         onRecord={handleOpenRecord}
-        exits={filtered}
-        onExportCSV={handleExportCSV}
-        onExportXLSX={handleExportXLSX}
+        exits={displayedExits}
+        canViewEmployees={canViewEmployees}
+        canViewChangeStatus={canViewChangeStatus}
+        canViewWarnings={canViewWarnings}
+        canViewComplaints={canViewComplaints}
+        canManage={canManage}
         canManageSettings={canManageExitSettings}
+        canCreateExit={canManage}
         onOpenSettings={() => navigate("/exit/settings")}
       />
 
-      {/* Stats Cards */}
-      <ExitStatsRow
-        total={stats.total}
-        thisMonth={stats.thisMonth}
-        resignations={stats.resignations}
-        terminations={stats.terminations}
-      />
-
-      {/* Filters Bar */}
       <ExitFilterBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         filterExitType={filterExitType}
         setFilterExitType={setFilterExitType}
-        filterDateFrom={filterDateFrom}
-        setFilterDateFrom={setFilterDateFrom}
-        filterDateTo={filterDateTo}
-        setFilterDateTo={setFilterDateTo}
+        filterReasonType={filterReasonType}
+        setFilterReasonType={setFilterReasonType}
+        showSalary={showSalary}
+        onToggleSalary={() => setShowSalary(!showSalary)}
+        onExportCSV={handleExportCSV}
+        onExportXLSX={handleExportXLSX}
         exitTypeOptions={exitTypes}
       />
 
-      {/* Exits Table */}
-      <ExitTable
-        exits={filtered}
-        loading={loading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onRecord={handleOpenRecord}
-      />
+      <div className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 overflow-hidden">
+        <ExitTable
+          exits={displayedExits}
+          loading={loading}
+          showSalary={showSalary}
+          canManage={canManage}
+          canCreateExit={canManage}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onRecord={handleOpenRecord}
+          onInterview={(ex) => setInterviewExit(ex)}
+        />
+      </div>
 
-      {/* Form Modal */}
       <ExitFormModal
         isOpen={showModal}
         onClose={() => {
@@ -181,6 +164,16 @@ export default function ExitPage() {
         branchId={currentBranchId}
         branchName={currentBranchName}
       />
+
+      {interviewExit && (
+        <ExitInterviewModal
+          isOpen={Boolean(interviewExit)}
+          onClose={() => setInterviewExit(null)}
+          exitItem={interviewExit}
+        />
+      )}
     </div>
   );
 }
+
+

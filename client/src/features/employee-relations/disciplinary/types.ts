@@ -7,11 +7,16 @@ export interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  display_name?: string | null;
+  full_name?: string | null;
+  kh_name?: string | null;
   department: string;
   role: string;
+  position?: string | null;
   avatar_url: string | null;
   branch_id?: string | null;
   employee_id?: string | null;
+  branches?: { id?: string; name?: string } | null;
 }
 
 export type DisciplinarySeverity = "low" | "medium" | "high" | "critical";

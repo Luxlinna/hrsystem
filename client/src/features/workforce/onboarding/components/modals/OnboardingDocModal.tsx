@@ -2,6 +2,8 @@ import { memo } from "react";
 import type { OnboardingRequest, DocForm } from "../../types";
 import { STAGES } from "../../constants";
 
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+
 interface OnboardingDocModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,7 +39,7 @@ export const OnboardingDocModal = memo(function OnboardingDocModal({
 
   const stageLabel = STAGES.find((s) => s.key === selectedStage)?.label || selectedStage;
   const emp = selectedRequest.employees;
-  const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "New Hire";
+  const fullName = emp ? formatKhmerFullName(emp) : "New Hire";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

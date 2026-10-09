@@ -1,6 +1,8 @@
 import type { Employee, AccountStatus } from "../types";
 import { supabase } from "@/lib/supabase";
 import { formatDMY } from "../dateUtils";
+import { formatKhmerFullName } from "../nameUtils";
+import { resolveReportEmploymentStatus } from "../constants";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -15,9 +17,9 @@ export async function exportEmployeesXLSX(
 ): Promise<boolean> {
   const empMap = new Map<string, string>();
   employees.forEach((emp) => {
-    const name = emp.full_name || `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
-    if (emp.id && name) empMap.set(emp.id, name);
-    if (emp.employee_code && name) empMap.set(emp.employee_code, name);
+    const name = formatKhmerFullName(emp);
+    if (emp.id && name !== "—") empMap.set(emp.id, name);
+    if (emp.employee_code && name !== "—") empMap.set(emp.employee_code, name);
   });
 
   const missingIds = employees
@@ -30,8 +32,8 @@ export async function exportEmployeesXLSX(
       .select("id, first_name, last_name, full_name")
       .in("id", [...new Set(missingIds)]);
     (managers || []).forEach((m: any) => {
-      const name = m.full_name || `${m.first_name || ""} ${m.last_name || ""}`.trim();
-      if (m.id && name) empMap.set(m.id, name);
+      const name = formatKhmerFullName(m);
+      if (m.id && name !== "—") empMap.set(m.id, name);
     });
   }
 
@@ -49,7 +51,7 @@ export async function exportEmployeesXLSX(
     ? employees.map((e, index) => {
         const acc = accountStatus[e.email];
         const accountStatusValue = acc?.hasAccount ? "Active Account" : acc?.invited ? "Invited" : "No Account";
-        const fullName = e.full_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "—";
+        const fullName = formatKhmerFullName(e);
         const currency = e.contract_rate_currency || "USD";
         const contractEnd = e.contract_end_date || e.fdc_end_date || "Continuous";
         const bankName = e.bank_name || (e.bank_accounts?.[0]?.payment_method ?? "—");
@@ -92,7 +94,7 @@ export async function exportEmployeesXLSX(
           "Line Manager / Reports To": resolveManager(e),
           "Biometric User ID": e.biometric_user_id || "—",
           "Joining Date": e.join_date || e.start_date || "—",
-          "Employment Status": (e.status || "active").replace(/_/g, " ").toUpperCase(),
+          "Employment Status": resolveReportEmploymentStatus(e.status),
           "Contract Type": e.contract_type || "UDC",
           "Contract Effective Date": e.contract_effective_date || e.join_date || "—",
           "Contract End Date": contractEnd,

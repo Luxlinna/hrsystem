@@ -24,7 +24,7 @@ export function useOnboardingChecklist() {
       .then(({ data: rows }) => {
         const data = rows && rows.length > 0 ? rows[0] : null;
         if (data && (data.first_name || data.last_name)) {
-          setCurrentEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+          setCurrentEmployeeName(`${data.last_name} ${data.first_name}`.trim());
         }
       });
   }, [user?.email]);
@@ -34,7 +34,7 @@ export function useOnboardingChecklist() {
     (user?.user_metadata?.display_name as string) ||
     (user?.user_metadata?.full_name as string) ||
     (user?.user_metadata?.first_name && user?.user_metadata?.last_name
-      ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+      ? `${user.user_metadata.last_name} ${user.user_metadata.first_name}`
       : "") ||
     (user?.email ? user.email.split("@")[0] : "HR Manager");
 

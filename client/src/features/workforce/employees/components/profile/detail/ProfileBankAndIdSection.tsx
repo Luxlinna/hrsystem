@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import type { Employee } from "../../../types";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   employee: Employee;
@@ -111,7 +112,7 @@ export const ProfileBankAndIdSection = memo(function ProfileBankAndIdSection({
                     <td className="py-2 px-3 text-center">{idx + 1}</td>
                     <td className="py-2 px-4">{idItem.identification_type || "-"}</td>
                     <td className="py-2 px-4">{idItem.identification_number || "-"}</td>
-                    <td className="py-2 px-4">{idItem.expiration_date || "-"}</td>
+                    <td className="py-2 px-4">{formatDMY(idItem.expiration_date)}</td>
                   </tr>
                 ))
               )}

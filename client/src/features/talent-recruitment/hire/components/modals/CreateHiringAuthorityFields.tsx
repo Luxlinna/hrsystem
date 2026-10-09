@@ -3,6 +3,7 @@ import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
 import { useHrRecruiters } from "../../hooks/useHrRecruiters";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface Props {
   form: NewHiringRequestFormState;
@@ -30,7 +31,7 @@ export const CreateHiringAuthorityFields = memo(function CreateHiringAuthorityFi
           : {
               ...prev,
               assigned_recruiter_id: rec.id,
-              assigned_recruiter_name: `${rec.first_name} ${rec.last_name}`.trim(),
+              assigned_recruiter_name: formatKhmerFullName(rec),
             }
       );
     }
@@ -40,7 +41,7 @@ export const CreateHiringAuthorityFields = memo(function CreateHiringAuthorityFi
     if (form.hiring_manager_id && !form.jd_reporting_line) {
       const target = employees.find((e) => e.id === form.hiring_manager_id);
       if (target) {
-        const managerName = `${target.first_name} ${target.last_name}`.trim();
+        const managerName = formatKhmerFullName(target);
         const autoReports = target.role ? `${target.role} (${managerName})` : managerName;
         setForm((prev) => (prev.jd_reporting_line ? prev : { ...prev, jd_reporting_line: autoReports }));
       } else if (form.hiring_manager_name) {
@@ -51,7 +52,7 @@ export const CreateHiringAuthorityFields = memo(function CreateHiringAuthorityFi
 
   const handleSelectHiringManager = (empId: string) => {
     const target = employees.find((e) => e.id === empId);
-    const managerName = target ? `${target.first_name} ${target.last_name}`.trim() : "";
+    const managerName = target ? formatKhmerFullName(target) : "";
     const autoReports = target
       ? target.role
         ? `${target.role} (${managerName})`
@@ -71,7 +72,7 @@ export const CreateHiringAuthorityFields = memo(function CreateHiringAuthorityFi
     setForm((prev) => ({
       ...prev,
       assigned_recruiter_id: target ? target.id : "",
-      assigned_recruiter_name: target ? `${target.first_name} ${target.last_name}`.trim() : "",
+      assigned_recruiter_name: target ? formatKhmerFullName(target) : "",
     }));
   };
 

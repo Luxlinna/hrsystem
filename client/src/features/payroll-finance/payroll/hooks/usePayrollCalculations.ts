@@ -70,7 +70,7 @@ export function usePayrollCalculations(
 
   const chartData: CompensationChartItem[] = useMemo(() => {
     return filteredRecords.slice(0, 15).map((p) => ({
-      name: p.employees ? `${p.employees.first_name} ${p.employees.last_name[0]}.` : "—",
+      name: p.employees ? `${p.employees.last_name || ""} ${p.employees.first_name || ""}`.trim() : "—",
       base: +(p.base_salary / 1000).toFixed(1),
       bonus: +(p.bonus / 1000).toFixed(1),
       deductions: +(p.deductions / 1000).toFixed(1),

@@ -12,7 +12,7 @@ export function exportToolUsagesCSV(
   const headers = ["Tool Name", "Employee", "Department", "Action", "Executed At"];
   const rows = usages.map((u) => [
     `"${getToolName(u.tool_id).replace(/"/g, '""')}"`,
-    `"${u.employees ? `${u.employees.first_name} ${u.employees.last_name}` : ""}"`,
+    `"${u.employees ? `${u.employees.last_name} ${u.employees.first_name}` : ""}"`,
     `"${u.employees?.department || ""}"`,
     `"${u.action}"`,
     `"${u.created_at || ""}"`,

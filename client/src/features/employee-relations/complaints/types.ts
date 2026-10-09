@@ -56,7 +56,7 @@ export const EMPTY_COMPLAINT_FORM: ComplaintFormState = {
   type: "complaint",
   entry_date: new Date().toISOString().split("T")[0],
   target_to: "",
-  target_category: "Business Unit",
+  target_category: "Division",
   show_identity: true,
   subject: "",
   details: "",

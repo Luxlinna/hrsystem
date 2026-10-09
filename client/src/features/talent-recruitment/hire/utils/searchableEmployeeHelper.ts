@@ -12,7 +12,7 @@ export function processSearchableEmployees(
   });
 
   return ((empData as any[]) || []).map((emp) => {
-    const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim().toLowerCase();
+    const fullName = `${emp.last_name || ""} ${emp.first_name || ""}`.trim().toLowerCase();
     const cleanEmail = (emp.email || "").trim().toLowerCase();
     const appRole = roleMap.get(cleanEmail) || roleMap.get(fullName);
 

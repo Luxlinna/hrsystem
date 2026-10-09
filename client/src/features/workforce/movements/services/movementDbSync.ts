@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import type { EmployeeMovement } from "../types";
 import type { MovementEmployeeInput } from "./movementPayloadBuilder";
 
@@ -27,7 +28,7 @@ export async function persistMovementRecord(
       entity_type: "movement",
       entity_id: employee.id,
       actor_name: actorName,
-      description: `${newMovement.title} for ${employee.first_name} ${employee.last_name}`,
+      description: `${newMovement.title} for ${formatKhmerFullName(employee)}`,
       branch_id: newMovement.branch_id,
       metadata: {
         movement_type: newMovement.movement_type,
@@ -74,4 +75,62 @@ export async function persistMovementRecord(
   } catch {
     // Table may be awaiting migration
   }
+}
+
+export async function recordInitialJoiningMovement(
+  employee: any,
+  actorName: string = "HR Admin"
+): Promise<EmployeeMovement> {
+  const site =
+    employee.site ||
+    employee.code_bu ||
+    (Array.isArray(employee.branches) ? employee.branches[0]?.name : employee.branches?.name) ||
+    employee.work_locations?.name ||
+    "—";
+  const department = employee.department || employee.division || "—";
+  const role = employee.position || employee.role || employee.employee_level || "Staff";
+  const supervisor = employee.line_manager || employee.reports_to || "—";
+  const contractType = employee.contract_type || "PERMANENT (UDC)";
+  const employeeType = employee.employment_type || "Full Time";
+  const rawSalary = employee.basic_salary ?? employee.contract_rate ?? 0;
+  const rawSalaryAfter = employee.contract_rate_after ?? 0;
+  const remarks = employee.contract_remark || "Initial Employment Joining Record";
+  const joinDate = employee.join_date || employee.start_date || new Date().toISOString().split("T")[0];
+
+  const initialMovement: EmployeeMovement = {
+    id: `join-${employee.id}`,
+    employee_id: employee.id,
+    movement_type: "change_contract",
+    title: "Join",
+    effective_date: joinDate,
+    previous_values: {},
+    new_values: {
+      site,
+      department,
+      role,
+      contract_type: contractType,
+      employment_type: employeeType,
+      supervisor,
+      new_salary: rawSalary,
+      salary_after_contract: rawSalaryAfter,
+      basic_salary: rawSalary,
+    },
+    remarks,
+    created_by_name: actorName,
+    created_at: new Date().toISOString(),
+    employees: {
+      id: employee.id,
+      first_name: employee.first_name || "",
+      last_name: employee.last_name || "",
+      role: employee.role || employee.position || "Staff",
+      department: employee.department || "",
+      avatar_url: employee.avatar_url || null,
+      branch_id: employee.branch_id || null,
+      branches: employee.branches,
+      work_locations: employee.work_locations,
+    },
+  };
+
+  await persistMovementRecord(initialMovement, employee, {}, actorName);
+  return initialMovement;
 }

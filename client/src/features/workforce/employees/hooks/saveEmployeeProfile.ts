@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { normalizePhone, phoneToSyntheticEmail } from "@/lib/phoneUtils";
 import { formatPaddedPin } from "@/lib/biometricUtils";
 import { logActivity } from "@/lib/audit";
+import { formatKhmerFullName } from "../nameUtils";
 import type { Employee } from "../types";
 
 export interface SaveProfileParams {
@@ -50,7 +51,7 @@ export async function executeSaveEmployeeProfile({
       if (dupPhoneEmp) {
         toast(
           "Phone Number Already Registered",
-          `An employee (${dupPhoneEmp.first_name} ${dupPhoneEmp.last_name}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
+          `An employee (${formatKhmerFullName(dupPhoneEmp)}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
           "error"
         );
         setSaving(false);
@@ -72,7 +73,7 @@ export async function executeSaveEmployeeProfile({
       const dupEmailEmp = existingEmailRows[0];
       toast(
         "Email Already Registered",
-        `An employee (${dupEmailEmp.first_name} ${dupEmailEmp.last_name}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
+        `An employee (${formatKhmerFullName(dupEmailEmp)}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
         "error"
       );
       setSaving(false);
@@ -173,7 +174,7 @@ export async function executeSaveEmployeeProfile({
     const finalDisplayName =
       form.display_name?.trim() ||
       form.full_name?.trim() ||
-      `${form.first_name || ""} ${form.last_name || ""}`.trim();
+      `${form.last_name || ""} ${form.first_name || ""}`.trim();
 
     if (finalDisplayName && (cleanEmail || cleanPhone)) {
       const identifiers: string[] = [];
@@ -199,7 +200,7 @@ export async function executeSaveEmployeeProfile({
       entityId: id,
       actorName: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
       actorRole: roleName || "Unknown",
-      description: `Profile updated for ${form.first_name} ${form.last_name}`,
+      description: `Profile updated for ${formatKhmerFullName(form)}`,
     });
     loadEmployee(id);
   }

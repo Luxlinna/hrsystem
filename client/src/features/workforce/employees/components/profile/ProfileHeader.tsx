@@ -4,6 +4,7 @@ import type { Employee } from "../../types";
 import { getProfileStatusMeta } from "../../constants";
 import { DefaultAvatarSvg } from "@/components/DefaultAvatarSvg";
 import { ProfileQuickContacts } from "./ProfileQuickContacts";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface ProfileHeaderProps {
   employee: Employee;
@@ -25,6 +26,7 @@ export const ProfileHeader = memo(function ProfileHeader({
   onUploadAvatar,
 }: ProfileHeaderProps) {
   const statusMeta = getProfileStatusMeta(employee.status);
+  const fullName = formatKhmerFullName(employee);
 
   return (
     <>
@@ -39,7 +41,7 @@ export const ProfileHeader = memo(function ProfileHeader({
         </Link>
         <i className="ri-arrow-right-s-line" />
         <span className="text-gray-900 font-medium">
-          {employee.first_name} {employee.last_name}
+          {fullName}
         </span>
       </div>
 
@@ -53,7 +55,7 @@ export const ProfileHeader = memo(function ProfileHeader({
               {employee.avatar_url ? (
                 <img
                   src={employee.avatar_url}
-                  alt={employee.first_name}
+                  alt={fullName}
                   className="w-28 h-28 rounded-2xl object-cover border-2 border-white shadow-md ring-1 ring-gray-200"
                 />
               ) : (
@@ -88,7 +90,7 @@ export const ProfileHeader = memo(function ProfileHeader({
             {/* 2. Full Name + Position */}
             <div className="space-y-0.5">
               <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                <span>{employee.first_name} {employee.last_name}</span>
+                <span>{fullName}</span>
                 {employee.title && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                     {employee.title}

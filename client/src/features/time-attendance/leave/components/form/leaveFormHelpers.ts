@@ -17,7 +17,7 @@ export function findLineManager(
     const found = employees.find(
       (e) =>
         getLeaveEmployeeName(e).trim().toLowerCase() === myApproverName.trim().toLowerCase() ||
-        `${e.first_name || ""} ${e.last_name || ""}`.trim().toLowerCase() === myApproverName.trim().toLowerCase()
+        `${e.last_name || ""} ${e.first_name || ""}`.trim().toLowerCase() === myApproverName.trim().toLowerCase()
     );
     if (found) return found;
   }

@@ -74,7 +74,7 @@ export const BatchItemizedDrilldownModal = memo(function BatchItemizedDrilldownM
                     )}
                     <div>
                       <p className="font-bold text-gray-900">
-                        {emp ? `${emp.first_name} ${emp.last_name}` : "Employee"}
+                        {emp ? `${emp.last_name} ${emp.first_name}` : "Employee"}
                       </p>
                       <p className="text-[10px] text-gray-400">{emp?.role || "Staff"}</p>
                     </div>

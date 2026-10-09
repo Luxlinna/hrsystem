@@ -44,7 +44,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
             </div>
             <div className="min-w-0">
               <h4 className="font-extrabold text-sm text-gray-900 truncate">
-                {inspectLeave.employees?.first_name} {inspectLeave.employees?.last_name}
+                {inspectLeave.employees?.last_name} {inspectLeave.employees?.first_name}
               </h4>
               <p className="text-[11px] text-gray-400 font-medium truncate">
                 {inspectLeave.employees?.role || "Staff"} &middot; {inspectLeave.employees?.department || "General"}

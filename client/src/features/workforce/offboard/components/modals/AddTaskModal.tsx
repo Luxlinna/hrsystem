@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { AddTaskForm } from "../../types";
 import { TASK_TYPE_COLORS } from "../../constants";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -92,10 +93,9 @@ export const AddTaskModal = memo(function AddTaskModal({
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
               Target Completion Date
             </label>
-            <input
-              type="date"
+            <DatePickerDMY
               value={newTaskForm.due_date}
-              onChange={(e) => setNewTaskForm({ ...newTaskForm, due_date: e.target.value })}
+              onChange={(iso) => setNewTaskForm({ ...newTaskForm, due_date: iso })}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-medium focus:bg-white focus:outline-none focus:border-[#253C7D]"
             />
           </div>

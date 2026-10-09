@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { DisciplinaryRecord } from "../types";
 import { TYPE_CONFIG, SEVERITY_CONFIG, STATUS_CONFIG } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface DisciplinaryCardProps {
   record: DisciplinaryRecord;
@@ -95,13 +96,13 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
             <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-xl object-cover shrink-0" />
           ) : (
             <div className="w-8 h-8 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-black shrink-0">
-              {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
+              {emp ? (emp.last_name?.[0] || emp.first_name?.[0] || "?") : "?"}
             </div>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1">
               <p className="text-xs font-bold text-gray-900 truncate">
-                {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                {emp ? formatKhmerFullName(emp) : "—"}
               </p>
               {emp?.employee_id && (
                 <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-white border border-gray-200 text-gray-600 shrink-0">

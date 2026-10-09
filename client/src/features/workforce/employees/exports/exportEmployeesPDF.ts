@@ -1,4 +1,6 @@
 import type { Employee, AccountStatus } from "../types";
+import { formatKhmerFullName } from "../nameUtils";
+import { resolveReportEmploymentStatus } from "../constants";
 
 export function exportEmployeesPDF(
   employees: Employee[],
@@ -23,7 +25,7 @@ export function exportEmployeesPDF(
   const rows = employees.length > 0
     ? employees
         .map((e, idx) => {
-          const empName = e.full_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "Employee";
+          const empName = formatKhmerFullName(e);
           const code = e.employee_code || e.id.slice(0, 8);
           const khName = e.kh_name ? `<div style="font-size:7.5px;color:#64748b">${e.kh_name}</div>` : "";
           const pos = e.position || e.role || "Staff";
@@ -61,7 +63,7 @@ export function exportEmployeesPDF(
               <div style="font-size:7.5px;color:#64748b">End: ${contractEnd}</div>
             </td>
             <td style="text-align:center;font-size:8px;font-weight:700;${stColor}">
-              ${(e.status || "active").replace(/_/g, " ").toUpperCase()}
+              ${resolveReportEmploymentStatus(e.status)}
             </td>
             <td style="font-size:8px">
               <div style="color:#1e293b">${e.phone || "—"}</div>

@@ -4,6 +4,7 @@ import { useWarningTypeOptions } from "../hooks/useWarningTypeOptions";
 import { WarningEmployeeField } from "./WarningEmployeeField";
 import { WarningRichTextFields } from "./WarningRichTextFields";
 import { WarningAttachmentField } from "./WarningAttachmentField";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface CreateEmployeeWarningFormProps {
   onBack: () => void;
@@ -101,13 +102,12 @@ export const CreateEmployeeWarningForm = memo(function CreateEmployeeWarningForm
                 Warning Date <span className="text-rose-500">*</span>
               </label>
               <div className="w-full sm:w-[350px] relative">
-                <input
-                  type="date"
+                <DatePickerDMY
                   required
                   value={newRecord.warning_date || newRecord.incident_date}
-                  onChange={(e) => {
-                    handleFieldChange("warning_date", e.target.value);
-                    handleFieldChange("incident_date", e.target.value);
+                  onChange={(iso) => {
+                    handleFieldChange("warning_date", iso);
+                    handleFieldChange("incident_date", iso);
                   }}
                   className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-sky-500"
                 />

@@ -15,7 +15,7 @@ export async function exportToolAssignmentsXLSX(
 
   const data = assignments.length > 0
     ? assignments.map((a) => {
-        const empName = a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "Employee";
+        const empName = a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : "Employee";
         const dept = a.employees?.department || "—";
         const role = a.employees?.role || "—";
 

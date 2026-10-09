@@ -66,7 +66,7 @@ export const ToolsActivityAuditView = memo(function ToolsActivityAuditView({
               color: "text-slate-600 bg-slate-100",
             };
             const empName = usage.employees
-              ? `${usage.employees.first_name} ${usage.employees.last_name}`
+              ? `${usage.employees.last_name} ${usage.employees.first_name}`
               : "System Agent";
 
             return (

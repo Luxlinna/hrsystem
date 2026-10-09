@@ -1,4 +1,5 @@
 import React, { type RefObject } from "react";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface Props {
   empSearchQuery: string;
@@ -67,11 +68,11 @@ export const ChangeStatusEmployeeSection: React.FC<Props> = ({
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-600 dark:text-slate-300 uppercase">
-                          {emp.first_name?.[0] || ""}{emp.last_name?.[0] || ""}
+                          {emp.last_name?.[0] || emp.first_name?.[0] || "?"}
                         </div>
                         <div>
                           <div className="font-medium text-slate-800 dark:text-slate-200">
-                            {emp.first_name} {emp.last_name}
+                            {formatKhmerFullName(emp)}
                           </div>
                           <div className="text-[10px] text-slate-400">
                             {emp.branches?.name || emp.bu_full_name || emp.company || emp.code_bu || "HQ"} · {emp.department || "General"} · {emp.role || emp.position || "Staff"}

@@ -26,7 +26,7 @@ export function matchAssignmentToEmployee(a: any, emps: any[]) {
   // 2. Display name match (e.g. "Sophat T")
   if (displayName) {
     const match = emps.find(
-      (e) => `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase().trim() === displayName
+      (e) => `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase().trim() === displayName
     );
     if (match) return match;
   }

@@ -1,4 +1,6 @@
 import { memo, useState, useRef, useEffect } from "react";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
+import { formatDMY } from "../dateUtils";
 
 const DATE_OPTIONS = [
   { id: "all", label: "All Date" },
@@ -89,9 +91,9 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
   const getLabel = () => {
     if (selectedOption.startsWith("custom:")) {
       const parts = selectedOption.split(":");
-      if (parts[1] && parts[2]) return `${parts[1]} ~ ${parts[2]}`;
-      if (parts[1]) return `From ${parts[1]}`;
-      if (parts[2]) return `Until ${parts[2]}`;
+      if (parts[1] && parts[2]) return `${formatDMY(parts[1])} ~ ${formatDMY(parts[2])}`;
+      if (parts[1]) return `From ${formatDMY(parts[1])}`;
+      if (parts[2]) return `Until ${formatDMY(parts[2])}`;
       return "CUSTOM";
     }
     const matched = DATE_OPTIONS.find((o) => o.id === selectedOption);
@@ -100,7 +102,6 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
 
   return (
     <div className="relative" ref={popoverRef}>
-      {/* Trigger Button matching Screenshot */}
       <button
         type="button"
         onClick={handleOpen}
@@ -115,7 +116,6 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
         <i className="ri-arrow-down-s-line text-xs opacity-80" />
       </button>
 
-      {/* Popover Dropdown matching Screenshot */}
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
@@ -139,31 +139,27 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
             );
           })}
 
-          {/* Custom Date Range inputs */}
           {tempSelected === "custom" && (
             <div className="pt-2 pb-1 px-1 space-y-2 border-t border-slate-100 mt-1">
               <div>
                 <label className="text-[10px] text-slate-500 font-medium block mb-0.5">Start Date</label>
-                <input
-                  type="date"
+                <DatePickerDMY
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(iso) => setStartDate(iso)}
                   className="w-full text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
                 <label className="text-[10px] text-slate-500 font-medium block mb-0.5">End Date</label>
-                <input
-                  type="date"
+                <DatePickerDMY
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(iso) => setEndDate(iso)}
                   className="w-full text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
             </div>
           )}
 
-          {/* Bottom Actions: Apply & Cancel */}
           <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5">
             <button
               type="button"

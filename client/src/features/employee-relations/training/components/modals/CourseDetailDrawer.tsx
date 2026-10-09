@@ -249,7 +249,7 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
               <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
                 {courseEnrollments.map((enr) => {
                   const emp = enr.employees;
-                  const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown";
+                  const empName = emp ? `${emp.last_name} ${emp.first_name}` : "Unknown";
                   const st = ENROLL_STATUS_CONFIG[enr.status] || ENROLL_STATUS_CONFIG.enrolled;
 
                   return (

@@ -25,7 +25,7 @@ export const ToolMembersTab = memo(function ToolMembersTab({
       .filter((a) => {
         if (!search.trim()) return true;
         const q = search.toLowerCase().trim();
-        const name = `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`.toLowerCase();
+        const name = `${a.employees?.last_name || ""} ${a.employees?.first_name || ""}`.toLowerCase();
         const dept = (a.employees?.department || "").toLowerCase();
         return name.includes(q) || dept.includes(q);
       });
@@ -52,7 +52,7 @@ export const ToolMembersTab = memo(function ToolMembersTab({
         <div className="divide-y divide-gray-100">
           {toolAssignments.map((a) => {
             const emp = a.employees;
-            const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown";
+            const empName = emp ? `${emp.last_name} ${emp.first_name}` : "Unknown";
 
             return (
               <div

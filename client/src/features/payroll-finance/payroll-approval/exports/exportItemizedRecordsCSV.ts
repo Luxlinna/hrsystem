@@ -14,7 +14,7 @@ export function exportItemizedRecordsCSV(records: EmployeeItemRecord[]): boolean
   ];
 
   const rows = records.map((r) => {
-    const empName = r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown";
+    const empName = r.employees ? `${r.employees.last_name} ${r.employees.first_name}` : "Unknown";
     const dept = r.employees?.department || "";
     const role = r.employees?.role || "";
 

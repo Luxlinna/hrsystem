@@ -61,7 +61,7 @@ export const ScheduleMatrixTable = memo(function ScheduleMatrixTable({
                 Employee
               </th>
               <th className="sticky left-[288px] z-30 bg-white w-[160px] min-w-[160px] max-w-[160px] px-3 py-2.5 text-[11px] font-bold text-gray-700 border-b border-r-2 border-gray-300 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.06)]">
-                Designation
+                Position
               </th>
               {matrixViewMode === "timesheet" && (
                 <th className="sticky left-[448px] z-30 bg-white w-[26px] min-w-[26px] max-w-[26px] p-0 border-b border-r border-gray-200 text-center text-[8.5px] font-extrabold text-gray-400 font-mono select-none" title="S: Scheduled / C: Clocked / L: Deficit">

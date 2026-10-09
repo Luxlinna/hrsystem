@@ -29,7 +29,7 @@ export function exportNssfCSV(employees: NssfEmployee[]): void {
     idx + 1,
     e.id,
     e.nssf_number || "",
-    `${e.first_name} ${e.last_name}`,
+    `${e.last_name} ${e.first_name}`,
     e.kh_name || "",
     e.gender || "",
     e.nationality || "Cambodian",

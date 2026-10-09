@@ -81,7 +81,7 @@ export const TimelineViewContent = memo(function TimelineViewContent({
                 <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 bg-white group-hover:bg-slate-50/60 z-10 border-r border-gray-100">
                     <p className="font-extrabold text-gray-900 text-xs truncate">
-                      {emp.first_name} {emp.last_name}
+                      {emp.last_name} {emp.first_name}
                     </p>
                     <p className="text-[10px] text-gray-400 font-medium truncate">
                       {emp.department}

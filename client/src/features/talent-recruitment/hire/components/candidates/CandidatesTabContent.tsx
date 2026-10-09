@@ -127,7 +127,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-700">{c.job_postings?.title || "Direct"}</td>
                     <td className="px-5 py-3.5 whitespace-nowrap text-[11px] text-gray-600 font-medium">
-                      {c.assigned_recruiter ? `${c.assigned_recruiter.first_name} ${c.assigned_recruiter.last_name}` : "—"}
+                      {c.assigned_recruiter ? `${c.assigned_recruiter.last_name} ${c.assigned_recruiter.first_name}` : "—"}
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <select

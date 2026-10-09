@@ -102,7 +102,7 @@ export default function GeofenceCheckInAlert() {
         break_end_time: site?.break_end_time || null,
       };
 
-      const employeeName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || user.email || "Employee";
+      const employeeName = `${employee.last_name || ""} ${employee.first_name || ""}`.trim() || user.email || "Employee";
 
       // Condition 1: Skip if employee has outside work scheduled or active today
       const { data: outsideTasks } = await supabase

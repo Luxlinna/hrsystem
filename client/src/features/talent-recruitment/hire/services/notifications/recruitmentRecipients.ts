@@ -105,7 +105,7 @@ export async function getDefaultRecruiter(): Promise<{ id: string; name: string;
     const chosen = hrRecruiters[0] || employees[0];
     return {
       id: chosen.id,
-      name: `${chosen.first_name || ""} ${chosen.last_name || ""}`.trim(),
+      name: `${chosen.last_name || ""} ${chosen.first_name || ""}`.trim(),
       email: chosen.email || undefined,
     };
   } catch (err) {

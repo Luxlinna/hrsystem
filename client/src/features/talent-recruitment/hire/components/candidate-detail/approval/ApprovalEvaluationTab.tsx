@@ -141,7 +141,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
           : iv.employees
           ? [
               {
-                name: `${iv.employees.first_name} ${iv.employees.last_name}`.trim(),
+                name: `${iv.employees.last_name} ${iv.employees.first_name}`.trim(),
                 role: iv.employees.role || iv.employees.department || "Hiring Manager",
               },
             ]

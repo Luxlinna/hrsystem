@@ -14,7 +14,7 @@ export function exportPayrollPDF(
   const rows = records.length > 0
     ? records
         .map((r) => {
-          const empName = r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown Employee";
+          const empName = r.employees ? `${r.employees.last_name} ${r.employees.first_name}` : "Unknown Employee";
           const dept = r.employees?.department || "—";
           const role = r.employees?.role || "—";
           const gross = Number(r.base_salary || 0) + Number(r.bonus || 0);

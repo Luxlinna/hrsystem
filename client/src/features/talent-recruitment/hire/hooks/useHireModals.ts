@@ -134,7 +134,7 @@ export function useHireModals({
       panelMembers.length > 0
         ? panelMembers.map((m) => m.name)
         : iv.employees
-        ? [`${iv.employees.first_name || ""} ${iv.employees.last_name || ""}`.trim()]
+        ? [`${iv.employees.last_name || ""} ${iv.employees.first_name || ""}`.trim()]
         : [];
 
     setNewInterview({

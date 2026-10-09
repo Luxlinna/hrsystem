@@ -24,7 +24,7 @@ export const exportTasksCSV = (tasks: Task[], filename = "tasks_report.csv") => 
   const rows = tasks.map((t) => [
     escapeCSV(t.title),
     escapeCSV(t.description || ""),
-    escapeCSV(t.employees ? `${t.employees.first_name} ${t.employees.last_name}` : "Unassigned"),
+    escapeCSV(t.employees ? `${t.employees.last_name} ${t.employees.first_name}` : "Unassigned"),
     escapeCSV(t.employees?.department || "—"),
     escapeCSV(t.priority.toUpperCase()),
     escapeCSV(STATUS_CONFIG[t.status]?.label || t.status),

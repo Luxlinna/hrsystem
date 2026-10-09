@@ -2,6 +2,7 @@ import { memo, useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Employee } from "../../types";
 import { exportSingleEmployeePDF, exportSingleEmployeeXLSX } from "../../exportUtils";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface EmployeeDetailHeaderProps {
   employee?: Employee | null;
@@ -67,7 +68,7 @@ export const EmployeeDetailHeader = memo(function EmployeeDetailHeader({
         </h1>
         {employee && (
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {employee.full_name || `${employee.first_name || ""} ${employee.last_name || ""}`} &bull; {employee.employee_code || employee.id.slice(0, 8)}
+            {formatKhmerFullName(employee)} &bull; {employee.employee_code || employee.id.slice(0, 8)}
           </p>
         )}
       </div>

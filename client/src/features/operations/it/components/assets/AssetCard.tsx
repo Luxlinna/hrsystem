@@ -58,7 +58,7 @@ export const AssetCard = memo(function AssetCard({
                 <div className="w-5 h-5 rounded-full bg-[#253C7D]/10 text-[#253C7D] text-[9px] font-bold flex items-center justify-center shrink-0">
                   {initials(asset.employees.first_name, asset.employees.last_name)}
                 </div>
-                <span className="truncate">{asset.employees.first_name} {asset.employees.last_name}</span>
+                <span className="truncate">{asset.employees.last_name} {asset.employees.first_name}</span>
               </Link>
             ) : (
               <span className="text-gray-400 font-semibold italic">Unassigned (Pool)</span>

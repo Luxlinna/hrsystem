@@ -78,7 +78,7 @@ export const ComplaintCard = memo(function ComplaintCard({
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
                 <i className="ri-user-line text-slate-400" />
                 <span className="truncate">
-                  {record.employees.first_name} {record.employees.last_name}
+                  {record.employees.last_name} {record.employees.first_name}
                 </span>
               </span>
             ) : null}

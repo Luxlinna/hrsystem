@@ -1,6 +1,7 @@
 import React, { type RefObject } from "react";
 import { SALARY_TYPES } from "./types";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface Props {
   supervisor: string;
@@ -72,10 +73,10 @@ export const ChangeStatusCompFields: React.FC<Props> = ({
                 .filter((s) => {
                   const q = supervisor.trim().toLowerCase();
                   if (!q) return true;
-                  return `${s.first_name || ""} ${s.last_name || ""}`.toLowerCase().includes(q);
+                  return formatKhmerFullName(s).toLowerCase().includes(q);
                 })
                 .map((s) => {
-                  const fullName = `${s.first_name} ${s.last_name}`;
+                  const fullName = formatKhmerFullName(s);
                   return (
                     <button
                       key={s.id}

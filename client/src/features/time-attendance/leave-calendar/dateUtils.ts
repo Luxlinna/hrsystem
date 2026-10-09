@@ -5,12 +5,8 @@ export function toYMD(d: Date): string {
 export function formatDateDisplay(dStr: string): string {
   if (!dStr) return "";
   const [y, m, d] = dStr.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  if (!y || !m || !d) return dStr;
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
 }
 
 export function formatDateShort(dStr: string): string {

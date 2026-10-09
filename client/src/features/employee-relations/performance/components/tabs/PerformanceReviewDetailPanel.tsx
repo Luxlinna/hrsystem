@@ -34,7 +34,7 @@ export const PerformanceReviewDetailPanel = memo(function PerformanceReviewDetai
                 {selectedReview.quarter} {selectedReview.year} {selectedReview.review_type || "Review"}
               </p>
               <h3 className="text-base font-bold mt-0.5">
-                {selectedReview.employee?.first_name} {selectedReview.employee?.last_name}
+                {selectedReview.employee?.last_name} {selectedReview.employee?.first_name}
               </h3>
               <p className="text-[12px] text-white/80">{selectedReview.employee?.role}</p>
             </div>
@@ -109,7 +109,7 @@ export const PerformanceReviewDetailPanel = memo(function PerformanceReviewDetai
               Evaluator / Manager
             </p>
             <p className="text-[13px] text-gray-700">
-              {selectedReview.reviewer?.first_name} {selectedReview.reviewer?.last_name}
+              {selectedReview.reviewer?.last_name} {selectedReview.reviewer?.first_name}
             </p>
             {selectedReview.submitted_at && (
               <p className="text-[11px] text-gray-400 mt-1">

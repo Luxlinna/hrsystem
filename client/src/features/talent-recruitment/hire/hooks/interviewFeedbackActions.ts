@@ -3,6 +3,7 @@ import { toast } from "@/components/Toast";
 import type { Interview, Candidate, Job } from "../types";
 import { notifyInterviewScheduledOrCompleted } from "../services/notifications/recruitmentEventTriggers";
 import { isUserInvitedToInterview } from "../utils/interviewPanelHelper";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export async function executeSaveFeedback(params: {
   interview: Interview;
@@ -42,7 +43,7 @@ export async function executeSaveFeedback(params: {
   const matchedJob = jobs.find((j) => j.id === matchedCand?.job_posting_id);
   const recruiterId = matchedCand?.assigned_recruiter_id || null;
   const recruiterName = matchedCand?.assigned_recruiter
-    ? `${matchedCand.assigned_recruiter.first_name} ${matchedCand.assigned_recruiter.last_name}`
+    ? formatKhmerFullName(matchedCand.assigned_recruiter)
     : null;
 
   // Extract panel interviewers from interview notes if present
@@ -50,7 +51,7 @@ export async function executeSaveFeedback(params: {
   const feedbackPanelNames = panelMatch
     ? panelMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
     : interview.employees
-    ? [`${interview.employees.first_name} ${interview.employees.last_name}`.trim()]
+    ? [formatKhmerFullName(interview.employees)]
     : [];
 
   const panelIdsMatch = (interview.notes || "").match(/\[PanelIds:\s*(.*?)\]/i);

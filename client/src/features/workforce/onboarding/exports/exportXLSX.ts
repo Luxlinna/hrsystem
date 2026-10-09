@@ -1,6 +1,7 @@
 import type { OnboardingRequest, OnboardingDoc } from "../types";
 import { STAGES } from "../constants";
 import { getOverallProgress } from "../onboardingUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 // Helper for dynamic XLSX loading
 const getXLSX = async () => {
@@ -38,7 +39,7 @@ export const exportOnboardingXLSX = async (
     const completedDocs = reqDocs.filter((d) => d.status === "complete").length;
 
     return {
-      "Employee Name": req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "Unknown",
+      "Employee Name": req.employees ? formatKhmerFullName(req.employees) : "Unknown",
       Role: req.employees?.role || "—",
       Department: req.employees?.department || "—",
       Branch: req.employees?.branches?.name || "Headquarters",
@@ -54,7 +55,7 @@ export const exportOnboardingXLSX = async (
   // Sheet 2: Document / Checklist Breakdown
   const checklistData = documents.map((doc) => {
     const req = requests.find((r) => r.id === doc.onboarding_request_id);
-    const empName = req?.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "Unknown";
+    const empName = req?.employees ? formatKhmerFullName(req.employees) : "Unknown";
 
     return {
       "Employee Name": empName,

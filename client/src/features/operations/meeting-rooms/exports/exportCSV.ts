@@ -29,7 +29,7 @@ export function exportMeetingRoomsCSV(
         const floor = room ? `Floor ${getRoomFloor(room)}` : "—";
         const roomName = room?.name || "Room";
         const booker =
-          `${b.employees?.first_name || ""} ${b.employees?.last_name || ""}`.trim() ||
+          `${b.employees?.last_name || ""} ${b.employees?.first_name || ""}`.trim() ||
           b.booked_by ||
           "Unknown";
         const dept = b.employees?.department || "—";

@@ -44,7 +44,7 @@ export const EmployeeQuickDrawer = memo(function EmployeeQuickDrawer({
           )}
           <div>
             <p className="text-[13px] font-bold text-gray-900 dark:text-slate-100">
-              {selectedEmployee.first_name} {selectedEmployee.last_name}
+              {selectedEmployee.last_name} {selectedEmployee.first_name}
             </p>
             <p className="text-[11px] text-gray-500 dark:text-slate-400">{selectedEmployee.role}</p>
           </div>
@@ -74,7 +74,7 @@ export const EmployeeQuickDrawer = memo(function EmployeeQuickDrawer({
         <div className="flex justify-between">
           <span className="text-[11px] text-gray-400 dark:text-slate-500">Reports To</span>
           <span className="text-[11px] font-semibold text-gray-700 dark:text-slate-200">
-            {manager ? `${manager.first_name} ${manager.last_name}` : "No manager"}
+            {manager ? `${manager.last_name} ${manager.first_name}` : "No manager"}
           </span>
         </div>
       </div>

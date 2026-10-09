@@ -5,6 +5,7 @@ import { calculateDays, rangesOverlap } from "@/features/time-attendance/leave/d
 import { uploadMediaToS3 } from "@/lib/s3-storage";
 import { logActivity } from "@/lib/audit";
 import { notifyNewLeaveRequest } from "@/features/time-attendance/leave/services/leaveNotificationService";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import type {
   Employee,
   LeaveFormData,
@@ -120,9 +121,7 @@ export function useSelfServiceLeaveMutations({
 
         if (error) throw error;
 
-        const actorName = currentEmployee
-          ? currentEmployee.display_name?.trim() || currentEmployee.full_name?.trim() || `${currentEmployee.first_name} ${currentEmployee.last_name}`.trim()
-          : "Employee";
+        const actorName = currentEmployee ? formatKhmerFullName(currentEmployee) : "Employee";
 
         const actorRole = currentEmployee?.role || "Employee";
 

@@ -11,7 +11,7 @@ export function exportToolAssignmentsCSV(
 
   const headers = ["Employee", "Department", "Role", "Tool Name", "Status", "Granted Date", "Revoked Date"];
   const rows = assignments.map((a) => [
-    `"${a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "—"}"`,
+    `"${a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : "—"}"`,
     `"${a.employees?.department || ""}"`,
     `"${a.employees?.role || ""}"`,
     `"${getToolName(a.tool_id).replace(/"/g, '""')}"`,

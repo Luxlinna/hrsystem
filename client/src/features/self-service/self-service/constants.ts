@@ -45,7 +45,7 @@ export function getSelfServiceEmployeeName(
   return (
     employee.display_name?.trim() ||
     employee.full_name?.trim() ||
-    `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
+    `${employee.last_name || ""} ${employee.first_name || ""}`.trim() ||
     fallback
   );
 }

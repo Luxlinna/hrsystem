@@ -39,7 +39,7 @@ export const TaskMultiAssigneeSelect = memo(function TaskMultiAssigneeSelect({
   }, []);
 
   const filteredEmployees = (employees || []).filter((e) =>
-    `${e.first_name || ""} ${e.last_name || ""} ${e.department || ""}`
+    `${e.last_name || ""} ${e.first_name || ""} ${e.department || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
@@ -85,9 +85,9 @@ export const TaskMultiAssigneeSelect = memo(function TaskMultiAssigneeSelect({
               className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs"
             >
               <span className="w-4 h-4 rounded-full bg-[#253C7D] text-white text-[9px] flex items-center justify-center font-black">
-                {initials(`${emp.first_name} ${emp.last_name}`)}
+                {initials(`${emp.last_name} ${emp.first_name}`)}
               </span>
-              <span>{emp.first_name} {emp.last_name}</span>
+              <span>{emp.last_name} {emp.first_name}</span>
               <button
                 type="button"
                 onClick={(e) => removeId(emp.id, e)}
@@ -143,10 +143,10 @@ export const TaskMultiAssigneeSelect = memo(function TaskMultiAssigneeSelect({
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-6 h-6 rounded-full bg-[#253C7D]/15 text-[#253C7D] font-bold text-[10px] flex items-center justify-center shrink-0">
-                      {initials(`${emp.first_name} ${emp.last_name}`)}
+                      {initials(`${emp.last_name} ${emp.first_name}`)}
                     </span>
                     <div className="truncate">
-                      <p className="truncate font-bold">{emp.first_name} {emp.last_name}</p>
+                      <p className="truncate font-bold">{emp.last_name} {emp.first_name}</p>
                       <p className="text-[10px] text-gray-400 truncate">{emp.department || "Staff"}</p>
                     </div>
                   </div>

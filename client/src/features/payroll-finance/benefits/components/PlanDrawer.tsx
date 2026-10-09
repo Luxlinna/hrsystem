@@ -120,7 +120,7 @@ export const PlanDrawer = memo(function PlanDrawer({
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">
-                            {emp?.first_name} {emp?.last_name}
+                            {emp?.last_name} {emp?.first_name}
                           </p>
                           <p className="text-[10px] text-gray-400">{emp?.role} · {emp?.department}</p>
                         </div>

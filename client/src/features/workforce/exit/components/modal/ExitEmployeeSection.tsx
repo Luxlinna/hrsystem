@@ -1,5 +1,6 @@
 import { memo, useState, useRef, useEffect } from "react";
 import type { ExitEmployee, ExitFormState } from "../../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface ExitEmployeeSectionProps {
   form: ExitFormState;
@@ -43,7 +44,7 @@ export const ExitEmployeeSection = memo(function ExitEmployeeSection({
 
   const handleSelect = (emp: ExitEmployee) => {
     setSelectedEmp(emp);
-    const fullName = `${emp.first_name} ${emp.last_name}`.trim();
+    const fullName = formatKhmerFullName(emp);
     setEmpQuery(fullName);
     onChange("employee_id", emp.id);
     if (emp.contract_type && !form.contract_type) {
@@ -126,7 +127,7 @@ export const ExitEmployeeSection = memo(function ExitEmployeeSection({
                         >
                           <div>
                             <span className="font-bold text-slate-800">
-                              {emp.first_name} {emp.last_name}
+                              {emp.last_name} {emp.first_name}
                             </span>
                             {emp.kh_name && <span className="text-slate-400 ml-1.5 font-normal">({emp.kh_name})</span>}
                             <p className="text-[11px] text-slate-500">
@@ -152,7 +153,7 @@ export const ExitEmployeeSection = memo(function ExitEmployeeSection({
               {selectedEmp && (
                 <div className="mt-2 flex items-center justify-between bg-indigo-50/70 border border-indigo-100 rounded-lg px-3 py-1.5 text-xs text-[#253C7D]">
                   <span>
-                    Selected: <strong>{selectedEmp.first_name} {selectedEmp.last_name}</strong>
+                    Selected: <strong>{selectedEmp.last_name} {selectedEmp.first_name}</strong>
                     {selectedEmp.branches?.name ? ` (${selectedEmp.branches.name})` : ""}
                   </span>
                   <button

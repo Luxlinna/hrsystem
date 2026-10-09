@@ -15,7 +15,7 @@ export function exportEnrollmentsCSV(enrollments: Enrollment[]): boolean {
   ];
 
   const rows = enrollments.map((e) => {
-    const empName = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.trim() || "Employee";
+    const empName = `${e.employees?.last_name || ""} ${e.employees?.first_name || ""}`.trim() || "Employee";
     const dept = e.employees?.department || "—";
     const courseTitle = e.training_courses?.title || "Training Module";
 

@@ -143,7 +143,7 @@ export const MobileRoomScheduleList = memo(function MobileRoomScheduleList({
                       >
                         <div className="min-w-0">
                           <p className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">{b.title}</p>
-                          <p className="text-[10px] text-slate-400">{b.employees?.first_name || "Staff"} {b.employees?.last_name || ""}</p>
+                          <p className="text-[10px] text-slate-400">{b.employees?.last_name || ""} {b.employees?.first_name || "Staff"}</p>
                         </div>
                         <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 shrink-0">
                           {fmtTime(b.start_time)} – {fmtTime(b.end_time)}

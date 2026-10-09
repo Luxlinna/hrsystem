@@ -6,6 +6,7 @@ import { getStatusMeta } from "../constants";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import { formatBiometricId } from "@/lib/biometricUtils";
 import { DefaultAvatarSvg } from "@/components/DefaultAvatarSvg";
+import { formatKhmerFullName } from "../nameUtils";
 
 interface EmployeesGridViewProps {
   employees: Employee[];
@@ -93,7 +94,7 @@ export const EmployeesGridView = memo(function EmployeesGridView({
             </div>
             <div className="flex items-center justify-between gap-2 mb-1">
               <h3 className="text-base font-semibold text-gray-900 truncate">
-                {e.first_name} {e.last_name}
+                {formatKhmerFullName(e)}
               </h3>
               {e.biometric_user_id && (
                 <span

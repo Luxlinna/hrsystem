@@ -11,10 +11,10 @@ export function exportReviewsPDF(reviews: Review[], title = "Employee Performanc
   const rows = reviews.length > 0
     ? reviews
         .map((r) => {
-          const empName = `${r.employee?.first_name || ""} ${r.employee?.last_name || ""}`.trim() || "Employee";
+          const empName = `${r.employee?.last_name || ""} ${r.employee?.first_name || ""}`.trim() || "Employee";
           const dept = r.employee?.department || "—";
           const role = r.employee?.role || "Staff";
-          const reviewerName = r.reviewer ? `${r.reviewer.first_name} ${r.reviewer.last_name}` : "Manager";
+          const reviewerName = r.reviewer ? `${r.reviewer.last_name} ${r.reviewer.first_name}` : "Manager";
           const period = `${r.quarter} ${r.year}`;
           const scoreStr = r.overall_score ? `${r.overall_score.toFixed(1)} / 5.0` : "—";
           const status = (r.status || "draft").toUpperCase();

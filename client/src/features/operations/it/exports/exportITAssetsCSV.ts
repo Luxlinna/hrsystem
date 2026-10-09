@@ -8,7 +8,7 @@ export function exportITAssetsCSV(assets: ITAsset[]): boolean {
     `"${a.type}"`,
     `"${a.serial_number || ""}"`,
     `"${a.branches?.name || "General"}"`,
-    `"${a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : ""}"`,
+    `"${a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : ""}"`,
     `"${a.employees?.department || ""}"`,
     `"${a.status}"`,
   ]);

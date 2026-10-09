@@ -123,7 +123,7 @@ export const TimelineRoomRow = memo(function TimelineRoomRow({
                 e.stopPropagation();
                 onSelectBooking(b);
               }}
-              title={`${b.title} (${fmtTime(b.start_time)} - ${fmtTime(b.end_time)})\nBooked by: ${b.employees?.first_name || "Staff"} ${b.employees?.last_name || ""}\nStatus: ${b.status.toUpperCase()}`}
+              title={`${b.title} (${fmtTime(b.start_time)} - ${fmtTime(b.end_time)})\nBooked by: ${b.employees?.last_name || ""} ${b.employees?.first_name || "Staff"}\nStatus: ${b.status.toUpperCase()}`}
               style={{
                 left: `${leftPct}%`,
                 width: `${widthPct}%`,

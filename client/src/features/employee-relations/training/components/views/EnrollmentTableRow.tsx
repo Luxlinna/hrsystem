@@ -18,7 +18,7 @@ export const EnrollmentTableRow = memo(function EnrollmentTableRow({
 }: EnrollmentTableRowProps) {
   const emp = enrollment.employees;
   const course = enrollment.training_courses;
-  const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+  const empName = emp ? `${emp.last_name} ${emp.first_name}` : "Unknown Staff";
   const stConfig = ENROLL_STATUS_CONFIG[enrollment.status] || ENROLL_STATUS_CONFIG.enrolled;
 
   return (

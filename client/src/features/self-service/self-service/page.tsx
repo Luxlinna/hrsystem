@@ -8,6 +8,8 @@ import { SelfServiceExportMenu } from "./components/SelfServiceExportMenu";
 import { MobilePresenceAttendance } from "./components/MobilePresenceAttendance";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+
 export default function SelfServicePage() {
   const [searchParams] = useSearchParams();
   const {
@@ -63,11 +65,7 @@ export default function SelfServicePage() {
     );
   }
 
-  const employeeName = selectedEmployee
-    ? selectedEmployee.display_name?.trim() ||
-      selectedEmployee.full_name?.trim() ||
-      `${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim()
-    : "";
+  const employeeName = selectedEmployee ? formatKhmerFullName(selectedEmployee) : "";
 
   return (
     <div className="min-h-screen bg-[#F4F7FB] dark:bg-slate-950 px-0 md:px-6 lg:px-8 pt-0 md:pt-8 pb-24 font-sans">

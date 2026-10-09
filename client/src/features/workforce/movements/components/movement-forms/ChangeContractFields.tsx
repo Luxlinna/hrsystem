@@ -1,5 +1,6 @@
 import React from "react";
 import { CONTRACT_TYPES } from "../../constants";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface Props {
   contractType: string;
@@ -40,10 +41,9 @@ export const ChangeContractFields: React.FC<Props> = ({
         <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
           Contract Start Date
         </label>
-        <input
-          type="date"
+        <DatePickerDMY
           value={contractStartDate}
-          onChange={(e) => onContractStartDateChange(e.target.value)}
+          onChange={onContractStartDateChange}
           className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200"
         />
       </div>
@@ -51,10 +51,9 @@ export const ChangeContractFields: React.FC<Props> = ({
         <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
           Contract End Date (if FDC)
         </label>
-        <input
-          type="date"
+        <DatePickerDMY
           value={contractEndDate}
-          onChange={(e) => onContractEndDateChange(e.target.value)}
+          onChange={onContractEndDateChange}
           className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200"
         />
       </div>

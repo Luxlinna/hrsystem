@@ -31,7 +31,7 @@ export function useTaskFilters(tasks: Task[], currentEmployeeId?: string | null)
           const q = search.toLowerCase().trim();
           const matchTitle = t.title.toLowerCase().includes(q);
           const matchDesc = (t.description || "").toLowerCase().includes(q);
-          const matchAssignee = `${t.employees?.first_name || ""} ${t.employees?.last_name || ""}`
+          const matchAssignee = `${t.employees?.last_name || ""} ${t.employees?.first_name || ""}`
             .toLowerCase()
             .includes(q);
           return matchTitle || matchDesc || matchAssignee;

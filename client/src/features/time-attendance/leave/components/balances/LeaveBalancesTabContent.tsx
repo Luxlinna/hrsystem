@@ -38,7 +38,7 @@ export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
     if (balanceSearch.trim()) {
       const q = balanceSearch.toLowerCase().trim();
       const name = getLeaveEmployeeName(e).toLowerCase();
-      const firstLast = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+      const firstLast = `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase();
       const role = (e.role || "").toLowerCase();
       const dept = (e.department || "").toLowerCase();
       if (!name.includes(q) && !firstLast.includes(q) && !role.includes(q) && !dept.includes(q)) return false;

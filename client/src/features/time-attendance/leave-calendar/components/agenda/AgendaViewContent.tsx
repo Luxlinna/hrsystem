@@ -72,7 +72,7 @@ export const AgendaViewContent = memo(function AgendaViewContent({
                       </div>
                       <div>
                         <p className="font-extrabold text-gray-900 text-xs sm:text-[13px]">
-                          {l.employees?.first_name} {l.employees?.last_name}
+                          {l.employees?.last_name} {l.employees?.first_name}
                         </p>
                         <p className="text-[11px] text-gray-400 font-medium">
                           {l.employees?.role || "Staff"} &middot; {l.employees?.department || "General"}

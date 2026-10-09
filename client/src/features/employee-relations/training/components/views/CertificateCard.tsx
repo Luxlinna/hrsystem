@@ -11,7 +11,7 @@ export const CertificateCard = memo(function CertificateCard({
 }: CertificateCardProps) {
   const emp = enrollment.employees;
   const course = enrollment.training_courses;
-  const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+  const empName = emp ? `${emp.last_name} ${emp.first_name}` : "Unknown Staff";
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">

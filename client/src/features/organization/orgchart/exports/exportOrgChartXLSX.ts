@@ -11,12 +11,12 @@ export async function exportOrgChartXLSX(employees: Employee[], branchName?: str
   const data = employees.length > 0
     ? employees.map((e) => {
         const mgr = e.reports_to ? employeeMap.get(e.reports_to) : null;
-        const mgrName = mgr ? `${mgr.first_name} ${mgr.last_name}` : "Executive (None)";
+        const mgrName = mgr ? `${mgr.last_name} ${mgr.first_name}` : "Executive (None)";
         const directReportsCount = employees.filter((x) => x.reports_to === e.id).length;
 
         return {
           "Employee ID": e.id,
-          "Full Name": `${e.first_name} ${e.last_name}`,
+          "Full Name": `${e.last_name} ${e.first_name}`,
           Role: e.role,
           Department: e.department || "General",
           Branch: e.branches?.name || branchName || "Main Branch",

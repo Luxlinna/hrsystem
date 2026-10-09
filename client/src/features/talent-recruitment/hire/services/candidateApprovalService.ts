@@ -9,6 +9,7 @@ import {
   extractFeedbackFromInterviews,
   parseInterviewPanelFromNotes,
 } from "../utils/interviewPanelHelper";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export { generateApprovalFormNumber, initCandidateApproval };
 
@@ -75,7 +76,7 @@ export async function fetchBuEmployeesForCandidate(
           if (matched.length > 0) {
             return matched.map((e) => ({
               id: e.id,
-              name: `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+              name: formatKhmerFullName(e),
               role: e.role || e.department || "Employee",
               department: e.department || "",
               branch_id: e.branch_id,
@@ -85,7 +86,7 @@ export async function fetchBuEmployeesForCandidate(
         }
         return allEmps.map((e) => ({
           id: e.id,
-          name: `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+          name: formatKhmerFullName(e),
           role: e.role || e.department || "Employee",
           department: e.department || "",
           branch_id: e.branch_id,
@@ -97,7 +98,7 @@ export async function fetchBuEmployeesForCandidate(
 
     return data.map((e) => ({
       id: e.id,
-      name: `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+      name: formatKhmerFullName(e),
       role: e.role || e.department || "Employee",
       department: e.department || "",
       branch_id: e.branch_id,
@@ -142,7 +143,7 @@ export async function resolveSignatoryNamesForApproval(
           e.branch_id === branchId &&
           /(ceo|president|division\s*director|branch\s*admin|bu\s*admin|general\s*manager|admin)/i.test(e.role || "")
       );
-      if (branchCeo) ceoName = `${branchCeo.first_name || ""} ${branchCeo.last_name || ""}`.trim();
+      if (branchCeo) ceoName = formatKhmerFullName(branchCeo);
     }
     if (!ceoName) {
       const ceoUra = uras?.find((u) => {
@@ -153,7 +154,7 @@ export async function resolveSignatoryNamesForApproval(
     }
     if (!ceoName) {
       const ceoEmp = emps?.find((e) => /(ceo|president)/i.test(e.role || ""));
-      if (ceoEmp) ceoName = `${ceoEmp.first_name || ""} ${ceoEmp.last_name || ""}`.trim();
+      if (ceoEmp) ceoName = formatKhmerFullName(ceoEmp);
     }
 
     // 2. HR Manager (HR Division)
@@ -177,7 +178,7 @@ export async function resolveSignatoryNamesForApproval(
         hrEmps?.find((e) => /manager/i.test(e.role || "")) ||
         hrEmps?.find((e) => /sokkhoeurn/i.test(e.first_name || "")) ||
         hrEmps?.[0];
-      if (bestHr) hrManagerName = `${bestHr.first_name || ""} ${bestHr.last_name || ""}`.trim();
+      if (bestHr) hrManagerName = formatKhmerFullName(bestHr);
     }
 
     // 3. HR Admin Director (HR Division)
@@ -197,7 +198,7 @@ export async function resolveSignatoryNamesForApproval(
             /(hr.*director|head\s*of\s*hr|director)/i.test(e.role || "")
           );
         }) || emps?.find((e) => /(hr.*director|head\s*of\s*hr)/i.test(e.role || ""));
-      if (dirEmp) hrDirectorName = `${dirEmp.first_name || ""} ${dirEmp.last_name || ""}`.trim();
+      if (dirEmp) hrDirectorName = formatKhmerFullName(dirEmp);
     }
 
     // 4. Chairwoman
@@ -209,7 +210,7 @@ export async function resolveSignatoryNamesForApproval(
 
     if (!chairwomanName) {
       const chairEmp = emps?.find((e) => /(chair|board)/i.test(e.role || ""));
-      if (chairEmp) chairwomanName = `${chairEmp.first_name || ""} ${chairEmp.last_name || ""}`.trim();
+      if (chairEmp) chairwomanName = formatKhmerFullName(chairEmp);
     }
   } catch (err) {
     console.error("resolveSignatoryNamesForApproval error:", err);
@@ -291,7 +292,7 @@ export async function resolveCandidateRequisitionDetails(
     if (!hiringManager) {
       hiringManager =
         candidate?.assigned_recruiter
-          ? `${candidate.assigned_recruiter.first_name || ""} ${candidate.assigned_recruiter.last_name || ""}`.trim()
+          ? formatKhmerFullName(candidate.assigned_recruiter)
           : job?.branches?.manager_name || "";
     }
     if (!currentSalary && job?.salary_min) {
@@ -423,7 +424,7 @@ export async function fetchCandidateApproval(
                 : iv.employees
                 ? [
                     {
-                      name: `${iv.employees.first_name} ${iv.employees.last_name}`.trim(),
+                      name: formatKhmerFullName(iv.employees),
                       role: iv.employees.role || iv.employees.department || "Hiring Manager",
                     },
                   ]

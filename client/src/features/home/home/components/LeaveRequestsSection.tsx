@@ -38,7 +38,7 @@ export const LeaveRequestsSection = memo(function LeaveRequestsSection({
                 {/* Desktop row */}
                 <div className="hidden sm:grid grid-cols-4 px-4 py-3 border-t border-gray-50 text-[13px]">
                   <span className="text-gray-900 font-medium truncate">
-                    {l.employees ? `${l.employees.first_name} ${l.employees.last_name}` : "Unknown"}
+                    {l.employees ? `${l.employees.last_name} ${l.employees.first_name}` : "Unknown"}
                   </span>
                   <span className="text-gray-600 capitalize">{l.leave_type}</span>
                   <span className="text-gray-500">
@@ -61,7 +61,7 @@ export const LeaveRequestsSection = memo(function LeaveRequestsSection({
                 <div className="sm:hidden flex items-center justify-between px-4 py-3 border-t border-gray-50">
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold text-gray-900 truncate">
-                      {l.employees ? `${l.employees.first_name} ${l.employees.last_name}` : "Unknown"}
+                      {l.employees ? `${l.employees.last_name} ${l.employees.first_name}` : "Unknown"}
                     </p>
                     <p className="text-[11px] text-gray-500 capitalize mt-0.5">
                       {l.leave_type} &middot; {l.start_date?.slice(5)} – {l.end_date?.slice(5)}

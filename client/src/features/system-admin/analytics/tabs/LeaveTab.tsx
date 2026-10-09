@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import type { Employee, LeaveRequest } from "../types";
 import { COLORS } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface LeaveTabProps {
   leaveByDept: { name: string; days: number }[];
@@ -75,7 +76,7 @@ export const LeaveTab = memo(function LeaveTab({
                   const emp = empMap.get(l.employee_id);
                   return (
                     <tr key={l.id} className="border-t border-gray-50 hover:bg-gray-50">
-                      <td className="px-5 py-3 text-[13px] text-gray-900">{emp ? `${emp.first_name} ${emp.last_name}` : "—"}</td>
+                      <td className="px-5 py-3 text-[13px] text-gray-900">{emp ? formatKhmerFullName(emp) : "—"}</td>
                       <td className="px-5 py-3 text-[13px] text-gray-600 capitalize">{l.leave_type}</td>
                       <td className="px-5 py-3 text-[13px] text-gray-600">{emp?.department || "—"}</td>
                       <td className="px-5 py-3 text-[13px] text-gray-600">{l.start_date} → {l.end_date}</td>

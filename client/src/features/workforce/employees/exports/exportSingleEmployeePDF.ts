@@ -9,9 +9,10 @@ import {
   renderEducationAndWorkSection,
 } from "./single-pdf/singleEmployeePdfSections";
 import { supabase } from "@/lib/supabase";
+import { formatKhmerFullName } from "../nameUtils";
 
 export async function exportSingleEmployeePDF(employee: Employee): Promise<boolean> {
-  const fullName = employee.full_name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Employee";
+  const fullName = formatKhmerFullName(employee);
   const empCode = employee.employee_code || employee.id.slice(0, 8);
   const position = employee.position || employee.role || "Staff";
   const department = employee.department || "—";
@@ -33,7 +34,7 @@ export async function exportSingleEmployeePDF(employee: Employee): Promise<boole
       .eq("id", managerTarget)
       .maybeSingle();
     if (mgr) {
-      managerName = mgr.full_name || `${mgr.first_name || ""} ${mgr.last_name || ""}`.trim() || "—";
+      managerName = formatKhmerFullName(mgr);
     }
   } else if (employee.line_manager && !isUuid(employee.line_manager)) {
     managerName = employee.line_manager;

@@ -11,7 +11,7 @@ export async function exportNssfXLSX(employees: NssfEmployee[]): Promise<boolean
           No: idx + 1,
           "Employee ID": e.id,
           "NSSF Number": e.nssf_number || "—",
-          "Name (English)": `${e.first_name} ${e.last_name}`,
+          "Name (English)": `${e.last_name} ${e.first_name}`,
           "Name (Khmer)": e.kh_name || "—",
           Gender: e.gender || "—",
           Nationality: e.nationality || "Cambodian",

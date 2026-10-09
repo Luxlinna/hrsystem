@@ -90,7 +90,7 @@ export const EmployeeMovementCard = memo(function EmployeeMovementCard({
           <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] truncate" title={designation}>
             {designation}
           </p>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Designation</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Position</p>
         </div>
 
         {/* Row 1, Col 4 */}

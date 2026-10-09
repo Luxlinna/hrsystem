@@ -27,7 +27,7 @@ export const AssetAssignmentsTabContent: React.FC<AssetAssignmentsTabContentProp
       assetTag: a.asset_tag,
       type: a.type || a.category || "General",
       assignedTo: a.employees
-        ? `${a.employees.first_name} ${a.employees.last_name}`
+        ? `${a.employees.last_name} ${a.employees.first_name}`
         : a.employee_id
         ? "Assigned User"
         : null,

@@ -80,7 +80,7 @@ export function transformRowsWithMapping(
     const firstName = getMapped("firstName");
     const lastName = getMapped("lastName");
     if (!fullName && (firstName || lastName)) {
-      fullName = `${firstName} ${lastName}`.trim();
+      fullName = `${lastName} ${firstName}`.trim();
     }
     if (!fullName) errors.push("Missing Full Name");
 

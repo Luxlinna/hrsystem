@@ -41,7 +41,7 @@ export const LeaveDetailApproversInfo = memo(function LeaveDetailApproversInfo({
 
       const isSuperAdminPerson = (p: { role?: string | null; name?: string | null; first_name?: string | null; last_name?: string | null }) => {
         const roleStr = (p.role || "").toLowerCase();
-        const nameStr = `${p.name || ""}${p.first_name || ""} ${p.last_name || ""}`.toLowerCase();
+        const nameStr = `${p.name || ""}${p.last_name || ""} ${p.first_name || ""}`.toLowerCase();
         return roleStr.includes("super admin") || roleStr.includes("superadmin") || nameStr.includes("superadmin");
       };
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { MovementContractSalaryFields } from "./MovementContractSalaryFields";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 export interface MovementFormValues {
   title: string;
@@ -68,10 +69,9 @@ export const MovementFormFields: React.FC<Props> = ({
           <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">
             Effective Date <span className="text-rose-500">*</span>
           </label>
-          <input
-            type="date"
+          <DatePickerDMY
             value={values.effectiveDate}
-            onChange={(e) => onChange("effectiveDate", e.target.value)}
+            onChange={(val) => onChange("effectiveDate", val)}
             required
             className="w-full px-3 py-2 border rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
@@ -101,7 +101,7 @@ export const MovementFormFields: React.FC<Props> = ({
           />
         </div>
         <div>
-          <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Designation</label>
+          <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Position</label>
           <input
             type="text"
             value={values.designation}

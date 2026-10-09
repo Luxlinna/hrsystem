@@ -8,6 +8,7 @@ import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types"
 import { useOnboardingStageTransitions } from "./useOnboardingStageTransitions";
 import { buildDefaultDocumentInserts, buildDefaultTaskInserts } from "../onboardingUtils";
 import { useBranchScope } from "@/context/BranchContext";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface UseOnboardingJourneyMutationsProps {
   requests: OnboardingRequest[];
@@ -80,7 +81,7 @@ export function useOnboardingJourneyMutations({
       }
 
       const emp = employees.find((x) => x.id === startEmployeeId);
-      const empName = emp ? `${emp.first_name} ${emp.last_name}` : "the employee";
+      const empName = formatKhmerFullName(emp);
       toast("Journey Started", `Onboarding started for ${empName}`, "success");
 
       if (emp?.branch_id && selectedBranchId !== "all" && selectedBranchId !== emp.branch_id && isSuperAdmin) {
@@ -117,7 +118,7 @@ export function useOnboardingJourneyMutations({
 
   const handleDeleteRequest = useCallback(
     async (req: OnboardingRequest) => {
-      const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "this employee";
+      const empName = formatKhmerFullName(req.employees);
       if (!confirm(`Are you sure you want to remove the onboarding journey for ${empName}? This will delete this onboarding request and its documents.`)) return;
 
       try {

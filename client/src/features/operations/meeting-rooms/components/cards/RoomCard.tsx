@@ -131,7 +131,7 @@ export const RoomCard = memo(function RoomCard({
                 <div className="min-w-0">
                   <p className="font-extrabold text-slate-900 dark:text-slate-100 text-[11px] truncate">{b.title}</p>
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                    {b.employees?.first_name} {b.employees?.last_name}
+                    {b.employees?.last_name} {b.employees?.first_name}
                   </p>
                 </div>
                 <span className="text-[10px] font-bold text-[#253C7D] dark:text-sky-300 shrink-0">

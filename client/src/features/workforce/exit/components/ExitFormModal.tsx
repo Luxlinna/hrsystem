@@ -1,7 +1,9 @@
-import { memo, useCallback, useEffect } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import type { EmployeeExit, ExitFormState } from "../types";
 import { useExitEmployeeSearch } from "../hooks/useExitEmployeeSearch";
 import { useExitFormOptions } from "../hooks/useExitFormOptions";
+import { calculateExitNoticePeriod } from "../utils/noticePeriodUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import { ExitEmployeeSection } from "./modal/ExitEmployeeSection";
 import { ExitInfoSection } from "./modal/ExitInfoSection";
 import { ExitContractSection } from "./modal/ExitContractSection";
@@ -33,7 +35,7 @@ export const ExitFormModal = memo(function ExitFormModal({
   branchId,
   branchName,
 }: ExitFormModalProps) {
-  const { results, searching, search } = useExitEmployeeSearch(branchId);
+  const { results, searching, search } = useExitEmployeeSearch();
   const { exitTypes, reasonTypes, refreshOptions } = useExitFormOptions();
 
   const handleChange = useCallback((field: keyof ExitFormState, value: any) => {
@@ -41,20 +43,39 @@ export const ExitFormModal = memo(function ExitFormModal({
   }, [setForm]);
 
   const handleSearchEmployees = useCallback((q: string) => {
-    search(q, branchId);
-  }, [search, branchId]);
+    search(q);
+  }, [search]);
 
   useEffect(() => {
     if (isOpen) {
-      search("", branchId);
+      search("");
       refreshOptions();
     }
-  }, [isOpen, branchId, search, refreshOptions]);
+  }, [isOpen, search, refreshOptions]);
+
+  const selectedEmp = results.find((r) => r.id === form.employee_id);
+  const empStartDate =
+    editing?.employees?.start_date ||
+    editing?.employees?.join_date ||
+    editing?.employees?.contract_effective_date ||
+    selectedEmp?.start_date ||
+    selectedEmp?.join_date ||
+    selectedEmp?.contract_effective_date;
+
+  const empContractType =
+    form.contract_type ||
+    selectedEmp?.contract_type ||
+    editing?.employees?.contract_type ||
+    "";
+
+  const noticeValidation = useMemo(() => {
+    return calculateExitNoticePeriod(empStartDate, empContractType, form.last_working_day);
+  }, [empStartDate, empContractType, form.last_working_day]);
 
   if (!isOpen) return null;
 
   const currentEmpName = editing?.employees
-    ? `${editing.employees.first_name} ${editing.employees.last_name}`.trim()
+    ? formatKhmerFullName(editing.employees)
     : undefined;
 
   return (
@@ -73,9 +94,13 @@ export const ExitFormModal = memo(function ExitFormModal({
             <h3 className="text-base font-black text-slate-900">
               {editing ? "Edit Exit Requirement Form" : "Exit Requirement Form"}
             </h3>
-            {branchName && (
+            {(selectedEmp?.branches?.name || editing?.employees?.branches?.name) ? (
               <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
-                Business Unit: <span className="text-[#253C7D] font-bold">{branchName}</span>
+                Business Unit: <span className="text-[#253C7D] font-bold">{selectedEmp?.branches?.name || editing?.employees?.branches?.name}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                All Business Units
               </p>
             )}
           </div>
@@ -106,23 +131,13 @@ export const ExitFormModal = memo(function ExitFormModal({
               onChange={handleChange}
               exitTypes={exitTypes}
               reasonTypes={reasonTypes}
+              noticeValidation={noticeValidation}
+              onApplyMinDate={(d) => handleChange("last_working_day", d)}
             />
 
-            <ExitContractSection
-              form={form}
-              onChange={handleChange}
-            />
-
-            <ExitSeveranceSection
-              form={form}
-              onChange={handleChange}
-            />
-
-            <ExitAttachmentSection
-              form={form}
-              onChange={handleChange}
-              onUploadDocument={onUploadDocument}
-            />
+            <ExitContractSection form={form} onChange={handleChange} />
+            <ExitSeveranceSection form={form} onChange={handleChange} />
+            <ExitAttachmentSection form={form} onChange={handleChange} onUploadDocument={onUploadDocument} />
           </div>
 
           {/* Footer */}

@@ -1,5 +1,6 @@
 import type { Employee, AccountStatus } from "../types";
 import { toast } from "@/components/Toast";
+import { resolveReportEmploymentStatus } from "../constants";
 
 export function exportEmployeesCSV(
   employees: Employee[],
@@ -10,7 +11,7 @@ export function exportEmployeesCSV(
     "Last Name",
     "Email",
     "Phone",
-    "Role",
+    "Position",
     "Department",
     "Business Unit",
     "Status",
@@ -25,10 +26,10 @@ export function exportEmployeesCSV(
       e.last_name,
       e.email,
       e.phone || "",
-      e.role || "",
+      e.position || e.role || "",
       e.department || "",
       e.branches?.name || "Headquarters",
-      e.status,
+      resolveReportEmploymentStatus(e.status),
       e.join_date || "",
       accountStatusValue,
     ]

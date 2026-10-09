@@ -23,7 +23,7 @@ export function matchEmployeeSearch(e: SearchableEmployee, query: string): boole
   const tokens = cleanQ.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return true;
 
-  const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+  const fullName = `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase();
   const khName = (e.kh_name || "").toLowerCase();
   const email = (e.email || "").toLowerCase();
   const phone = (e.phone || "").toLowerCase();
@@ -78,7 +78,7 @@ export function compareEmployees(
   if (!sortField) {
     const idComp = (a.biometric_user_id || "").localeCompare(b.biometric_user_id || "", undefined, { numeric: true });
     if (idComp !== 0) return idComp;
-    return `${a.first_name || ""} ${a.last_name || ""}`.localeCompare(`${b.first_name || ""} ${b.last_name || ""}`);
+    return `${a.last_name || ""} ${a.first_name || ""}`.localeCompare(`${b.last_name || ""} ${b.first_name || ""}`);
   }
   if (sortField === "biometric_user_id") {
     const diff = (a.biometric_user_id || "").localeCompare(b.biometric_user_id || "", undefined, { numeric: true });
@@ -87,8 +87,8 @@ export function compareEmployees(
   let aVal = a[sortField] || "";
   let bVal = b[sortField] || "";
   if (sortField === "first_name") {
-    aVal = `${a.first_name || ""} ${a.last_name || ""}`;
-    bVal = `${b.first_name || ""} ${b.last_name || ""}`;
+    aVal = `${a.last_name || ""} ${a.first_name || ""}`;
+    bVal = `${b.last_name || ""} ${b.first_name || ""}`;
   } else if (sortField === "email") {
     aVal = a.email || a.phone || "";
     bVal = b.email || b.phone || "";

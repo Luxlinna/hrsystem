@@ -1,9 +1,9 @@
-import React, { memo, useState, useEffect } from "react";
+import React, { memo } from "react";
 import type { ComplaintFormState } from "../types";
 import { RichTextEditor } from "@/features/employee-relations/disciplinary/components/RichTextEditor";
-import { supabase } from "@/lib/supabase";
-import { DEPARTMENTS } from "@/features/workforce/employees/constants";
 import { ComplaintRecipientField } from "./ComplaintRecipientField";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
+import { useComplaintOrgData } from "../hooks/useComplaintOrgData";
 
 interface ComplaintInfoFieldsProps {
   form: ComplaintFormState;
@@ -16,79 +16,34 @@ export const ComplaintInfoFields = memo(function ComplaintInfoFields({
   form,
   setForm,
   branchId,
-  branchName,
 }: ComplaintInfoFieldsProps) {
-  const [buEmployees, setBuEmployees] = useState<{ id: string; name: string; dept: string }[]>([]);
-  const [buDepartments, setBuDepartments] = useState<string[]>(DEPARTMENTS);
-
-  useEffect(() => {
-    if (!branchId) return;
-    let cancelled = false;
-    supabase
-      .from("employees")
-      .select("id, first_name, last_name, department")
-      .eq("branch_id", branchId)
-      .is("deleted_at", null)
-      .order("first_name")
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        const emps = data.map((e) => ({
-          id: e.id,
-          name: `${e.first_name} ${e.last_name}`.trim(),
-          dept: e.department || "General",
-        }));
-        setBuEmployees(emps);
-        const dynamicDepts = Array.from(
-          new Set([...data.map((e) => e.department).filter(Boolean), ...DEPARTMENTS])
-        );
-        setBuDepartments(dynamicDepts);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [branchId]);
+  const { buDepartments, buDivisions } = useComplaintOrgData(branchId);
 
   const updateField = <K extends keyof ComplaintFormState>(field: K, value: ComplaintFormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCategoryChange = (cat: string) => {
-    if (cat === "Business Unit") {
-      setForm((prev) => ({
-        ...prev,
-        target_category: "Business Unit",
-        target_to: branchName || "Business Unit",
-        employee_id: "",
-      }));
-    } else if (cat === "Department") {
+    if (cat === "Department") {
       setForm((prev) => ({
         ...prev,
         target_category: "Department",
-        target_to: prev.target_category === "Department" ? prev.target_to : (buDepartments[0] || ""),
+        target_to: buDepartments[0] || "",
         employee_id: "",
       }));
     } else {
       setForm((prev) => ({
         ...prev,
-        target_category: "Employee",
-        target_to: "",
+        target_category: "Division",
+        target_to: buDivisions[0] || "",
         employee_id: "",
       }));
     }
   };
 
-  const handleEmployeeSelect = (val: string) => {
-    const matched = buEmployees.find((e) => e.name.toLowerCase() === val.trim().toLowerCase());
-    setForm((prev) => ({
-      ...prev,
-      target_to: val,
-      employee_id: matched ? matched.id : prev.employee_id,
-    }));
-  };
-
   return (
     <div>
-      <div className="text-sm font-bold text-[#0284c7] uppercase tracking-wide">
+      <div className="text-sm font-bold text-[#253C7D] uppercase tracking-wide">
         COMPLAINT/SUGGESTION INFO
       </div>
       <div className="border-b border-slate-200 mt-2 mb-6" />
@@ -100,25 +55,22 @@ export const ComplaintInfoFields = memo(function ComplaintInfoFields({
             Filing Date <span className="text-rose-500">*</span>
           </label>
           <div className="w-full sm:w-[350px]">
-            <input
-              type="date"
+            <DatePickerDMY
               required
               value={form.entry_date}
-              onChange={(e) => updateField("entry_date", e.target.value)}
+              onChange={(iso) => updateField("entry_date", iso)}
               className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
 
-        {/* Complaint/Suggestion To (Own BU Scoped) */}
+        {/* Complaint/Suggestion To (Division / Department) */}
         <ComplaintRecipientField
           form={form}
           updateField={updateField}
-          branchName={branchName}
+          buDivisions={buDivisions}
           buDepartments={buDepartments}
-          buEmployees={buEmployees}
           onCategoryChange={handleCategoryChange}
-          onEmployeeSelect={handleEmployeeSelect}
         />
 
         {/* Subject */}

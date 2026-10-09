@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import type { Employee } from "../../../types";
 import { formatDMY } from "../../../dateUtils";
+import { formatKhmerFullName } from "../../../nameUtils";
 
 interface Props {
   employee: Employee;
@@ -11,11 +12,7 @@ export const ProfilePersonalInfoSection = memo(function ProfilePersonalInfoSecti
 }: Props) {
   const [showDob, setShowDob] = useState(false);
 
-  const displayAs =
-    `${employee.last_name || ""} ${employee.first_name || ""}`.trim() ||
-    employee.display_name ||
-    employee.full_name ||
-    "-";
+  const displayAs = formatKhmerFullName(employee);
 
   const enrolledId = employee.biometric_user_id || employee.employee_code || "-";
   const paymentMethod = employee.bank_accounts?.[0]?.payment_method || "-";

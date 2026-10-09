@@ -3,6 +3,7 @@ import type { Employee } from "../types";
 import { getJobStatusBadge, getBranchCode } from "../constants";
 import { EmployeeInfoCell, DepartmentLocationCell } from "./table/EmployeeRowCells";
 import { EmployeeActionDropdown } from "./table/EmployeeActionDropdown";
+import { formatKhmerFullName } from "../nameUtils";
 
 interface EmployeesTableRowProps {
   employee: Employee;
@@ -50,7 +51,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
   const buName = e.branches?.name || e.bu_full_name || (e as any).company || "";
   const buCode = e.code_bu || (buName ? getBranchCode(buName) : "HQ");
   const employeeCode = e.employee_code || e.id.slice(0, 8);
-  const fullName = e.full_name || e.display_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "-";
+  const fullName = formatKhmerFullName(e);
   const designation = e.position || e.role || "Staff";
   const empType = e.employment_type || "Full Time";
   const department = e.department || "—";

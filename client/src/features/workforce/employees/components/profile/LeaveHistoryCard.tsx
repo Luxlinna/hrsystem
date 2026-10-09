@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { formatDMY } from "../../dateUtils";
 
 interface LeaveHistoryCardProps {
   leaveRequests: any[];
@@ -23,7 +24,7 @@ export const LeaveHistoryCard = memo(function LeaveHistoryCard({
               <div key={l.id} className="grid grid-cols-4 px-4 py-3 border-t border-gray-50 text-[13px]">
                 <span className="capitalize">{l.leave_type}</span>
                 <span className="text-gray-600">
-                  {l.start_date?.slice(5)} - {l.end_date?.slice(5)}
+                  {formatDMY(l.start_date)} - {formatDMY(l.end_date)}
                 </span>
                 <span
                   className={`capitalize font-medium ${
@@ -36,7 +37,7 @@ export const LeaveHistoryCard = memo(function LeaveHistoryCard({
                 >
                   {l.status}
                 </span>
-                <span className="text-gray-500">{new Date(l.created_at).toLocaleDateString()}</span>
+                <span className="text-gray-500">{formatDMY(l.created_at)}</span>
               </div>
             ))}
           </div>

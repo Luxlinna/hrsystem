@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { BasicInfoSectionProps } from "./types";
 import { formatDMY } from "../../../dateUtils";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 export const ProfileDemographicFields = memo(function ProfileDemographicFields({
   employee,
@@ -34,10 +35,9 @@ export const ProfileDemographicFields = memo(function ProfileDemographicFields({
           Date of Birth
         </label>
         {editing ? (
-          <input
-            type="date"
+          <DatePickerDMY
             value={form.date_of_birth || ""}
-            onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
+            onChange={(iso) => setForm({ ...form, date_of_birth: iso })}
             className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
           />
         ) : (

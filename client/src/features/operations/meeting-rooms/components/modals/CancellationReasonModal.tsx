@@ -37,7 +37,7 @@ export const CancellationReasonModal = memo(function CancellationReasonModal({
   const handleConfirm = async () => {
     const finalReason = reason.trim() || (isReject ? "Rejected by Admin" : "Cancelled by Admin");
     const actorName = currentEmployee
-      ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
+      ? `${currentEmployee.last_name} ${currentEmployee.first_name}`
       : "Management";
 
     let targetBookingId = booking.id;

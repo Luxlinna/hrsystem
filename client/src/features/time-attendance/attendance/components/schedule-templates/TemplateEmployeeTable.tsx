@@ -30,8 +30,8 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
   const filteredAssigned = useMemo(() => {
     const q = empSearch.toLowerCase();
     return assignedEmployees.filter((e) => {
-      const empName = (e.display_name || e.full_name || `${e.first_name} ${e.last_name}`).toLowerCase();
-      const match = !q || empName.includes(q) || `${e.first_name} ${e.last_name}`.toLowerCase().includes(q) ||
+      const empName = (e.display_name || e.full_name || `${e.last_name} ${e.first_name}`).toLowerCase();
+      const match = !q || empName.includes(q) || `${e.last_name} ${e.first_name}`.toLowerCase().includes(q) ||
         (e.employee_code || e.biometric_user_id || "").toLowerCase().includes(q);
       return match && (deptFilter === "all" || e.department?.toLowerCase() === deptFilter.toLowerCase());
     });
@@ -120,7 +120,7 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
               <th className="py-2.5 px-3">Employee Code</th>
               <th className="py-2.5 px-3">Employee Name</th>
               <th className="py-2.5 px-3">Department</th>
-              <th className="py-2.5 px-3">Designation</th>
+              <th className="py-2.5 px-3">Position</th>
               <th className="py-2.5 px-3">Site / BU</th>
               <th className="py-2.5 px-3 w-16 text-center">Action</th>
             </tr>
@@ -158,7 +158,7 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
                         )}
                       </div>
                       <span className="font-bold text-gray-900 dark:text-slate-100">
-                        {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name} ${emp.last_name}`}
+                        {emp.display_name?.trim() || emp.full_name?.trim() || `${emp.last_name} ${emp.first_name}`}
                       </span>
                     </div>
                   </td>

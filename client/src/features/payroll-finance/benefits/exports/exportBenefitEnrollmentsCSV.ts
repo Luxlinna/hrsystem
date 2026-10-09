@@ -12,7 +12,7 @@ export function exportBenefitEnrollmentsCSV(enrollments: Enrollment[]): boolean 
   ];
 
   const rows = enrollments.map((e) => [
-    `"${e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : "—"}"`,
+    `"${e.employees ? `${e.employees.last_name} ${e.employees.first_name}` : "—"}"`,
     `"${e.employees?.department || ""}"`,
     `"${e.employees?.role || ""}"`,
     `"${e.benefit_plans?.name || ""}"`,

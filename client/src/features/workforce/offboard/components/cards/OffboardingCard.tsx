@@ -4,6 +4,8 @@ import { OffboardingProgressStepper } from "./OffboardingProgressStepper";
 import { OffboardingTaskList } from "./OffboardingTaskList";
 import { STATUS_CONFIG } from "../../constants";
 import { initials, formatRelativeDays } from "../../offboardUtils";
+import { formatDMY } from "@/features/workforce/employees/dateUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface OffboardingCardProps {
   offboarding: Offboarding;
@@ -23,7 +25,7 @@ export const OffboardingCard = memo(function OffboardingCard({
   onDeleteOffboarding,
 }: OffboardingCardProps) {
   const emp = offboarding.employees;
-  const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+  const fullName = emp ? formatKhmerFullName(emp) : "Unknown Staff";
   const statusCfg = STATUS_CONFIG[offboarding.status] || STATUS_CONFIG.notice_period;
 
   return (
@@ -70,7 +72,7 @@ export const OffboardingCard = memo(function OffboardingCard({
           <div className="flex items-center justify-between">
             <span className="text-gray-400 font-medium">Last Working Day:</span>
             <span className="font-extrabold text-gray-900">
-              {offboarding.last_day ? new Date(offboarding.last_day).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+              {formatDMY(offboarding.last_day)}
             </span>
           </div>
           <div className="flex items-center justify-between">

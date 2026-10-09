@@ -111,7 +111,7 @@ export const ApplyMovementModal: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <i className="ri-route-line text-sky-600 dark:text-sky-400 font-bold" />
             <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">
-              Apply Employee Movement &mdash; {employee.first_name} {employee.last_name}
+              Apply Employee Movement &mdash; {employee.last_name} {employee.first_name}
             </h3>
           </div>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 text-lg">

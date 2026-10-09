@@ -38,7 +38,7 @@ export const BatchEnrollModal = memo(function BatchEnrollModal({
   const filtered = employees.filter((emp) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
-    return `${emp.first_name} ${emp.last_name} ${emp.role || ""} ${emp.department || ""}`.toLowerCase().includes(q);
+    return `${emp.last_name} ${emp.first_name} ${emp.role || ""} ${emp.department || ""}`.toLowerCase().includes(q);
   });
 
   const toggle = (id: string) =>
@@ -207,7 +207,7 @@ export const BatchEnrollModal = memo(function BatchEnrollModal({
                           {/* Name + role */}
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-bold truncate ${sel ? "text-[#253C7D]" : "text-gray-900"}`}>
-                              {emp.first_name} {emp.last_name}
+                              {emp.last_name} {emp.first_name}
                             </p>
                             <p className="text-[11px] text-gray-400 truncate">
                               {[emp.role, emp.department].filter(Boolean).join(" · ") || "—"}

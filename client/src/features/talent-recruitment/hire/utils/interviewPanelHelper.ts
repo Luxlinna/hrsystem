@@ -2,6 +2,8 @@
  * Helper to encode and decode multiple invited BU interviewers in interview notes
  */
 
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+
 export interface PanelMemberSummary {
   id?: string;
   name: string;
@@ -180,7 +182,7 @@ export function extractFeedbackFromInterviews(interviews: any[] = []): {
 
   for (const iv of completed) {
     const defaultEvaluatorName = iv.employees
-      ? `${iv.employees.first_name || ""} ${iv.employees.last_name || ""}`.trim()
+      ? formatKhmerFullName(iv.employees)
       : "Evaluator";
     const defaultRole = iv.employees?.role || iv.type || "Interview Panel";
     const defaultScoreStr = iv.score ? `★ ${iv.score}/5` : "";
@@ -339,7 +341,7 @@ export function isUserInvitedToInterview(params: {
 
   // 5. Match by primary interviewer employee name if ID is missing or mismatched
   if (interview.employees && actorName) {
-    const fullName = `${interview.employees.first_name || ""} ${interview.employees.last_name || ""}`.trim().toLowerCase();
+    const fullName = formatKhmerFullName(interview.employees).toLowerCase();
     const cleanActor = actorName.trim().toLowerCase();
     if (fullName && cleanActor && (fullName === cleanActor || fullName.includes(cleanActor) || cleanActor.includes(fullName))) {
       return true;

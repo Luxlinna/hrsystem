@@ -59,7 +59,7 @@ export function useEmployeesData({
         formatted.sort((a, b) => {
           const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
           if (idComp !== 0) return idComp;
-          return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+          return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
         });
 
         setEmployees(formatted);

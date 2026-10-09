@@ -2,6 +2,8 @@ import type { OnboardingRequest, OnboardingDoc } from "../types";
 import { STAGES } from "../constants";
 import { getOverallProgress } from "../onboardingUtils";
 
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+
 const getStageLabel = (stageKey: string) => {
   const match = STAGES.find((s) => s.key === stageKey);
   return match?.label || stageKey;
@@ -34,7 +36,7 @@ export const exportOnboardingPDF = (
 
   const rows = requests
     .map((req) => {
-      const name = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "Unknown";
+      const name = req.employees ? formatKhmerFullName(req.employees) : "Unknown";
       const role = req.employees?.role || "—";
       const dept = req.employees?.department || "—";
       const branch = req.employees?.branches?.name || "Headquarters";

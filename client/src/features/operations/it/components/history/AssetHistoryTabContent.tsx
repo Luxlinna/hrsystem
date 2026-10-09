@@ -42,7 +42,7 @@ export const AssetHistoryTabContent: React.FC<AssetHistoryTabContentProps> = ({
           assetName: a.name,
           action: "Assigned",
           performedBy: "IT Admin",
-          details: `Dispatched to ${a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "Staff"}`,
+          details: `Dispatched to ${a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : "Staff"}`,
         });
       }
 

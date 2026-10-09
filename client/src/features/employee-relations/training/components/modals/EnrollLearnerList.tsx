@@ -51,7 +51,7 @@ export const EnrollLearnerList = memo(function EnrollLearnerList({
           filteredEmployees.map((emp) => {
             const isAlreadyEnrolled = alreadyEnrolledIds.has(emp.id);
             const isSelected = enrollEmployeeIds.includes(emp.id);
-            const name = `${emp.first_name} ${emp.last_name}`;
+            const name = `${emp.last_name} ${emp.first_name}`;
 
             return (
               <div

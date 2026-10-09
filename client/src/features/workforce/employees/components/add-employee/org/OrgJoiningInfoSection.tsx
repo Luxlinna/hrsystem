@@ -4,6 +4,8 @@ import type { ModalManagerEmployee } from "../types";
 import { OrgLocationFields } from "./OrgLocationFields";
 import { OrgCompensationFields } from "./OrgCompensationFields";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
+import { formatKhmerFullName } from "../../../nameUtils";
 
 interface OrgJoiningInfoSectionProps {
   form: EmployeeFormState;
@@ -58,11 +60,13 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             Joining Date <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <input
-              type="date"
+            <DatePickerDMY
               required
               value={form.join_date || form.start_date || ""}
-              onChange={(e) => { onChange("join_date", e.target.value); onChange("start_date", e.target.value); }}
+              onChange={(val) => {
+                onChange("join_date", val);
+                onChange("start_date", val);
+              }}
               className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />
           </div>
@@ -158,14 +162,14 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             <SearchableSelect
               options={buManagers.map((m) => ({
                 value: m.id,
-                label: `${m.first_name} ${m.last_name}`.trim(),
+                label: formatKhmerFullName(m),
                 sublabel: m.realRole || m.role || m.position || m.department || "Staff",
               }))}
               value={form.reports_to || form.line_manager || ""}
               onChange={(val) => {
-                const matched = buManagers.find((m) => m.id === val || `${m.first_name} ${m.last_name}`.trim() === val);
+                const matched = buManagers.find((m) => m.id === val || formatKhmerFullName(m) === val);
                 onChange("reports_to", matched?.id || val || "");
-                onChange("line_manager", matched ? `${matched.first_name} ${matched.last_name}`.trim() : val || "");
+                onChange("line_manager", matched ? formatKhmerFullName(matched) : val || "");
               }}
               placeholder="Search / Select Supervisor (Line Manager)..."
               searchPlaceholder="Type name or role to search..."

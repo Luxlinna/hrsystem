@@ -9,6 +9,7 @@ import { usePermissions, isBootstrapAdminEmail } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import GeofenceCheckInAlert from "@/components/GeofenceCheckInAlert";
 import UrgentAnnouncementAlert from "@/components/UrgentAnnouncementAlert";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 function getRouteIndex(pathname: string, search: string): number {
   const currentTab = new URLSearchParams(search).get("tab");
@@ -106,6 +107,7 @@ function LayoutContent() {
       </div>
       <GeofenceCheckInAlert />
       <UrgentAnnouncementAlert />
+      <ScrollToTopButton />
     </div>
   );
 }

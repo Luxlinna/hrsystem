@@ -7,10 +7,10 @@ const getXLSX = async () => {
 export async function exportReviewsXLSX(reviews: Review[]): Promise<boolean> {
   const data = reviews.length > 0
     ? reviews.map((r) => {
-        const empName = `${r.employee?.first_name || ""} ${r.employee?.last_name || ""}`.trim() || "Employee";
+        const empName = `${r.employee?.last_name || ""} ${r.employee?.first_name || ""}`.trim() || "Employee";
         const dept = r.employee?.department || "—";
         const role = r.employee?.role || "Staff";
-        const reviewerName = r.reviewer ? `${r.reviewer.first_name} ${r.reviewer.last_name}` : "Manager";
+        const reviewerName = r.reviewer ? `${r.reviewer.last_name} ${r.reviewer.first_name}` : "Manager";
 
         return {
           "Review ID": r.id,

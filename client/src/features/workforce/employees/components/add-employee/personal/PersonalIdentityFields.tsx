@@ -8,12 +8,12 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
   const handleNameChange = (first: string, last: string) => {
     onChange("first_name", first);
     onChange("last_name", last);
-    const full = `${first} ${last}`.trim();
+    const full = `${last} ${first}`.trim();
     onChange("full_name", full);
 
-    const format = form.display_name_format || "first_last";
-    if (format === "last_first") {
-      onChange("display_name", `${last} ${first}`.trim());
+    const format = form.display_name_format || "last_first";
+    if (format === "first_last") {
+      onChange("display_name", `${first} ${last}`.trim());
     } else {
       onChange("display_name", full);
     }
@@ -82,23 +82,23 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
         </label>
         <div className="sm:col-span-2">
           <select
-            value={form.display_name_format || "first_last"}
+            value={form.display_name_format || "last_first"}
             onChange={(e) => {
               const fmt = e.target.value;
               onChange("display_name_format", fmt);
-              if (fmt === "last_first") {
+              if (fmt === "first_last") {
                 onChange("display_name", `${form.last_name} ${form.first_name}`.trim());
               } else {
-                onChange("display_name", `${form.first_name} ${form.last_name}`.trim());
+                onChange("display_name", `${form.last_name} ${form.first_name}`.trim());
               }
             }}
             className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
-            <option value="first_last">
-              {form.first_name || form.last_name ? `${form.first_name} ${form.last_name}`.trim() : "First Name Last Name"}
-            </option>
             <option value="last_first">
-              {form.first_name || form.last_name ? `${form.last_name} ${form.first_name}`.trim() : "Last Name First Name"}
+              {form.first_name || form.last_name ? `${form.last_name} ${form.first_name}`.trim() : "Last Name First Name (Khmer Standard)"}
+            </option>
+            <option value="first_last">
+              {form.first_name || form.last_name ? `${form.last_name} ${form.first_name}`.trim() : "First Name Last Name"}
             </option>
           </select>
         </div>

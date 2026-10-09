@@ -67,7 +67,7 @@ export const RecordModal = memo(function RecordModal({
               </span>
               <span className="font-extrabold text-xs text-gray-900 dark:text-white">
                 {recordToEdit.employees
-                  ? `${recordToEdit.employees.first_name} ${recordToEdit.employees.last_name}`
+                  ? `${recordToEdit.employees.last_name} ${recordToEdit.employees.first_name}`
                   : "Employee"}
               </span>
             </div>

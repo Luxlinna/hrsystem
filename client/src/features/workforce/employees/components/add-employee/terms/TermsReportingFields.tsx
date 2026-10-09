@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import type { EmployeeFormState } from "../../../types";
 import type { ModalManagerEmployee } from "../types";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { formatKhmerFullName } from "../../../nameUtils";
 
 interface TermsReportingFieldsProps {
   form: EmployeeFormState;
@@ -27,18 +28,18 @@ export const TermsReportingFields = memo(function TermsReportingFields({
   const isCustomManager =
     Boolean(form.line_manager) &&
     !buManagers.some((m) => {
-      const name = `${m.first_name} ${m.last_name}`.trim();
+      const name = formatKhmerFullName(m);
       return name.toLowerCase() === (form.line_manager || "").toLowerCase();
     }) &&
     !buCeos.some((m) => {
-      const name = `${m.first_name} ${m.last_name}`.trim();
+      const name = formatKhmerFullName(m);
       return name.toLowerCase() === (form.line_manager || "").toLowerCase();
     });
 
   const managerOptions = useMemo(() => {
     const list: Array<{ value: string; label: string; sublabel?: string; badge?: string }> = [];
     buManagers.forEach((m) => {
-      const name = `${m.first_name} ${m.last_name}`.trim();
+      const name = formatKhmerFullName(m);
       list.push({
         value: name,
         label: name,
@@ -47,7 +48,7 @@ export const TermsReportingFields = memo(function TermsReportingFields({
       });
     });
     buCeos.forEach((c) => {
-      const name = `${c.first_name} ${c.last_name}`.trim();
+      const name = formatKhmerFullName(c);
       list.push({
         value: name,
         label: name,
@@ -76,7 +77,7 @@ export const TermsReportingFields = memo(function TermsReportingFields({
           onChange={(val) => {
             onChange("line_manager", val);
             const matched = [...buManagers, ...buCeos].find(
-              (m) => `${m.first_name} ${m.last_name}`.trim().toLowerCase() === val.toLowerCase()
+              (m) => formatKhmerFullName(m).toLowerCase() === val.toLowerCase()
             );
             onChange("reports_to", matched?.id || "");
           }}

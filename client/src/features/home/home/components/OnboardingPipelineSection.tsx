@@ -32,7 +32,7 @@ export const OnboardingPipelineSection = memo(function OnboardingPipelineSection
               </span>
               <div className="mt-6">
                 <p className="text-sm font-bold">
-                  {o.employees?.first_name} {o.employees?.last_name}
+                  {o.employees?.last_name} {o.employees?.first_name}
                 </p>
                 <p className="text-[12px] text-white/80 mt-0.5">{o.employees?.role || "New Hire"}</p>
                 <p className="text-[10px] text-white/60 mt-2.5 capitalize">

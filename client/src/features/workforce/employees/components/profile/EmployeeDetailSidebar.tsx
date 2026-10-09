@@ -1,6 +1,7 @@
 import { memo, useRef } from "react";
 import type { Employee } from "../../types";
 import { DefaultAvatarSvg } from "@/components/DefaultAvatarSvg";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface EmployeeDetailSidebarProps {
   employee: Employee;
@@ -16,12 +17,7 @@ export const EmployeeDetailSidebar = memo(function EmployeeDetailSidebar({
   onUploadAvatar,
 }: EmployeeDetailSidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const rawFullName =
-    employee.full_name ||
-    employee.display_name ||
-    `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
-    "Dul Kechhorng";
-  const fullName = rawFullName.replace(/\s*-\s*$/, "").trim() || rawFullName;
+  const fullName = formatKhmerFullName(employee);
 
   const honorific =
     employee.title && ["Mr", "Ms", "Mrs", "Miss", "Dr"].includes(employee.title)

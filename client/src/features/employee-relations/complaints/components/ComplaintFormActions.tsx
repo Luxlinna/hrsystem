@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import { memo, useState } from "react";
 
 interface ComplaintFormActionsProps {
   saving: boolean;
@@ -19,7 +19,7 @@ export const ComplaintFormActions = memo(function ComplaintFormActions({
         <button
           type="submit"
           disabled={saving}
-          className="px-3.5 py-1.5 text-xs font-medium text-white bg-[#0284c7] hover:bg-sky-700 rounded-l flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+          className="px-3.5 py-1.5 text-xs font-medium text-white bg-[#253C7D] hover:bg-[#1E3066] rounded-l flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
         >
           <i className="ri-save-line text-sm" />
           <span>{saving ? "Saving..." : "Save"}</span>
@@ -29,7 +29,7 @@ export const ComplaintFormActions = memo(function ComplaintFormActions({
           type="button"
           onClick={() => setSaveMenuOpen(!saveMenuOpen)}
           disabled={saving}
-          className="px-2 py-1.5 text-xs text-white bg-sky-700 hover:bg-sky-800 rounded-r border-l border-sky-500 cursor-pointer flex items-center transition-colors"
+          className="px-2 py-1.5 text-xs text-white bg-[#1E3066] hover:bg-[#16244f] rounded-r border-l border-white/20 cursor-pointer flex items-center transition-colors"
         >
           <i className="ri-arrow-down-s-fill text-xs" />
         </button>

@@ -18,13 +18,13 @@ export function exportOrgChartPDF(
     ? employees
         .map((e) => {
           const mgr = e.reports_to ? employeeMap.get(e.reports_to) : null;
-          const mgrName = mgr ? `${mgr.first_name} ${mgr.last_name}` : "Executive / Top Level";
+          const mgrName = mgr ? `${mgr.last_name} ${mgr.first_name}` : "Executive / Top Level";
           const directReportsCount = employees.filter((x) => x.reports_to === e.id).length;
           const isLeader = /ceo|chairman|chairwoman|director|manager|head|lead|founder/i.test(e.role);
 
           return `<tr>
             <td style="font-weight:700;color:#253C7D">
-              ${e.first_name} ${e.last_name}
+              ${e.last_name} ${e.first_name}
               ${isLeader ? `<span style="display:inline-block;margin-left:4px;padding:1px 5px;background:#dbeafe;color:#1e40af;border-radius:4px;font-size:9px;font-weight:700">LEADER</span>` : ""}
             </td>
             <td style="font-weight:600">${e.role}</td>
@@ -82,7 +82,7 @@ export function exportOrgChartPDF(
       <thead>
         <tr>
           <th>Employee Name</th>
-          <th>Designation / Role</th>
+          <th>Position / Role</th>
           <th>Department</th>
           <th>Branch</th>
           <th>Direct Manager (Reports To)</th>

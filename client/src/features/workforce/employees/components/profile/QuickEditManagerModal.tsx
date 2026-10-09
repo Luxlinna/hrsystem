@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/audit";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { Employee, ReportEntry } from "../../types";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface QuickEditManagerModalProps {
   isOpen: boolean;
@@ -35,7 +36,7 @@ export const QuickEditManagerModal = memo(function QuickEditManagerModal({
 
   const eligibleManagers = allEmployees.filter(
     (e) => e.id !== employee.id &&
-      (`${e.first_name || ""} ${e.last_name || ""} ${e.role || ""}`.toLowerCase().includes(search.toLowerCase()))
+      (`${e.last_name || ""} ${e.first_name || ""} ${e.role || ""}`.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleSave = async () => {
@@ -43,7 +44,7 @@ export const QuickEditManagerModal = memo(function QuickEditManagerModal({
     try {
       const newManagerId = selectedManagerId || null;
       const chosen = allEmployees.find((e) => e.id === newManagerId);
-      const managerName = chosen ? `${chosen.first_name} ${chosen.last_name}`.trim() : null;
+      const managerName = chosen ? formatKhmerFullName(chosen) : null;
 
       const { error } = await supabase
         .from("employees")
@@ -62,7 +63,7 @@ export const QuickEditManagerModal = memo(function QuickEditManagerModal({
         entityId: employee.id,
         actorName: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
         actorRole: role?.name || "Admin",
-        description: `Updated Line Manager for ${employee.first_name} ${employee.last_name} to "${managerName || "None"}"`,
+        description: `Updated Line Manager for ${formatKhmerFullName(employee)} to "${managerName || "None"}"`,
       });
 
       toast("Line Manager Updated", `Direct manager set to ${managerName || "None"}`, "success");
@@ -89,7 +90,7 @@ export const QuickEditManagerModal = memo(function QuickEditManagerModal({
                 Edit Line Manager
               </h3>
               <p className="text-[11px] text-gray-500 font-medium">
-                Reporting line for {employee.first_name} {employee.last_name} • <span className="font-bold text-[#253C7D]">{employee.bu_full_name || employee.branches?.name || "Their BU"}</span>
+                Reporting line for {formatKhmerFullName(employee)} • <span className="font-bold text-[#253C7D]">{employee.bu_full_name || employee.branches?.name || "Their BU"}</span>
               </p>
             </div>
           </div>
@@ -137,7 +138,7 @@ export const QuickEditManagerModal = memo(function QuickEditManagerModal({
               <option value="">No manager (Reports directly to BU / Executive)</option>
               {eligibleManagers.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.first_name} {e.last_name} — {e.userRole || e.role || "Manager"} {e.department ? `(${e.department})` : ""}
+                  {formatKhmerFullName(e)} — {e.userRole || e.role || "Manager"} {e.department ? `(${e.department})` : ""}
                 </option>
               ))}
             </select>
@@ -146,7 +147,7 @@ export const QuickEditManagerModal = memo(function QuickEditManagerModal({
           <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-[11px] text-blue-800 flex items-start gap-2">
             <i className="ri-information-line text-sm shrink-0 mt-0.5" />
             <span>
-              This manager will receive and endorse <strong>Step 1 Leave Requests</strong> submitted by {employee.first_name}.
+              This manager will receive and endorse <strong>Step 1 Leave Requests</strong> submitted by {formatKhmerFullName(employee)}.
             </span>
           </div>
         </div>

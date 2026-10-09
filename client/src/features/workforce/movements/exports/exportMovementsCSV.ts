@@ -1,5 +1,6 @@
 import type { EmployeeMovement } from "../types";
 import { MOVEMENT_TYPES } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function exportMovementsCSV(movements: EmployeeMovement[]): void {
   const headers = [
@@ -31,7 +32,7 @@ export function exportMovementsCSV(movements: EmployeeMovement[]): void {
 
     return [
       m.id,
-      emp ? `"${emp.first_name} ${emp.last_name}"` : '""',
+      emp ? `"${formatKhmerFullName(emp)}"` : '""',
       m.employee_id || "",
       `"${emp?.department || ""}"`,
       `"${emp?.branches?.name || ""}"`,

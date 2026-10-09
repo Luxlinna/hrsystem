@@ -74,7 +74,7 @@ export const SetUpPhoneAccountForm = memo(function SetUpPhoneAccountForm({
       const displayName =
         employee.display_name?.trim() ||
         employee.full_name?.trim() ||
-        `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+        `${employee.last_name || ""} ${employee.first_name || ""}`.trim();
       const res = await onSubmit({
         employeeId: employee.id,
         phone: employee.phone.trim(),
@@ -103,7 +103,7 @@ export const SetUpPhoneAccountForm = memo(function SetUpPhoneAccountForm({
   const fullName =
     employee.display_name?.trim() ||
     employee.full_name?.trim() ||
-    `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
+    `${employee.last_name || ""} ${employee.first_name || ""}`.trim() ||
     "Employee";
 
   return (

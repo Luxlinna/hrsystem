@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { DisciplinaryRecord } from "../types";
 import { formatDateDMY } from "../utils/formatters";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface WarningDetailEmployeeCardProps {
   record: DisciplinaryRecord;
@@ -30,7 +31,7 @@ export const WarningDetailEmployeeCard = memo(function WarningDetailEmployeeCard
   }, [record.employee_id]);
 
   const emp = profile || record.employees;
-  const empName = emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : "—";
+  const empName = emp ? formatKhmerFullName(emp) : "—";
   const avatarUrl = profile?.avatar_url || record.employees?.avatar_url;
   const empCode = profile?.employee_code || profile?.biometric_user_id || record.employees?.employee_id || "3783";
 
@@ -40,7 +41,7 @@ export const WarningDetailEmployeeCard = memo(function WarningDetailEmployeeCard
   const department = profile?.department || profile?.division || record.employees?.department || "General";
   const supervisor =
     profile?.line_manager ||
-    (profile?.manager ? `${profile.manager.first_name} ${profile.manager.last_name}` : "Unknown");
+    (profile?.manager ? formatKhmerFullName(profile.manager) : "Unknown");
 
   const empType = profile?.employment_type ? profile.employment_type.toUpperCase() : "FULL-TIME";
   const contractType = profile?.contract_type ? profile.contract_type.toUpperCase() : "PERMANENT (UDC)";
@@ -74,7 +75,7 @@ export const WarningDetailEmployeeCard = memo(function WarningDetailEmployeeCard
             className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#253C7D] text-white font-bold text-sm flex items-center justify-center shrink-0"
             style={{ width: 64, height: 64 }}
           >
-            {emp ? emp.first_name[0] + emp.last_name[0] : "EM"}
+            {emp ? (emp.last_name?.[0] || emp.first_name?.[0] || "E") : "EM"}
           </div>
         )}
         <span className="mt-2 px-2.5 py-0.5 text-[10px] font-bold text-white bg-[#14b8a6] rounded shadow-2xs text-center whitespace-nowrap">
@@ -95,7 +96,7 @@ export const WarningDetailEmployeeCard = memo(function WarningDetailEmployeeCard
             </div>
             <div>
               <p className="font-normal text-slate-700">{designation}</p>
-              <p className="text-[11px] text-slate-400 font-normal">Designation</p>
+              <p className="text-[11px] text-slate-400 font-normal">Position</p>
             </div>
             <div>
               <p className="font-normal text-slate-700 uppercase">{department}</p>

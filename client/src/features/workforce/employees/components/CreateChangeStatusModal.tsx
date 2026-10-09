@@ -5,6 +5,7 @@ import { useChangeStatusForm } from "./change-status/useChangeStatusForm";
 import { ChangeStatusEmployeeSection } from "./change-status/ChangeStatusEmployeeSection";
 import { ChangeStatusInfoSection } from "./change-status/ChangeStatusInfoSection";
 import { ChangeStatusAttachmentSection } from "./change-status/ChangeStatusAttachmentSection";
+import { formatKhmerFullName } from "../nameUtils";
 
 export const CreateChangeStatusModal: React.FC<CreateChangeStatusModalProps> = ({
   isOpen,
@@ -68,7 +69,7 @@ export const CreateChangeStatusModal: React.FC<CreateChangeStatusModalProps> = (
             selectedEmpId={form.selectedEmpId}
             onSelectEmployee={(emp) => {
               form.setSelectedEmpId(emp.id);
-              form.setEmpSearchQuery(`${emp.first_name} ${emp.last_name}`);
+              form.setEmpSearchQuery(formatKhmerFullName(emp));
               form.setIsEmpDropdownOpen(false);
             }}
           />

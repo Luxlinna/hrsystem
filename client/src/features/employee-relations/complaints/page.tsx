@@ -8,15 +8,13 @@ import { WarningFileViewerModal } from "@/features/employee-relations/disciplina
 import { useComplaintsData } from "./hooks/useComplaintsData";
 import { useComplaintMutations } from "./hooks/useComplaintMutations";
 import { ComplaintHeader } from "./components/ComplaintHeader";
-import { ComplaintStatsRow } from "./components/ComplaintStatsRow";
 import { ComplaintFilterBar } from "./components/ComplaintFilterBar";
 import { ComplaintTable } from "./components/ComplaintTable";
-import { ComplaintCardsView } from "./components/ComplaintCardsView";
 import { ComplaintDetailModal } from "./components/ComplaintDetailModal";
 import { CreateComplaintForm } from "./components/CreateComplaintForm";
+import { EMPTY_COMPLAINT_FORM, type ComplaintSuggestion, type ComplaintFormState } from "./types";
 import { exportComplaintCSV } from "./exports/exportComplaintCSV";
 import { exportComplaintXLSX } from "./exports/exportComplaintXLSX";
-import { EMPTY_COMPLAINT_FORM, type ComplaintSuggestion, type ComplaintFormState } from "./types";
 
 export default function ComplaintsPage() {
   const { user } = useAuth();
@@ -29,15 +27,25 @@ export default function ComplaintsPage() {
   const actorRole = role?.name || (user?.user_metadata?.role as string) || "";
 
   const {
-    filtered, loading, stats, searchQuery, setSearchQuery, filterType, setFilterType,
-    filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, loadData,
+    filtered,
+    loading,
+    searchQuery,
+    setSearchQuery,
+    filterStatus,
+    setFilterStatus,
+    filterDateOption,
+    setFilterDateOption,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    loadData,
   } = useComplaintsData();
 
   const { saving, createComplaint, updateComplaint, updateStatus, deleteComplaint, uploadDocument } =
     useComplaintMutations({ loadData, actorName, actorRole });
 
   const [viewMode, setViewMode] = useState<"table" | "form">("table");
-  const [listMode, setListMode] = useState<"table" | "cards">("table");
   const [editingRecord, setEditingRecord] = useState<ComplaintSuggestion | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<ComplaintSuggestion | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
@@ -105,7 +113,7 @@ export default function ComplaintsPage() {
 
   if (isPartnerBranchBlocked) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+      <div className="min-h-screen bg-white p-4 sm:p-6 font-sans">
         <PartnerBranchPrivacyShield moduleName="Complaints & Suggestions" userBranchName={currentBranchName || ""} hasNoBranch={false} />
       </div>
     );
@@ -128,51 +136,33 @@ export default function ComplaintsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-      <ComplaintHeader
-        viewMode={listMode}
-        onViewModeChange={setListMode}
-        onNew={handleOpenNew}
-        onExportCSV={() => exportComplaintCSV(filtered)}
-        onExportXLSX={() => exportComplaintXLSX(filtered)}
-      />
-      <ComplaintStatsRow stats={stats} />
+    <div className="min-h-screen bg-white p-4 sm:p-6 font-sans">
+      <ComplaintHeader onNew={handleOpenNew} />
+
       <ComplaintFilterBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        filterType={filterType}
-        setFilterType={setFilterType}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
-        filterDateFrom={filterDateFrom}
-        setFilterDateFrom={setFilterDateFrom}
-        filterDateTo={filterDateTo}
-        setFilterDateTo={setFilterDateTo}
+        filterDateOption={filterDateOption}
+        setFilterDateOption={setFilterDateOption}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        onExportCSV={() => exportComplaintCSV(filtered)}
+        onExportXLSX={() => exportComplaintXLSX(filtered)}
       />
 
-      {listMode === "table" ? (
-        <ComplaintTable
-          records={filtered}
-          loading={loading}
-          onSelect={setSelectedRecord}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onUpdateStatus={updateStatus}
-          onPreviewAttachment={(url, name) => setPreviewDoc({ url, name })}
-          onNew={handleOpenNew}
-        />
-      ) : (
-        <ComplaintCardsView
-          records={filtered}
-          loading={loading}
-          onSelect={setSelectedRecord}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onUpdateStatus={updateStatus}
-          onPreviewAttachment={(url, name) => setPreviewDoc({ url, name })}
-          onNew={handleOpenNew}
-        />
-      )}
+      <ComplaintTable
+        records={filtered}
+        loading={loading}
+        onSelect={setSelectedRecord}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onUpdateStatus={updateStatus}
+        onPreviewAttachment={(url, name) => setPreviewDoc({ url, name })}
+      />
 
       <ComplaintDetailModal
         item={selectedRecord}

@@ -26,8 +26,8 @@ interface EvaluationCompletedNotifyParams {
 
 export async function notifySelfAssessmentSubmitted(params: SelfAssessmentNotifyParams): Promise<void> {
   const { reviewId, employee, evaluator, selfScore, quarter, year, reflection, branchId } = params;
-  const empName = employee ? `${employee.first_name} ${employee.last_name}`.trim() : "Employee";
-  const mgrName = evaluator ? `${evaluator.first_name} ${evaluator.last_name}`.trim() : "Direct Manager";
+  const empName = employee ? `${employee.last_name} ${employee.first_name}`.trim() : "Employee";
+  const mgrName = evaluator ? `${evaluator.last_name} ${evaluator.first_name}`.trim() : "Direct Manager";
   const empRole = employee?.app_role || employee?.role || "Staff";
   const empDept = employee?.department || "General";
   const period = `${quarter} ${year}`;
@@ -73,8 +73,8 @@ export async function notifySelfAssessmentSubmitted(params: SelfAssessmentNotify
 
 export async function notifyEvaluationCompleted(params: EvaluationCompletedNotifyParams): Promise<void> {
   const { reviewId, employee, evaluator, overallScore, quarter, year, comments, branchId } = params;
-  const empName = employee ? `${employee.first_name} ${employee.last_name}`.trim() : "Employee";
-  const mgrName = evaluator ? `${evaluator.first_name} ${evaluator.last_name}`.trim() : "Manager";
+  const empName = employee ? `${employee.last_name} ${employee.first_name}`.trim() : "Employee";
+  const mgrName = evaluator ? `${evaluator.last_name} ${evaluator.first_name}`.trim() : "Manager";
   const empRole = employee?.app_role || employee?.role || "Staff";
   const empDept = employee?.department || "General";
   const period = `${quarter} ${year}`;

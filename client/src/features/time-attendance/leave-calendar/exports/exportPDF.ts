@@ -17,7 +17,7 @@ export function exportCalendarPDF(
 
   const rows = filteredLeaves
     .map((r) => {
-      const name = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Unknown";
+      const name = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim() || "Unknown";
       const dept = r.employees?.department || "—";
       const leaveType = LEAVE_TYPE_CONFIG[r.leave_type]?.label || r.leave_type;
       const statusColor =

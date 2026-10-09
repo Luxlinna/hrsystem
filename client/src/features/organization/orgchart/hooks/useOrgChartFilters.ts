@@ -20,7 +20,7 @@ export function useOrgChartFilters(employees: Employee[]) {
     () =>
       searchTerm
         ? listEmployees.filter((e) =>
-            `${e.first_name} ${e.last_name} ${e.role} ${e.department}`
+            `${e.last_name} ${e.first_name} ${e.role} ${e.department}`
               .toLowerCase()
               .includes(searchTerm.toLowerCase())
           )

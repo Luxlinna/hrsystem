@@ -1,4 +1,5 @@
 import type { DisciplinaryRecord } from "../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function exportDisciplinaryCSV(records: DisciplinaryRecord[]): boolean {
   const headers = [
@@ -23,7 +24,7 @@ export function exportDisciplinaryCSV(records: DisciplinaryRecord[]): boolean {
 
   const rows = records.map((r) => {
     const empId = r.employees?.employee_id || r.employee_id?.substring(0, 8) || "";
-    const empName = r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "";
+    const empName = r.employees ? formatKhmerFullName(r.employees) : "";
     const dept = r.employees?.department || "";
     const role = r.employees?.role || "";
 

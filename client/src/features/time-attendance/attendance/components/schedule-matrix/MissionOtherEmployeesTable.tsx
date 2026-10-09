@@ -27,7 +27,7 @@ export const MissionOtherEmployeesTable = memo(function MissionOtherEmployeesTab
   const filteredEmployees = availableEmployees.filter((e) => {
     const term = search.toLowerCase();
     const displayName = getAttendanceEmployeeName(e).toLowerCase();
-    const rawName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+    const rawName = `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase();
     const code = (e.employee_code || e.biometric_user_id || "").toLowerCase();
     return displayName.includes(term) || rawName.includes(term) || code.includes(term);
   });
@@ -107,7 +107,7 @@ export const MissionOtherEmployeesTable = memo(function MissionOtherEmployeesTab
               <th className="py-2.5 px-3">Employee Code</th>
               <th className="py-2.5 px-3">Employee Name</th>
               <th className="py-2.5 px-3">Department</th>
-              <th className="py-2.5 px-3">Designation</th>
+              <th className="py-2.5 px-3">Position</th>
               <th className="py-2.5 px-3 w-10 text-center"></th>
             </tr>
           </thead>

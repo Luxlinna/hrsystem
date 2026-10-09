@@ -87,7 +87,7 @@ export const OrgNode = memo(function OrgNode({
           )}
 
           <p className="text-xs font-bold text-gray-900 dark:text-slate-100 text-center leading-tight hover:text-[#253C7D] dark:hover:text-sky-400 transition-colors truncate w-full">
-            {node.first_name} {node.last_name}
+            {node.last_name} {node.first_name}
           </p>
         </Link>
 

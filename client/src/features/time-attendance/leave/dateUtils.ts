@@ -2,23 +2,14 @@ export function formatDate(dateStr: string): string {
   if (!dateStr) return "—";
   const [y, m, d] = dateStr.split("-").map(Number);
   if (!y || !m || !d) return dateStr;
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
 }
 
 export function formatDateShort(dateStr: string): string {
   if (!dateStr) return "—";
   const [y, m, d] = dateStr.split("-").map(Number);
   if (!y || !m || !d) return dateStr;
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
 }
 
 export function toYMD(d: Date): string {

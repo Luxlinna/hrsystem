@@ -45,12 +45,12 @@ export function NssfTableRow({ emp, onSave }: NssfTableRowProps) {
             ) : (
               <div className="w-7 h-7 rounded-full bg-[#253C7D]/10 flex items-center justify-center flex-shrink-0">
                 <span className="text-[10px] font-bold text-[#253C7D]">
-                  {emp.first_name[0]}{emp.last_name[0]}
+                  {emp.last_name[0]}{emp.first_name[0]}
                 </span>
               </div>
             )}
             <div>
-              <p className="text-xs font-semibold text-gray-800">{emp.first_name} {emp.last_name}</p>
+              <p className="text-xs font-semibold text-gray-800">{emp.last_name} {emp.first_name}</p>
               <p className="text-[11px] text-gray-400">{emp.id}</p>
             </div>
           </div>
@@ -134,12 +134,12 @@ export function NssfTableRow({ emp, onSave }: NssfTableRowProps) {
           ) : (
             <div className="w-7 h-7 rounded-full bg-[#253C7D]/10 flex items-center justify-center flex-shrink-0">
               <span className="text-[10px] font-bold text-[#253C7D]">
-                {emp.first_name[0]}{emp.last_name[0]}
+                {emp.last_name[0]}{emp.first_name[0]}
               </span>
             </div>
           )}
           <div>
-            <p className="text-xs font-semibold text-gray-800">{emp.first_name} {emp.last_name}</p>
+            <p className="text-xs font-semibold text-gray-800">{emp.last_name} {emp.first_name}</p>
             <p className="text-[11px] text-gray-400">{emp.id}</p>
           </div>
         </div>

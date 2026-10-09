@@ -25,7 +25,7 @@ export const CourseEmployeeInvites = memo(function CourseEmployeeInvites({
 
   const filteredEmployees = branchEmployees.filter((e) => {
     if (!empSearch) return true;
-    const name = `${e.first_name} ${e.last_name} ${e.department || ""}`.toLowerCase();
+    const name = `${e.last_name} ${e.first_name} ${e.department || ""}`.toLowerCase();
     return name.includes(empSearch.toLowerCase());
   });
 
@@ -114,7 +114,7 @@ export const CourseEmployeeInvites = memo(function CourseEmployeeInvites({
                   {emp.last_name?.[0]}
                 </div>
                 <span className="truncate font-semibold">
-                  {emp.first_name} {emp.last_name}
+                  {emp.last_name} {emp.first_name}
                 </span>
                 <span className="text-[11px] text-gray-400 font-normal truncate">
                   ({emp.department || "Staff"})

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Interview } from "../../types";
 import { formatScheduleDateTime } from "../../hireUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface InterviewCardProps {
   interview: Interview;
@@ -78,7 +79,7 @@ export const InterviewCard = memo(function InterviewCard({
             <div className="flex items-center justify-between text-gray-600">
               <span className="text-gray-500 font-medium">Interviewer:</span>
               <span className="font-bold text-gray-800">
-                {interview.employees.first_name} {interview.employees.last_name}
+                {formatKhmerFullName(interview.employees)}
               </span>
             </div>
           )}

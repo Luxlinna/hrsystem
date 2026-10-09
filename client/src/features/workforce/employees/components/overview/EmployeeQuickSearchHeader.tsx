@@ -44,7 +44,7 @@ export const EmployeeQuickSearchHeader: React.FC<EmployeeQuickSearchHeaderProps>
   };
 
   const staffId = currentEmployee.biometric_user_id || "—";
-  const fullName = `${currentEmployee.first_name || ""} ${currentEmployee.last_name || ""}`.trim();
+  const fullName = `${currentEmployee.last_name || ""} ${currentEmployee.first_name || ""}`.trim();
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4" ref={wrapperRef}>
@@ -99,7 +99,7 @@ export const EmployeeQuickSearchHeader: React.FC<EmployeeQuickSearchHeaderProps>
               >
                 <div>
                   <div className="font-semibold text-gray-800 flex items-center gap-1.5">
-                    <span>{emp.first_name} {emp.last_name}</span>
+                    <span>{emp.last_name} {emp.first_name}</span>
                     {emp.kh_name && <span className="text-gray-400 font-normal">({emp.kh_name})</span>}
                   </div>
                   <div className="text-[11px] text-gray-500">

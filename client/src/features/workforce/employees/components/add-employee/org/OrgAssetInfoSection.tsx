@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFormState, EmployeeAssetBookingItem } from "../../../types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface OrgAssetInfoSectionProps {
   form: EmployeeFormState;
@@ -81,11 +82,10 @@ export const OrgAssetInfoSection = memo(function OrgAssetInfoSection({
                   <tr key={item.id || idx} className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-2 px-3 text-center text-slate-500">{idx + 1}</td>
                     <td className="py-2 px-3">
-                      <input
-                        type="date"
+                      <DatePickerDMY
                         value={item.from_date || ""}
-                        onChange={(e) => handleUpdateRow(idx, "from_date", e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
+                        onChange={(iso) => handleUpdateRow(idx, "from_date", iso)}
+                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white"
                       />
                     </td>
                     <td className="py-2 px-3">

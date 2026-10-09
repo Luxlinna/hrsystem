@@ -85,7 +85,7 @@ export function exportSelfPayslipsPDF(
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Issued Payslips</div></div>
       <div class="stat-card"><div class="stat-val" style="color:#059669">$${totalNet.toLocaleString()}</div><div class="stat-lbl">Total Net Earned</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#253C7D">${employee?.role || "Staff"}</div><div class="stat-lbl">Designation</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#253C7D">${employee?.role || "Staff"}</div><div class="stat-lbl">Position</div></div>
     </div>
 
     <table>

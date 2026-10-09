@@ -30,7 +30,7 @@ export function buildEnrichedAssignments(
     }
 
     const empDisplayName = emp
-      ? (emp.display_name?.trim() || emp.full_name?.trim() || `${emp.first_name || ""} ${emp.last_name || ""}`.trim())
+      ? (emp.display_name?.trim() || emp.full_name?.trim() || `${emp.last_name || ""} ${emp.first_name || ""}`.trim())
       : null;
 
     const empBranchId = emp?.branch_id;

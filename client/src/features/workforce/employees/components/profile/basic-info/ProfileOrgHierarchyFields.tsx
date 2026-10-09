@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { BasicInfoOrgProps } from "./types";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { formatKhmerFullName } from "../../../nameUtils";
 
 export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields({
   employee,
@@ -154,7 +155,7 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
           <SearchableSelect
             options={allEmployees.map((e) => ({
               value: e.id,
-              label: `${e.first_name} ${e.last_name}`,
+              label: formatKhmerFullName(e),
               sublabel: e.role || e.department || "",
             }))}
             value={form.reports_to || ""}
@@ -163,7 +164,7 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
               setForm({
                 ...form,
                 reports_to: val || null,
-                line_manager: matched ? `${matched.first_name} ${matched.last_name}`.trim() : null,
+                line_manager: matched ? formatKhmerFullName(matched) : null,
               });
             }}
             placeholder="Select Line Manager"
@@ -175,7 +176,7 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
             <i className="ri-user-star-line text-[#253C7D] text-xs" />
             <span className="text-xs font-bold text-slate-900">
               {manager
-                ? `${manager.first_name} ${manager.last_name} (${manager.role})`
+                ? `${formatKhmerFullName(manager)} (${manager.role})`
                 : employee.line_manager || "No manager"}
             </span>
           </div>

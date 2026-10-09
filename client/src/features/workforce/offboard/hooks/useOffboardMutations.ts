@@ -59,7 +59,7 @@ export function useOffboardMutations({
       toast("Status Updated", STATUS_CONFIG[status]?.label || status, "success");
       const record = offboardings.find((o) => o.id === id);
       const empName = record?.employees
-        ? `${record.employees.first_name} ${record.employees.last_name}`
+        ? `${record.employees.last_name} ${record.employees.first_name}`
         : "an employee";
 
       logActivity({

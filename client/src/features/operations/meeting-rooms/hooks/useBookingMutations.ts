@@ -61,7 +61,7 @@ export function useBookingMutations({
     setSaving(true);
     const finalRequirements = [...bookingForm.selected_requirements, bookingForm.custom_requirements.trim()].filter(Boolean).join(", ") || "None";
     const finalRefreshments = [...bookingForm.selected_refreshments, bookingForm.custom_refreshments.trim()].filter(Boolean).join(", ") || "None";
-    const empName = currentEmployee ? `${currentEmployee.first_name} ${currentEmployee.last_name}` : "An employee";
+    const empName = currentEmployee ? `${currentEmployee.last_name} ${currentEmployee.first_name}` : "An employee";
 
     if (editingBooking) {
       if (editingBooking.status !== "pending") {

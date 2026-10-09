@@ -74,7 +74,7 @@ export function useITFilters(
         const tag = (a.asset_tag || "").toLowerCase();
         const type = (a.type || "").toLowerCase();
         const serial = (a.serial_number || "").toLowerCase();
-        const emp = `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`.toLowerCase();
+        const emp = `${a.employees?.last_name || ""} ${a.employees?.first_name || ""}`.toLowerCase();
         const branch = (a.branches?.name || "").toLowerCase();
         if (
           !name.includes(q) &&

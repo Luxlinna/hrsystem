@@ -14,6 +14,9 @@ export interface MovementEmployeeInput {
   branches?: { name: string } | null;
   work_locations?: { name: string } | null;
   avatar_url?: string | null;
+  basic_salary?: number | string | null;
+  contract_rate?: number | string | null;
+  contract_rate_after?: number | string | null;
 }
 
 export interface MovementChanges {
@@ -84,6 +87,7 @@ export function buildMovementChanges(
       title = title || `Salary Adjustment (${form.adjustment_type || "Merit Review"})`;
       prev.salary = form.current_salary;
       next.salary = form.new_salary;
+      next.new_salary = form.new_salary;
       next.currency = form.currency || "USD";
       next.adjustment_type = form.adjustment_type;
       break;
@@ -134,12 +138,14 @@ export function buildMovementChanges(
   if (form.supervisor) { next.supervisor = form.supervisor; employeeUpdates.line_manager = form.supervisor; }
   if (form.salary != null) {
     next.new_salary = form.salary;
+    next.salary = form.salary;
     employeeUpdates.basic_salary = form.salary;
     employeeUpdates.contract_rate = form.salary;
   }
   if (form.salary_freq) { next.contract_rate_frequency = form.salary_freq; employeeUpdates.contract_rate_frequency = form.salary_freq; }
   if (form.salary_after != null) {
     next.salary_after_contract = form.salary_after;
+    next.salary_after_probation = form.salary_after;
     employeeUpdates.contract_rate_after = form.salary_after;
   }
   if (form.salary_after_freq) {

@@ -59,12 +59,12 @@ export const timeToMinutes = (timeStr: string): number => {
 
 export const getInitials = (emp?: { first_name?: string; last_name?: string } | null): string => {
   if (!emp) return "?";
-  return `${emp.first_name?.[0] || ""}${emp.last_name?.[0] || ""}`.toUpperCase();
+  return `${emp.last_name?.[0] || ""}${emp.first_name?.[0] || ""}`.toUpperCase();
 };
 
 export const getFullName = (emp?: { first_name?: string; last_name?: string } | null): string => {
   if (!emp) return "Unknown Member";
-  return `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+  return `${emp.last_name || ""} ${emp.first_name || ""}`.trim();
 };
 
 export const getRoomImage = (roomOrName?: MeetingRoom | string | null): string => {

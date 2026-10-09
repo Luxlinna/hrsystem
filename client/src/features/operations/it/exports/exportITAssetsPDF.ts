@@ -10,7 +10,7 @@ export function exportITAssetsPDF(assets: ITAsset[], title = "IT Hardware & Equi
   const rows = assets.length > 0
     ? assets
         .map((a) => {
-          const empName = a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "Unassigned (In Stock)";
+          const empName = a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : "Unassigned (In Stock)";
           const dept = a.employees?.department || "IT Inventory";
           const statusStr = (a.status || "active").toUpperCase();
           const branchName = a.branches?.name || "General";

@@ -1,4 +1,5 @@
 import type { Offboarding } from "../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function exportOffboardingsPDF(
   offboardings: Offboarding[],
@@ -12,7 +13,7 @@ export function exportOffboardingsPDF(
   const rows = offboardings.length > 0
     ? offboardings
         .map((o) => {
-          const empName = `${o.employees?.first_name || ""} ${o.employees?.last_name || ""}`.trim() || "Employee";
+          const empName = formatKhmerFullName(o.employees);
           const dept = o.employees?.department || "—";
           const branch = o.employees?.branches?.name || "Main Branch";
           const role = o.employees?.role || "Staff";

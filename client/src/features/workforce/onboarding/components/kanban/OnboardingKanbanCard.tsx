@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { OnboardingRequest, OnboardingDoc } from "../../types";
 import { initials, getOverallProgress } from "../../onboardingUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface OnboardingKanbanCardProps {
   request: OnboardingRequest;
@@ -18,7 +19,7 @@ export const OnboardingKanbanCard = memo(function OnboardingKanbanCard({
   onCompleteOnboarding,
 }: OnboardingKanbanCardProps) {
   const emp = request.employees;
-  const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+  const fullName = emp ? formatKhmerFullName(emp) : "Unknown Staff";
   const overallProgress = getOverallProgress(request, documents);
 
   return (

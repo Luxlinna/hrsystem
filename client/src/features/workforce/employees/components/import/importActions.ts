@@ -45,16 +45,16 @@ export async function commitEmployeeImport({
     if (!term || term === "—" || term === "-") return { id: null, name: null };
     if (isUuid(term)) {
       const match = dbEmployees?.find((e) => e.id === term);
-      return { id: term, name: match?.full_name || `${match?.first_name || ""} ${match?.last_name || ""}`.trim() || null };
+      return { id: term, name: match?.full_name || `${match?.last_name || ""} ${match?.first_name || ""}`.trim() || null };
     }
     const cleanTerm = term.toLowerCase().trim();
     const match = dbEmployees?.find((e) => {
-      const fn = (e.full_name || `${e.first_name || ""} ${e.last_name || ""}`).toLowerCase().trim();
+      const fn = (e.full_name || `${e.last_name || ""} ${e.first_name || ""}`).toLowerCase().trim();
       return fn === cleanTerm || (e.employee_code && e.employee_code.toLowerCase().trim() === cleanTerm);
     });
     return {
       id: match?.id || null,
-      name: match ? (match.full_name || `${match.first_name || ""} ${match.last_name || ""}`.trim()) : term,
+      name: match ? (match.full_name || `${match.last_name || ""} ${match.first_name || ""}`.trim()) : term,
     };
   };
 

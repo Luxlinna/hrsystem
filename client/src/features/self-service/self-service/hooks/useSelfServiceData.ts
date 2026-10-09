@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { Employee } from "../types";
 import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import { SELF_SERVICE_TABS } from "../constants";
 
 export function useSelfServiceData() {
@@ -84,11 +85,7 @@ export function useSelfServiceData() {
             .eq("id", emp.reports_to)
             .maybeSingle();
           if (mgr) {
-            setManagerName(
-              mgr.display_name?.trim() ||
-              mgr.full_name?.trim() ||
-              `${mgr.first_name} ${mgr.last_name}`.trim()
-            );
+            setManagerName(formatKhmerFullName(mgr));
           }
         }
       } else {

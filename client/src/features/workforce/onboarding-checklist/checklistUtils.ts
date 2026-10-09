@@ -1,11 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import { notify } from "@/lib/notify";
 import { DOC_TO_TASK, TASK_TO_DOC } from "@/lib/onboarding";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import type { OnboardingHire, ChecklistTask } from "./types";
 
 export const getHireName = (hire: OnboardingHire | null): string => {
   if (!hire?.employees) return "New Hire";
-  return `${hire.employees.first_name} ${hire.employees.last_name}`.trim();
+  return formatKhmerFullName(hire.employees);
 };
 
 export const getHireInitials = (hire: OnboardingHire | null): string => {
@@ -114,7 +115,7 @@ export async function notifyAssigneeOfChecklistTask({
   try {
     // 1. Locate staff member in provided list or database
     let emp: any = staffList?.find(
-      (s: any) => `${s.first_name || ""} ${s.last_name || ""}`.trim().toLowerCase() === targetName.toLowerCase()
+      (s: any) => `${s.last_name || ""} ${s.first_name || ""}`.trim().toLowerCase() === targetName.toLowerCase()
     );
 
     if (!emp || !emp.email) {

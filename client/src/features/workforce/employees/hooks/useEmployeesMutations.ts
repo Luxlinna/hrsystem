@@ -8,6 +8,8 @@ import { normalizePhone } from "@/lib/phoneUtils";
 import { formatPaddedPin } from "@/lib/biometricUtils";
 import { startOnboardingForEmployee } from "@/lib/onboarding";
 import { INITIAL_EMPLOYEE_FORM } from "../constants";
+import { formatKhmerFullName } from "../nameUtils";
+import { recordInitialJoiningMovement } from "@/features/workforce/movements/services/movementService";
 import type { Employee, EmployeeFormState, AppRole } from "../types";
 
 interface UseEmployeesMutationsProps {
@@ -41,9 +43,9 @@ export function useEmployeesMutations({
         first_name: emp.first_name || "",
         last_name: emp.last_name || "",
         kh_name: emp.kh_name || emp.foreign_name || "",
-        full_name: emp.full_name || `${emp.first_name || ""} ${emp.last_name || ""}`.trim(),
-        display_name: emp.display_name || "",
-        display_name_format: (emp as any).display_name_format || "First Name Last Name",
+        full_name: formatKhmerFullName(emp),
+        display_name: emp.display_name || formatKhmerFullName(emp),
+        display_name_format: (emp as any).display_name_format || "Last Name First Name",
         foreign_name: emp.foreign_name || emp.kh_name || "",
         foreign_name_format: (emp as any).foreign_name_format || "Last Name First Name",
         gender: emp.gender?.toLowerCase() === "female" ? "Female" : emp.gender?.toLowerCase() === "other" ? "Other" : "Male",
@@ -157,7 +159,7 @@ export function useEmployeesMutations({
       try {
         const staffRole = roles.find((r) => r.name.toLowerCase() === "staff") || roles[0];
         const roleId = staffRole?.id ? String(staffRole.id) : null;
-        const displayName = empDisplayName?.trim() || `${firstName} ${lastName}`.trim();
+        const displayName = empDisplayName?.trim() || `${lastName} ${firstName}`.trim();
 
         const { res, result } = await sendUserInvite({
           email,
@@ -249,13 +251,13 @@ export function useEmployeesMutations({
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      const resolvedFullName = form.full_name?.trim() || `${form.first_name || ""} ${form.last_name || ""}`.trim();
+      const resolvedFullName = form.full_name?.trim() || formatKhmerFullName(form);
       let resolvedFirstName = form.first_name?.trim() || "";
       let resolvedLastName = form.last_name?.trim() || "";
       if ((!resolvedFirstName || !resolvedLastName) && resolvedFullName) {
         const parts = resolvedFullName.split(/\s+/);
-        resolvedFirstName = parts[0] || "";
-        resolvedLastName = parts.slice(1).join(" ") || parts[0] || "";
+        resolvedLastName = parts[0] || "";
+        resolvedFirstName = parts.slice(1).join(" ") || parts[0] || "";
       }
 
       if (!resolvedFirstName && !resolvedFullName) {
@@ -321,7 +323,7 @@ export function useEmployeesMutations({
             if (dupPhoneEmp) {
               toast(
                 "Phone Number Already Registered",
-                `An employee (${dupPhoneEmp.first_name} ${dupPhoneEmp.last_name}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
+                `An employee (${formatKhmerFullName(dupPhoneEmp)}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
                 "error"
               );
               setSubmitting(false);
@@ -348,7 +350,7 @@ export function useEmployeesMutations({
             const dupEmailEmp = existingEmailRows[0];
             toast(
               "Email Already Registered",
-              `An employee (${dupEmailEmp.first_name} ${dupEmailEmp.last_name}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
+              `An employee (${formatKhmerFullName(dupEmailEmp)}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
               "error"
             );
             setSubmitting(false);
@@ -532,6 +534,15 @@ export function useEmployeesMutations({
         const { data: newEmp, error } = await supabase.from("employees").insert(payload).select().single();
         if (error) throw error;
 
+        // Record initial joining movement record
+        if (newEmp?.id) {
+          try {
+            await recordInitialJoiningMovement(newEmp, actorName);
+          } catch (movErr) {
+            console.warn("Failed to record initial join movement:", movErr);
+          }
+        }
+
         // Automatically initialize onboarding journey if created in onboarding status
         if (form.status === "onboarding" && newEmp?.id) {
           try {
@@ -569,7 +580,7 @@ export function useEmployeesMutations({
 
         await notify({
           title: "New Team Member",
-          message: `${form.first_name} ${form.last_name} joined the ${form.department} team.`,
+          message: `${formatKhmerFullName(form)} joined the ${form.department} team.`,
           type: "success",
           source: "employees",
           entityId: newEmp.id,
@@ -607,7 +618,8 @@ export function useEmployeesMutations({
 
   const deleteEmployee = useCallback(
     async (emp: Employee) => {
-      if (!confirm(`Are you sure you want to delete ${emp.first_name} ${emp.last_name}?`)) return;
+      const empName = formatKhmerFullName(emp);
+      if (!confirm(`Are you sure you want to delete ${empName}?`)) return;
       setDeletingId(emp.id);
       try {
         const now = new Date().toISOString();
@@ -631,7 +643,7 @@ export function useEmployeesMutations({
             .eq("email", normEmail);
         }
 
-        toast("Deleted", `${emp.first_name} ${emp.last_name} removed and deleted from user management.`, "success");
+        toast("Deleted", `${empName} removed and deleted from user management.`, "success");
         await logActivity({
           module: "employees",
           action: "deleted",
@@ -639,7 +651,7 @@ export function useEmployeesMutations({
           entityId: emp.id,
           actorName,
           actorRole: roleName,
-          description: `Deleted employee ${emp.first_name} ${emp.last_name}`,
+          description: `Deleted employee ${empName}`,
         });
         loadEmployees();
       } catch (err: any) {
@@ -657,7 +669,7 @@ export function useEmployeesMutations({
       const newStatus = isCurrentlyDisabled ? "active" : "suspended";
       const actionLabel = isCurrentlyDisabled ? "enable" : "disable";
 
-      if (!confirm(`Are you sure you want to ${actionLabel} ${emp.first_name || ""} ${emp.last_name || ""}?`)) return;
+      if (!confirm(`Are you sure you want to ${actionLabel} ${emp.last_name || ""} ${emp.first_name || ""}?`)) return;
 
       try {
         const { error } = await supabase
@@ -669,7 +681,7 @@ export function useEmployeesMutations({
 
         toast(
           "Status Updated",
-          `${emp.first_name || ""} ${emp.last_name || ""} is now ${newStatus}.`,
+          `${emp.last_name || ""} ${emp.first_name || ""} is now ${newStatus}.`,
           "success"
         );
         await logActivity({
@@ -679,7 +691,7 @@ export function useEmployeesMutations({
           entityId: emp.id,
           actorName,
           actorRole: roleName,
-          description: `${isCurrentlyDisabled ? "Enabled" : "Disabled"} employee ${emp.first_name || ""} ${emp.last_name || ""}`,
+          description: `${isCurrentlyDisabled ? "Enabled" : "Disabled"} employee ${emp.last_name || ""} ${emp.first_name || ""}`,
         });
         loadEmployees();
       } catch (err: any) {
@@ -695,7 +707,7 @@ export function useEmployeesMutations({
       const newStatus = isCurrentlyDeactivated ? "active" : "inactive";
       const actionLabel = isCurrentlyDeactivated ? "activate" : "deactivate";
 
-      if (!confirm(`Are you sure you want to ${actionLabel} ${emp.first_name || ""} ${emp.last_name || ""}?`)) return;
+      if (!confirm(`Are you sure you want to ${actionLabel} ${emp.last_name || ""} ${emp.first_name || ""}?`)) return;
 
       try {
         const { error } = await supabase
@@ -707,7 +719,7 @@ export function useEmployeesMutations({
 
         toast(
           "Status Updated",
-          `${emp.first_name || ""} ${emp.last_name || ""} has been ${newStatus === "active" ? "activated" : "deactivated"}.`,
+          `${emp.last_name || ""} ${emp.first_name || ""} has been ${newStatus === "active" ? "activated" : "deactivated"}.`,
           "success"
         );
         await logActivity({
@@ -717,7 +729,7 @@ export function useEmployeesMutations({
           entityId: emp.id,
           actorName,
           actorRole: roleName,
-          description: `${isCurrentlyDeactivated ? "Activated" : "Deactivated"} employee ${emp.first_name || ""} ${emp.last_name || ""}`,
+          description: `${isCurrentlyDeactivated ? "Activated" : "Deactivated"} employee ${emp.last_name || ""} ${emp.first_name || ""}`,
         });
         loadEmployees();
       } catch (err: any) {

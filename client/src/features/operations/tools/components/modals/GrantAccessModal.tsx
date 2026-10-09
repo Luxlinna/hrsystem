@@ -39,7 +39,7 @@ export const GrantAccessModal = memo(function GrantAccessModal({
     if (assignDeptFilter !== "All" && e.department !== assignDeptFilter) return false;
     if (assignSearch.trim()) {
       const q = assignSearch.toLowerCase().trim();
-      const name = `${e.first_name} ${e.last_name}`.toLowerCase();
+      const name = `${e.last_name} ${e.first_name}`.toLowerCase();
       const role = (e.role || "").toLowerCase();
       return name.includes(q) || role.includes(q);
     }
@@ -139,7 +139,7 @@ export const GrantAccessModal = memo(function GrantAccessModal({
         <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50 max-h-60 p-1">
           {filteredEmployees.map((emp) => {
             const isSelected = assignEmployeeIds.includes(emp.id);
-            const empName = `${emp.first_name} ${emp.last_name}`;
+            const empName = `${emp.last_name} ${emp.first_name}`;
 
             return (
               <div

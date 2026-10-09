@@ -29,7 +29,7 @@ export const AppActivityTab = memo(function AppActivityTab({
       <div className="space-y-2">
         {sortedLogs.map((log) => {
           const emp = log.employees;
-          const empName = emp ? `${emp.first_name} ${emp.last_name}` : "User";
+          const empName = emp ? `${emp.last_name} ${emp.first_name}` : "User";
 
           return (
             <div

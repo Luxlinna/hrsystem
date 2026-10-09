@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface OrgContractInfoSectionProps {
   form: EmployeeFormState;
@@ -50,11 +51,10 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
             Effective Date <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <input
-              type="date"
+            <DatePickerDMY
               required
               value={form.contract_effective_date || form.start_date || ""}
-              onChange={(e) => onChange("contract_effective_date", e.target.value)}
+              onChange={(val) => onChange("contract_effective_date", val)}
               className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />
           </div>
@@ -66,12 +66,11 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
             Contract End Date <span className="text-rose-500">*</span>
           </label>
           <div className="sm:col-span-2">
-            <input
-              type="date"
+            <DatePickerDMY
               value={form.contract_end_date || form.fdc_end_date || ""}
-              onChange={(e) => {
-                onChange("contract_end_date", e.target.value);
-                onChange("fdc_end_date", e.target.value);
+              onChange={(val) => {
+                onChange("contract_end_date", val);
+                onChange("fdc_end_date", val);
               }}
               className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />

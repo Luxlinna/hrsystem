@@ -1,140 +1,125 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { EmployeeMovement } from "../types";
-import { exportMovementsXLSX, exportMovementsCSV, exportMovementsPDF } from "../exports";
 
 interface MovementsHeaderProps {
   movements: EmployeeMovement[];
   onOpenRecordModal: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const MovementsHeader: React.FC<MovementsHeaderProps> = ({
-  movements,
   onOpenRecordModal,
+  onOpenSettings,
 }) => {
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exporting, setExporting] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setExportOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleExport = async (format: "xlsx" | "pdf" | "csv") => {
-    setExporting(format);
-    setExportOpen(false);
-    try {
-      if (format === "xlsx") {
-        await exportMovementsXLSX(movements);
-      } else if (format === "pdf") {
-        exportMovementsPDF(movements);
-      } else if (format === "csv") {
-        exportMovementsCSV(movements);
-      }
-    } finally {
-      setTimeout(() => setExporting(null), 500);
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
     }
-  };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDropdown]);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100 dark:border-slate-800">
+    <div className="flex items-center justify-between pt-1 pb-3">
+      {/* Title */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#253C7D] to-[#29ABE2] flex items-center justify-center text-white shadow-md shadow-[#253C7D]/20 shrink-0">
-          <i className="ri-route-line text-xl" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              Employee Movements
-            </h1>
-            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-[#253C7D] dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-              Personnel Actions
-            </span>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Track probation, promotions, transfers, salary adjustments, and contract renewals
-          </p>
-        </div>
+        <h1 className="text-xl font-normal text-slate-700 dark:text-slate-200 tracking-tight">
+          Change Statuses
+        </h1>
       </div>
 
-      <div className="flex items-center gap-2.5">
-        {/* Export Menu */}
-        <div className="relative" ref={menuRef}>
+      {/* Top Right Actions */}
+      <div className="flex items-center gap-2">
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => setExportOpen(!exportOpen)}
-            disabled={exporting !== null}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 shadow-sm transition-all"
+            type="button"
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="px-4 py-1.5 rounded-sm bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
           >
-            {exporting ? (
-              <>
-                <i className="ri-loader-4-line animate-spin text-sm" />
-                <span>Exporting...</span>
-              </>
-            ) : (
-              <>
-                <i className="ri-download-2-line text-sm text-gray-500" />
-                <span>Export</span>
-                <i className="ri-arrow-down-s-line text-xs text-gray-400" />
-              </>
-            )}
+            <span>Change Statuses</span>
+            <i className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${showDropdown ? "rotate-180" : ""}`} />
           </button>
 
-          {exportOpen && (
-            <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden animate-in fade-in-50">
-              <button
-                onClick={() => handleExport("xlsx")}
-                className="w-full text-left px-3.5 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5"
-              >
-                <div className="w-6 h-6 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <i className="ri-file-excel-2-line text-sm" />
-                </div>
-                <div>
-                  <div className="font-semibold">Excel Workbook</div>
-                  <div className="text-[10px] text-gray-400">.xlsx format</div>
-                </div>
-              </button>
-              <button
-                onClick={() => handleExport("pdf")}
-                className="w-full text-left px-3.5 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5"
-              >
-                <div className="w-6 h-6 rounded bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                  <i className="ri-file-pdf-line text-sm" />
-                </div>
-                <div>
-                  <div className="font-semibold">Printable PDF</div>
-                  <div className="text-[10px] text-gray-400">Audit report view</div>
-                </div>
-              </button>
-              <button
-                onClick={() => handleExport("csv")}
-                className="w-full text-left px-3.5 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5"
-              >
-                <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <i className="ri-file-text-line text-sm" />
-                </div>
-                <div>
-                  <div className="font-semibold">CSV Dataset</div>
-                  <div className="text-[10px] text-gray-400">Raw tabular data</div>
-                </div>
-              </button>
+          {showDropdown && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 top-8 w-56 rounded-md bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
+            >
+              {/* Workforce Navigation */}
+              <div className="py-0.5">
+                <Link
+                  to="/employees"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-team-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                  <span>Employees</span>
+                </Link>
+
+                <Link
+                  to="/change-statuses"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-sky-600 bg-sky-50/70 dark:bg-sky-950/40 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-route-line text-base text-sky-600 shrink-0 w-5 text-center" />
+                  <span>Change Status</span>
+                </Link>
+
+                <Link
+                  to="/exit"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-user-unfollow-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                  <span>Exits</span>
+                </Link>
+
+                <Link
+                  to="/warnings"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-error-warning-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                  <span>Warnings</span>
+                </Link>
+
+                <Link
+                  to="/complaints"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-feedback-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                  <span>Complaints/Suggestions</span>
+                </Link>
+              </div>
+
+              {/* Actions */}
+              <div className="border-t border-slate-100 dark:border-slate-700 pt-1 mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDropdown(false);
+                    onOpenRecordModal();
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 cursor-pointer"
+                >
+                  <i className="ri-add-circle-line text-sm text-[#253C7D] shrink-0 w-5 text-center" />
+                  <span>Create New Change Status</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
-
-        {/* Record Movement Action */}
-        <button
-          onClick={onOpenRecordModal}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-[#253C7D] hover:bg-[#1f3166] text-white shadow-sm hover:shadow transition-all"
-        >
-          <i className="ri-add-line text-sm" />
-          <span>Record Movement</span>
-        </button>
       </div>
     </div>
   );
 };
+

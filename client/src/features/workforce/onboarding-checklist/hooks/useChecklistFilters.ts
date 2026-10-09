@@ -19,7 +19,7 @@ export function useChecklistFilters(
 
   const filteredHires = useMemo(() => {
     return hires.filter((h) => {
-      const name = h.employees ? `${h.employees.first_name} ${h.employees.last_name}`.toLowerCase() : "new hire";
+      const name = h.employees ? `${h.employees.last_name} ${h.employees.first_name}`.toLowerCase() : "new hire";
       const role = (h.employees?.role || "").toLowerCase();
       const dept = (h.employees?.department || "").toLowerCase();
       const branch = (h.employees?.branches?.name || "").toLowerCase();

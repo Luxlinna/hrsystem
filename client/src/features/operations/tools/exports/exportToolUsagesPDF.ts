@@ -15,7 +15,7 @@ export function exportToolUsagesPDF(
   const rows = usages.length > 0
     ? usages
         .map((u) => {
-          const empName = u.employees ? `${u.employees.first_name} ${u.employees.last_name}` : "System User";
+          const empName = u.employees ? `${u.employees.last_name} ${u.employees.first_name}` : "System User";
           const dept = u.employees?.department || "General";
           const toolName = getToolName(u.tool_id);
           const dateStr = u.created_at ? new Date(u.created_at).toLocaleString("en-US") : "—";

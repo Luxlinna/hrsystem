@@ -60,7 +60,7 @@ export const BookingDetailModal = memo(function BookingDetailModal({
             .filter(Boolean)
             .map((emp: any) => ({
               id: emp.id,
-              name: `${emp.first_name} ${emp.last_name}`,
+              name: `${emp.last_name} ${emp.first_name}`,
               dept: emp.department || "Staff",
             }));
           setTrainingLearners(list);
@@ -158,7 +158,7 @@ export const BookingDetailModal = memo(function BookingDetailModal({
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
                 <p className="font-extrabold text-xs text-gray-900 truncate">
-                  {booking.employees?.first_name} {booking.employees?.last_name}
+                  {booking.employees?.last_name} {booking.employees?.first_name}
                 </p>
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   Organizer

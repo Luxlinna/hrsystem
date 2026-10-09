@@ -4,6 +4,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import type { Employee, PayrollRecord } from "../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface PayrollTabProps {
   salaryByDept: { name: string; total: number; avg: number; count: number }[];
@@ -78,7 +79,7 @@ export const PayrollTab = memo(function PayrollTab({
                   const emp = empMap.get(p.employee_id);
                   return (
                     <tr key={i} className="border-t border-gray-50 hover:bg-gray-50">
-                      <td className="px-5 py-3 text-[13px] text-gray-900">{emp ? `${emp.first_name} ${emp.last_name}` : "—"}</td>
+                      <td className="px-5 py-3 text-[13px] text-gray-900">{emp ? formatKhmerFullName(emp) : "—"}</td>
                       <td className="px-5 py-3 text-[13px] text-gray-600">{emp?.department || "—"}</td>
                       <td className="px-5 py-3 text-[13px] text-gray-600">{p.month}</td>
                       <td className="px-5 py-3 text-[13px] text-gray-900">${Number(p.base_salary || 0).toLocaleString()}</td>

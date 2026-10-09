@@ -1,12 +1,17 @@
 import { memo } from "react";
 import type { ExitFormState } from "../../types";
 import type { ExitOptionItem } from "../../hooks/useExitFormOptions";
+import type { NoticePeriodValidation } from "../../utils/noticePeriodUtils";
+import { ExitNoticePeriodNotice } from "./ExitNoticePeriodNotice";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface ExitInfoSectionProps {
   form: ExitFormState;
   onChange: (field: keyof ExitFormState, value: any) => void;
   exitTypes?: ExitOptionItem[];
   reasonTypes?: ExitOptionItem[];
+  noticeValidation?: NoticePeriodValidation;
+  onApplyMinDate?: (dateStr: string) => void;
 }
 
 export const ExitInfoSection = memo(function ExitInfoSection({
@@ -14,6 +19,8 @@ export const ExitInfoSection = memo(function ExitInfoSection({
   onChange,
   exitTypes = [],
   reasonTypes = [],
+  noticeValidation,
+  onApplyMinDate,
 }: ExitInfoSectionProps) {
   // Ensure existing selected exit_type is visible even if not in active list
   const hasSelectedExitType =
@@ -57,19 +64,25 @@ export const ExitInfoSection = memo(function ExitInfoSection({
         </div>
       </div>
 
-      {/* Effective Date */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 items-center">
-        <label className="text-xs font-bold text-slate-700">
+      {/* Effective Date & Labor Notice Policy */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 items-start">
+        <label className="text-xs font-bold text-slate-700 md:pt-2.5">
           Effective Date <span className="text-rose-500">*</span>
         </label>
-        <div className="md:col-span-3 relative">
-          <input
-            type="date"
+        <div className="md:col-span-3 space-y-2">
+          <DatePickerDMY
             required
             value={form.last_working_day}
-            onChange={(e) => onChange("last_working_day", e.target.value)}
+            onChange={(iso) => onChange("last_working_day", iso)}
             className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
           />
+
+          {noticeValidation && (
+            <ExitNoticePeriodNotice
+              validation={noticeValidation}
+              onApplyMinDate={onApplyMinDate}
+            />
+          )}
         </div>
       </div>
 

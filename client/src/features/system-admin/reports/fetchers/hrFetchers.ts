@@ -18,7 +18,7 @@ export const fetchLeaveReport = async (config: ReportConfig): Promise<ReportResu
       const isDeleted = Boolean(r.deleted_at);
       return {
         id: r.id,
-        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+        employee: `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim(),
         department: r.employees?.department || "—",
         branch: r.employees?.branches?.name || "—",
         leave_type: r.leave_type,
@@ -66,7 +66,7 @@ export const fetchPayrollReport = async (config: ReportConfig): Promise<ReportRe
       const isDeleted = Boolean(r.deleted_at);
       return {
         id: r.id,
-        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+        employee: `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim(),
         department: r.employees?.department || "—",
         branch: r.employees?.branches?.name || "—",
         month: r.month,

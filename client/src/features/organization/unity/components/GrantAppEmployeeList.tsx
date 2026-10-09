@@ -17,7 +17,7 @@ export const GrantAppEmployeeList = memo(function GrantAppEmployeeList({
     <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50 max-h-52 p-1 text-xs">
       {filteredEmployees.map((emp) => {
         const isSelected = selectedEmpIds.includes(emp.id);
-        const empName = `${emp.first_name} ${emp.last_name}`;
+        const empName = `${emp.last_name} ${emp.first_name}`;
 
         return (
           <div

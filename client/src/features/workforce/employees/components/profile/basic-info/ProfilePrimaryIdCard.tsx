@@ -1,5 +1,7 @@
 import { memo } from "react";
 import type { EmployeeIdentificationItem } from "../../../types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   primaryId: EmployeeIdentificationItem;
@@ -38,10 +40,9 @@ export const ProfilePrimaryIdCard = memo(function ProfilePrimaryIdCard({
             onChange={(e) => onUpdate("identification_number", e.target.value)}
             className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-mono font-bold focus:outline-none focus:border-[#253C7D] bg-white"
           />
-          <input
-            type="date"
+          <DatePickerDMY
             value={primaryId.expiration_date === "—" ? "" : primaryId.expiration_date}
-            onChange={(e) => onUpdate("expiration_date", e.target.value)}
+            onChange={(iso) => onUpdate("expiration_date", iso)}
             className="w-full px-2 py-1 rounded-lg border border-slate-300 text-[11px] font-mono focus:outline-none focus:border-[#253C7D] bg-white"
           />
         </div>
@@ -51,7 +52,7 @@ export const ProfilePrimaryIdCard = memo(function ProfilePrimaryIdCard({
             {primaryId.identification_number || nationalIdNumber || "—"}
           </p>
           {primaryId.expiration_date && primaryId.expiration_date !== "—" && (
-            <p className="text-[10px] text-slate-500 mt-1">Exp: {primaryId.expiration_date}</p>
+            <p className="text-[10px] text-slate-500 mt-1">Exp: {formatDMY(primaryId.expiration_date)}</p>
           )}
         </>
       )}

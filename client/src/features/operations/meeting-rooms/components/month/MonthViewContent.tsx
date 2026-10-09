@@ -138,7 +138,7 @@ export const MonthViewContent = memo(function MonthViewContent({
                       </div>
 
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                        {targetRoom?.name} &middot; {b.employees?.first_name} {b.employees?.last_name}
+                        {targetRoom?.name} &middot; {b.employees?.last_name} {b.employees?.first_name}
                       </p>
 
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">

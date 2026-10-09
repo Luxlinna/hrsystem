@@ -7,7 +7,7 @@ const getXLSX = async () => {
 export async function exportITAssetsXLSX(assets: ITAsset[]): Promise<boolean> {
   const data = assets.length > 0
     ? assets.map((a) => {
-        const empName = a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "Unassigned";
+        const empName = a.employees ? `${a.employees.last_name} ${a.employees.first_name}` : "Unassigned";
         const dept = a.employees?.department || "—";
 
         return {

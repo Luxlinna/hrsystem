@@ -1,70 +1,145 @@
-import { memo } from "react";
-import type { DisciplinaryRecord } from "../types";
-import { DisciplinaryExportMenu } from "./DisciplinaryExportMenu";
+import { memo, useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 interface DisciplinaryHeaderProps {
-  recordsCount: number;
-  canManage: boolean;
-  onExportCSV?: () => void;
   onOpenCreateModal: () => void;
-  records?: DisciplinaryRecord[];
-  canManageSettings?: boolean;
-  onOpenSettings?: () => void;
+  canManage?: boolean;
+  canViewEmployees?: boolean;
+  canViewChangeStatus?: boolean;
+  canViewExits?: boolean;
+  canViewWarnings?: boolean;
+  canViewComplaints?: boolean;
 }
 
 export const DisciplinaryHeader = memo(function DisciplinaryHeader({
-  recordsCount,
-  canManage,
   onOpenCreateModal,
-  records = [],
-  canManageSettings,
-  onOpenSettings,
+  canManage = false,
+  canViewEmployees = true,
+  canViewChangeStatus = true,
+  canViewExits = true,
+  canViewWarnings = true,
+  canViewComplaints = true,
 }: DisciplinaryHeaderProps) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDropdown]);
+
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-      <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          <span>Employee Relations</span>
-          <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] font-bold">Employee Warnings</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
-          Employee Warnings
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
-            {recordsCount} Records
-          </span>
+    <div className="flex items-center justify-between pt-1 pb-3">
+      {/* Title */}
+      <div className="flex items-center gap-3">
+        <h1 className="text-xl font-normal text-slate-700 dark:text-slate-200 tracking-tight">
+          Warnings
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {canManage
-            ? "Track formal warnings, corrective actions, employee promises, and performance improvement plans."
-            : "View your warnings, incident reports, and performance improvement plans."}
-        </p>
       </div>
 
-      {/* Header Action Buttons */}
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <DisciplinaryExportMenu records={records} />
-
-        {canManageSettings && onOpenSettings && (
+      {/* Top Right Actions */}
+      <div className="flex items-center gap-2">
+        <div className="relative" ref={dropdownRef}>
           <button
             type="button"
-            onClick={onOpenSettings}
-            className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all border border-gray-200 dark:border-slate-700 shadow-2xs hover:bg-gray-50 dark:hover:bg-slate-750 cursor-pointer"
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="px-4 py-1.5 rounded-sm bg-[#1b62a5] hover:bg-[#154e85] text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
           >
-            <i className="ri-settings-3-line text-[#253C7D] text-base" />
-            Setting
+            <span>Warnings</span>
+            <i
+              className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${
+                showDropdown ? "rotate-180" : ""
+              }`}
+            />
           </button>
-        )}
 
-        {canManage && (
-          <button
-            onClick={onOpenCreateModal}
-            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-          >
-            <i className="ri-file-shield-line text-base font-bold" />
-            Issue Warning / Log Incident
-          </button>
-        )}
+          {showDropdown && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 top-8 w-56 rounded-md bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
+            >
+              {/* Workforce Navigation */}
+              <div className="py-0.5">
+                {canViewEmployees && (
+                  <Link
+                    to="/employees"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-team-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Employees</span>
+                  </Link>
+                )}
+
+                {canViewChangeStatus && (
+                  <Link
+                    to="/change-statuses"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-route-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Change Status</span>
+                  </Link>
+                )}
+
+                {canViewExits && (
+                  <Link
+                    to="/exit"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-user-unfollow-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Exits</span>
+                  </Link>
+                )}
+
+                <Link
+                  to="/warnings"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-sky-600 bg-sky-50/70 dark:bg-sky-950/40 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-error-warning-line text-base text-sky-600 shrink-0 w-5 text-center" />
+                  <span>Warnings</span>
+                </Link>
+
+                {canViewComplaints && (
+                  <Link
+                    to="/complaints"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-feedback-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Complaints/Suggestions</span>
+                  </Link>
+                )}
+              </div>
+
+              {/* Actions for managers/admins */}
+              {canManage && (
+                <div className="border-t border-slate-100 dark:border-slate-700 pt-1 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDropdown(false);
+                      onOpenCreateModal();
+                    }}
+                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <i className="ri-add-circle-line text-sm text-[#1b62a5] shrink-0 w-5 text-center" />
+                    <span>Issue Warning / Log Incident</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { DisciplinaryRecord } from "../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -7,7 +8,7 @@ const getXLSX = async () => {
 export async function exportDisciplinaryXLSX(records: DisciplinaryRecord[]): Promise<boolean> {
   const data = records.length > 0
     ? records.map((r) => {
-        const empName = r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown Employee";
+        const empName = r.employees ? formatKhmerFullName(r.employees) : "Unknown Employee";
         const dept = r.employees?.department || "—";
         const role = r.employees?.role || "—";
 

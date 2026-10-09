@@ -65,24 +65,26 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
     emp.site ||
     emp.code_bu ||
     (Array.isArray(emp.branches) ? emp.branches[0]?.name : emp.branches?.name) ||
-    "8887";
+    (emp as any).work_locations?.name ||
+    "—";
   const department =
     newV.department ||
     newV.target_department ||
     emp.department ||
     emp.division ||
-    "OPERATIONS";
+    "—";
   const designation =
     newV.role ||
     newV.new_role ||
     newV.position ||
     emp.position ||
+    emp.role ||
     emp.employee_level ||
     emp.title ||
     "—";
   const contractTypeStr = formatContractType(m, emp);
   const employeeType = newV.employment_type || emp.employment_type || "—";
-  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || "—";
+  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || emp.reports_to || "—";
 
   const rawSalary = newV.new_salary ?? newV.salary ?? emp.basic_salary ?? emp.contract_rate ?? "0";
   const salaryFreq = newV.contract_rate_frequency || emp.contract_rate_frequency || "Monthly";
@@ -107,22 +109,29 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
 }
 
 export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] {
-  if (!emp.id) return [];
-  const site = emp.site || emp.code_bu || "—";
+  if (!emp || !emp.id) return [];
+  const site =
+    emp.site ||
+    emp.code_bu ||
+    (Array.isArray(emp.branches) ? emp.branches[0]?.name : emp.branches?.name) ||
+    (emp as any).work_locations?.name ||
+    "—";
   const department = emp.department || emp.division || "—";
-  const role = emp.position || emp.employee_level || emp.title || "—";
-  const supervisor = emp.line_manager || "—";
-  const contractType = emp.contract_type || "UDC";
+  const role = emp.position || emp.role || emp.employee_level || emp.title || "Staff";
+  const supervisor = emp.line_manager || emp.reports_to || "—";
+  const contractType = emp.contract_type || "PERMANENT (UDC)";
   const employeeType = emp.employment_type || "Full Time";
-  const rawSalary = emp.basic_salary ?? emp.contract_rate ?? "0";
-  const rawSalaryAfter = emp.contract_rate_after ?? "0";
-  const remarks = emp.contract_remark || "—";
+  const rawSalary = emp.basic_salary ?? emp.contract_rate ?? 0;
+  const rawSalaryAfter = emp.contract_rate_after ?? 0;
+  const remarks = emp.contract_remark || "";
 
   const joinDate = emp.join_date || emp.start_date || new Date().toISOString().split("T")[0];
-  const probationDate = emp.fdc_end_date || emp.contract_end_date || joinDate;
+  const probationDate = emp.fdc_end_date || emp.contract_end_date;
 
-  return [
-    {
+  const records: EmployeeMovement[] = [];
+
+  if (probationDate && probationDate !== joinDate) {
+    records.push({
       id: `probation-${emp.id}`,
       employee_id: emp.id,
       movement_type: "pass_probation",
@@ -141,26 +150,30 @@ export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] 
       },
       remarks,
       created_at: new Date().toISOString(),
+    });
+  }
+
+  records.push({
+    id: `join-${emp.id}`,
+    employee_id: emp.id,
+    movement_type: "change_contract",
+    title: "Join",
+    effective_date: joinDate,
+    previous_values: {},
+    new_values: {
+      site,
+      department,
+      role,
+      contract_type: contractType,
+      employment_type: employeeType,
+      supervisor,
+      new_salary: rawSalary,
+      salary_after_contract: rawSalaryAfter,
+      basic_salary: rawSalary,
     },
-    {
-      id: `join-${emp.id}`,
-      employee_id: emp.id,
-      movement_type: "change_contract",
-      title: "Join",
-      effective_date: joinDate,
-      previous_values: {},
-      new_values: {
-        site,
-        department,
-        role,
-        contract_type: contractType,
-        employment_type: employeeType,
-        supervisor,
-        new_salary: rawSalary,
-        salary_after_contract: rawSalaryAfter,
-      },
-      remarks,
-      created_at: new Date().toISOString(),
-    },
-  ];
+    remarks,
+    created_at: new Date().toISOString(),
+  });
+
+  return records;
 }

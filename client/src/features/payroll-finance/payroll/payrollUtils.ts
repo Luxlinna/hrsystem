@@ -1,5 +1,6 @@
 import type { PayrollRecord } from "./types";
 import { toast } from "@/components/Toast";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export const initials = (first?: string, last?: string): string =>
   `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
@@ -21,7 +22,7 @@ export const formatMonthLabel = (monthStr: string): string => {
 };
 
 export const printPayslip = (p: PayrollRecord): void => {
-  const empName = p.employees ? `${p.employees.first_name} ${p.employees.last_name}` : "Employee";
+  const empName = formatKhmerFullName(p.employees);
   const gross = Number(p.base_salary) + Number(p.bonus);
   const html = `<!DOCTYPE html>
 <html>
@@ -90,7 +91,7 @@ export const exportToCSV = (
 
   const headers = ["Employee", "Department", "Role", "Month", "Base Salary", "Bonus", "Deductions", "Net Pay", "Status", "Notes"];
   const rows = filteredRecords.map((r) => [
-    `"${r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown"}"`,
+    `"${formatKhmerFullName(r.employees)}"`,
     `"${r.employees?.department || ""}"`,
     `"${r.employees?.role || ""}"`,
     r.month,

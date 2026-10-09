@@ -11,7 +11,7 @@ export function exportBenefitEnrollmentsPDF(
   const rows = enrollments.length > 0
     ? enrollments
         .map((e) => {
-          const empName = e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : "Employee";
+          const empName = e.employees ? `${e.employees.last_name} ${e.employees.first_name}` : "Employee";
           const dept = e.employees?.department || "—";
           const role = e.employees?.role || "—";
           const planName = e.benefit_plans?.name || "General Benefit";

@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import type { Employee, ReportEntry } from "../../../types";
 import { formatDMY } from "../../../dateUtils";
+import { formatKhmerFullName } from "../../../nameUtils";
 
 interface Props {
   employee: Employee;
@@ -18,8 +19,12 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
   const site = employee.site || employee.work_locations?.name || employee.branches?.name || "—";
   const department = employee.department || employee.division || "—";
   const designation = employee.position || employee.employee_level || employee.title || "—";
+  const businessUnit = employee.bu_full_name || employee.branches?.name || employee.code_bu || "—";
+  const employeeLevel = employee.employee_level || employee.level || "—";
   const supervisorName = manager
-    ? `${manager.first_name || ""} ${manager.last_name || ""}`.trim() || employee.line_manager || "—"
+    ? formatKhmerFullName(manager) !== "—"
+      ? formatKhmerFullName(manager)
+      : employee.line_manager || "—"
     : employee.line_manager || "—";
 
   const joinDate = formatDMY(employee.join_date || employee.start_date);
@@ -75,7 +80,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
-            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Designation</span>
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Position</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{designation}</span>
           </div>
 
@@ -103,6 +108,16 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
             <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Supervisor</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{supervisorName}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Business Unit</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{businessUnit}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Employee Level</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employeeLevel}</span>
           </div>
         </div>
       </div>

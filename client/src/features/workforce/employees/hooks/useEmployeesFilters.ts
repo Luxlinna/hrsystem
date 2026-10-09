@@ -289,7 +289,7 @@ export function useEmployeesFilters({
   const scopedEmployees = useMemo(() => {
     if (isLineManager && currentEmployee) {
       const myId = currentEmployee.id;
-      const myName = `${currentEmployee.first_name || ""} ${currentEmployee.last_name || ""}`.trim().toLowerCase();
+      const myName = `${currentEmployee.last_name || ""} ${currentEmployee.first_name || ""}`.trim().toLowerCase();
       const myEmail = (currentEmployee.email || "").trim().toLowerCase();
       const myDept = (currentEmployee.department || "").trim().toLowerCase();
       const myDiv = (currentEmployee.division || "").trim().toLowerCase();

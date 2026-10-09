@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeNssfInfo } from "../../../types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 import { PersonalNssfStatusFields } from "./PersonalNssfStatusFields";
 
 interface PersonalNssfFieldsProps {
@@ -42,11 +43,10 @@ export const PersonalNssfFields = memo(function PersonalNssfFields({
               NSSF Joining Date <span className="text-rose-500">*</span>
             </label>
             <div className="md:col-span-8">
-              <input
-                type="date"
+              <DatePickerDMY
                 required
                 value={nssf.joining_date || ""}
-                onChange={(e) => updateNssf("joining_date", e.target.value)}
+                onChange={(iso) => updateNssf("joining_date", iso)}
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-[#253C7D]"
               />
             </div>

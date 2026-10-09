@@ -45,7 +45,7 @@ export const EditManagerModal = memo(function EditManagerModal({
         <p className="text-[12px] text-gray-500 dark:text-slate-400 mb-5">
           Set who{" "}
           <span className="font-semibold text-gray-700 dark:text-slate-200">
-            {selectedEmployee.first_name} {selectedEmployee.last_name}
+            {selectedEmployee.last_name} {selectedEmployee.first_name}
           </span>{" "}
           reports to
         </p>
@@ -62,7 +62,7 @@ export const EditManagerModal = memo(function EditManagerModal({
             <option value="none" className="dark:bg-slate-800">— No manager (Top level)</option>
             {eligibleManagers.map((e) => (
               <option key={e.id} value={e.id} className="dark:bg-slate-800">
-                {e.first_name} {e.last_name} — {e.role}
+                {e.last_name} {e.first_name} — {e.role}
               </option>
             ))}
           </select>

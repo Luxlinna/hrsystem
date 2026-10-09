@@ -22,7 +22,7 @@ export const BranchStaffSection = memo(function BranchStaffSection({
     for (const [dept, emps] of Object.entries(deptGroups)) {
       const matched = emps.filter(
         (e) =>
-          `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase().includes(term) ||
+          `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase().includes(term) ||
           (e.role && e.role.toLowerCase().includes(term)) ||
           (e.department && e.department.toLowerCase().includes(term)) ||
           (e.biometric_user_id && e.biometric_user_id.toLowerCase().includes(term))

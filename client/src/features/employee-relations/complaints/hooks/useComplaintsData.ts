@@ -1,10 +1,14 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import type { ComplaintSuggestion, ComplaintStats } from "../types";
 
 export function useComplaintsData() {
   const { targetBranch, userBranchId, isPartnerBranchBlocked } = useBranchScope();
+  const { isEmployee, isAdmin, isSuperAdmin, isLineManager } = usePermissions();
+  const { employee: myEmployee } = useMyEmployee();
   const activeBranch = targetBranch || userBranchId || null;
 
   const [records, setRecords] = useState<ComplaintSuggestion[]>([]);
@@ -12,10 +16,10 @@ export function useComplaintsData() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterDateOption, setFilterDateOption] = useState<string>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -24,14 +28,16 @@ export function useComplaintsData() {
       .from("complaints_suggestions")
       .select(
         `*,
-         employees(first_name, last_name, role, department, avatar_url),
+         employees(first_name, last_name, role, department, avatar_url, branch_id),
          branches(id, name)`
       )
       .order("entry_date", { ascending: false })
       .order("created_at", { ascending: false });
 
-    // Strict dynamic BU scoping
-    if (activeBranch && !isPartnerBranchBlocked) {
+    // Scoping for employees / partner branches
+    if (isEmployee && !isAdmin && !isSuperAdmin && !isLineManager && myEmployee?.id) {
+      query = query.eq("employee_id", myEmployee.id);
+    } else if (isPartnerBranchBlocked && activeBranch) {
       query = query.eq("branch_id", activeBranch);
     }
 
@@ -42,7 +48,7 @@ export function useComplaintsData() {
       setRecords([]);
     }
     setLoading(false);
-  }, [activeBranch, isPartnerBranchBlocked]);
+  }, [activeBranch, isPartnerBranchBlocked, isEmployee, isAdmin, isSuperAdmin, isLineManager, myEmployee?.id]);
 
   useEffect(() => {
     loadData();
@@ -53,10 +59,10 @@ export function useComplaintsData() {
     return records.filter((r) => {
       const q = searchQuery.trim().toLowerCase();
       if (q) {
-        const empName = `${r.employees?.first_name ?? ""} ${r.employees?.last_name ?? ""}`.toLowerCase();
-        const subj = r.subject.toLowerCase();
-        const det = r.details.toLowerCase();
-        const tgt = r.target_to.toLowerCase();
+        const empName = `${r.employees?.last_name ?? ""} ${r.employees?.first_name ?? ""}`.toLowerCase();
+        const subj = (r.subject || "").toLowerCase();
+        const det = (r.details || "").toLowerCase();
+        const tgt = (r.target_to || "").toLowerCase();
         const rem = (r.remark ?? "").toLowerCase();
         const sug = (r.suggestion ?? "").toLowerCase();
 
@@ -72,16 +78,55 @@ export function useComplaintsData() {
         }
       }
 
-      if (filterType !== "all" && r.type !== filterType) return false;
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
-      if (filterDateFrom && r.entry_date < filterDateFrom) return false;
-      if (filterDateTo && r.entry_date > filterDateTo) return false;
+
+      // Date range filtering
+      if (filterDateOption && filterDateOption !== "all") {
+        const rawDateStr = r.entry_date || r.created_at;
+        if (!rawDateStr) return false;
+        const entryD = new Date(rawDateStr);
+        if (isNaN(entryD.getTime())) return false;
+
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        if (filterDateOption === "today") {
+          if (entryD < todayStart || entryD > todayEnd) return false;
+        } else if (filterDateOption === "this_week") {
+          const day = todayStart.getDay();
+          const s = new Date(todayStart);
+          s.setDate(todayStart.getDate() - (day === 0 ? 6 : day - 1));
+          const e = new Date(s);
+          e.setDate(s.getDate() + 6);
+          e.setHours(23, 59, 59, 999);
+          if (entryD < s || entryD > e) return false;
+        } else if (filterDateOption === "this_month") {
+          const s = new Date(now.getFullYear(), now.getMonth(), 1);
+          const e = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+          if (entryD < s || entryD > e) return false;
+        } else if (filterDateOption === "this_year") {
+          const s = new Date(now.getFullYear(), 0, 1);
+          const e = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+          if (entryD < s || entryD > e) return false;
+        } else if (filterDateOption === "custom") {
+          if (startDate) {
+            const s = new Date(startDate);
+            s.setHours(0, 0, 0, 0);
+            if (entryD < s) return false;
+          }
+          if (endDate) {
+            const e = new Date(endDate);
+            e.setHours(23, 59, 59, 999);
+            if (entryD > e) return false;
+          }
+        }
+      }
 
       return true;
     });
-  }, [records, searchQuery, filterType, filterStatus, filterDateFrom, filterDateTo]);
+  }, [records, searchQuery, filterStatus, filterDateOption, startDate, endDate]);
 
-  // KPI Metrics
   const stats: ComplaintStats = useMemo(() => {
     return {
       total: records.length,
@@ -98,14 +143,14 @@ export function useComplaintsData() {
     stats,
     searchQuery,
     setSearchQuery,
-    filterType,
-    setFilterType,
     filterStatus,
     setFilterStatus,
-    filterDateFrom,
-    setFilterDateFrom,
-    filterDateTo,
-    setFilterDateTo,
+    filterDateOption,
+    setFilterDateOption,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
     loadData,
   };
 }

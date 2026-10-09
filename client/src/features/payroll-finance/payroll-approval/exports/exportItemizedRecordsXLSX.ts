@@ -7,7 +7,7 @@ const getXLSX = async () => {
 export async function exportItemizedRecordsXLSX(records: EmployeeItemRecord[]): Promise<boolean> {
   const data = records.length > 0
     ? records.map((r) => {
-        const empName = r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Employee";
+        const empName = r.employees ? `${r.employees.last_name} ${r.employees.first_name}` : "Employee";
         const dept = r.employees?.department || "—";
         const role = r.employees?.role || "—";
 

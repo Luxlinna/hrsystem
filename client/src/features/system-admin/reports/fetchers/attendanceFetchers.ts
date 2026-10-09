@@ -24,7 +24,7 @@ const loadAttendanceRows = async (config: ReportConfig) => {
     .map((r: any) => ({
       id: r.id,
       employee_id: r.employee_id,
-      employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Unknown",
+      employee: `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim() || "Unknown",
       department: r.employees?.department || "—",
       branch: r.employees?.branches?.name || "—",
       role: r.employees?.role || "—",

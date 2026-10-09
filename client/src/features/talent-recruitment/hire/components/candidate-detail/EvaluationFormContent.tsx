@@ -71,7 +71,7 @@ export function EvaluationFormContent({
     matchedPanelMember?.name ||
     currentUserName ||
     (existingInterview?.employees
-      ? `${existingInterview.employees.first_name || ""} ${existingInterview.employees.last_name || ""}`.trim()
+      ? `${existingInterview.employees.last_name || ""} ${existingInterview.employees.first_name || ""}`.trim()
       : "Evaluator");
 
   const initialParsed = parseInterviewFeedback(existingInterview?.feedback, resolvedInitialEvaluator);

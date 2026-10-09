@@ -7,7 +7,7 @@ const getXLSX = async () => {
 export async function exportCertificatesXLSX(certificates: Enrollment[]): Promise<boolean> {
   const data = certificates.length > 0
     ? certificates.map((c) => {
-        const empName = `${c.employees?.first_name || ""} ${c.employees?.last_name || ""}`.trim() || "Employee";
+        const empName = `${c.employees?.last_name || ""} ${c.employees?.first_name || ""}`.trim() || "Employee";
         const dept = c.employees?.department || "—";
         const courseTitle = c.training_courses?.title || "Training Module";
 

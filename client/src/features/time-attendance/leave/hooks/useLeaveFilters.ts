@@ -120,7 +120,7 @@ export function useLeaveFilters(
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const empName = getLeaveEmployeeName(r.employees).toLowerCase();
-        const empFirstLast = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+        const empFirstLast = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.toLowerCase();
         const empCode = (r.employees?.employee_code || r.employees?.biometric_user_id || "").toLowerCase();
         const empRole = (r.employees?.role || "").toLowerCase();
         const empDept = (r.employees?.department || "").toLowerCase();

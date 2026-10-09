@@ -34,7 +34,7 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
     if (!searchQuery.trim()) return employees;
     const q = searchQuery.toLowerCase().trim();
     return employees.filter((emp) => {
-      const name = `${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
+      const name = `${emp.last_name || ""} ${emp.first_name || ""}`.toLowerCase();
       const email = (emp.email || "").toLowerCase();
       const phone = (emp.phone || "").toLowerCase();
       const role = (emp.role || "").toLowerCase();
@@ -79,7 +79,7 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
         <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-slate-800 border border-[#253C7D]/30 dark:border-slate-700 rounded-lg text-xs h-[36px]">
           <div className="min-w-0 pr-2">
             <p className="font-semibold text-gray-900 dark:text-slate-100 truncate text-xs">
-              {selectedEmployee.first_name} {selectedEmployee.last_name}
+              {selectedEmployee.last_name} {selectedEmployee.first_name}
             </p>
           </div>
           <button
@@ -145,11 +145,11 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
                 className="w-full text-left px-3.5 py-2.5 hover:bg-[#253C7D]/5 dark:hover:bg-slate-700/60 flex items-center gap-3 transition-colors cursor-pointer border-b border-gray-50 dark:border-slate-700/60 last:border-none"
               >
                 <div className="w-8 h-8 rounded-xl bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 flex items-center justify-center text-xs font-bold shrink-0">
-                  {`${emp.first_name?.[0] || ""}${emp.last_name?.[0] || ""}`.toUpperCase() || "E"}
+                  {`${emp.last_name?.[0] || ""}${emp.first_name?.[0] || ""}`.toUpperCase() || "E"}
                 </div>
                 <div className="flex-1 min-w-0 pr-1">
                   <p className="text-xs font-bold text-gray-900 dark:text-slate-100 truncate">
-                    {emp.first_name} {emp.last_name}
+                    {emp.last_name} {emp.first_name}
                   </p>
                   <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate mt-0.5">
                     {accountType === "phone" && emp.phone ? (

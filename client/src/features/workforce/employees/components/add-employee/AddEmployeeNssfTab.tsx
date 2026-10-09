@@ -2,6 +2,7 @@ import { memo, useRef, useState, useCallback, useMemo } from "react";
 import type { EmployeeFormState, EmployeeNssfInfo } from "../../types";
 import { uploadMediaToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface AddEmployeeNssfTabProps {
   form: EmployeeFormState;
@@ -16,61 +17,34 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
   const [uploading, setUploading] = useState(false);
 
   const khName = form.kh_name || (form as any).khmer_name || "";
-  const khParts = useMemo(
-    () => khName.trim().split(/\s+/).filter(Boolean),
-    [khName]
-  );
+  const khParts = useMemo(() => khName.trim().split(/\s+/).filter(Boolean), [khName]);
   const defaultKhLast = khParts.length > 1 ? khParts[0] : (khParts[0] || "");
   const defaultKhFirst = khParts.length > 1 ? khParts.slice(1).join(" ") : (khParts[0] || "");
 
-  const defaultIdentityCode =
-    form.nssf_number ||
-    form.employee_code ||
-    form.national_id_number ||
-    form.biometric_user_id ||
-    "";
+  const defaultIdentityCode = form.nssf_number || form.employee_code || form.national_id_number || "";
+  const defaultJoiningDate = form.join_date || form.start_date || new Date().toISOString().slice(0, 10);
 
-  const defaultJoiningDate =
-    form.join_date ||
-    form.start_date ||
-    new Date().toISOString().slice(0, 10);
-
-  const nssf: EmployeeNssfInfo = useMemo(() => {
-    return {
-      register_nssf: Boolean(form.register_nssf || form.nssf_info?.register_nssf || form.nssf_number),
-      identity_code: form.nssf_info?.identity_code || defaultIdentityCode,
-      joining_date: form.nssf_info?.joining_date || defaultJoiningDate,
-      first_name_latin: form.nssf_info?.first_name_latin || form.first_name || "",
-      last_name_latin: form.nssf_info?.last_name_latin || form.last_name || "",
-      first_name_kh: form.nssf_info?.first_name_kh || defaultKhFirst,
-      last_name_kh: form.nssf_info?.last_name_kh || defaultKhLast,
-      monthly_wage_type: form.nssf_info?.monthly_wage_type || "Formula",
-      monthly_wage: form.nssf_info?.monthly_wage || "Taxable Salary",
-      seniority_pension_fund: form.nssf_info?.seniority_pension_fund || "",
-      remark: form.nssf_info?.remark || "",
-      status: form.nssf_info?.status || "Active",
-    };
-  }, [
-    form.nssf_info,
-    form.register_nssf,
-    form.nssf_number,
-    form.first_name,
-    form.last_name,
-    defaultIdentityCode,
-    defaultJoiningDate,
-    defaultKhFirst,
-    defaultKhLast,
-  ]);
+  const nssf: EmployeeNssfInfo = useMemo(() => ({
+    register_nssf: Boolean(form.register_nssf || form.nssf_info?.register_nssf || form.nssf_number),
+    identity_code: form.nssf_info?.identity_code || defaultIdentityCode,
+    joining_date: form.nssf_info?.joining_date || defaultJoiningDate,
+    first_name_latin: form.nssf_info?.first_name_latin || form.first_name || "",
+    last_name_latin: form.nssf_info?.last_name_latin || form.last_name || "",
+    first_name_kh: form.nssf_info?.first_name_kh || defaultKhFirst,
+    last_name_kh: form.nssf_info?.last_name_kh || defaultKhLast,
+    monthly_wage_type: form.nssf_info?.monthly_wage_type || "Formula",
+    monthly_wage: form.nssf_info?.monthly_wage || "Taxable Salary",
+    seniority_pension_fund: form.nssf_info?.seniority_pension_fund || "",
+    remark: form.nssf_info?.remark || "",
+    status: form.nssf_info?.status || "Active",
+  }), [form, defaultIdentityCode, defaultJoiningDate, defaultKhFirst, defaultKhLast]);
 
   const isRegistered = Boolean(form.register_nssf || nssf.register_nssf);
 
-  const updateNssf = useCallback(
-    (field: keyof EmployeeNssfInfo, value: any) => {
-      onChange("nssf_info", { ...nssf, [field]: value });
-      if (field === "identity_code") onChange("nssf_number", value);
-    },
-    [nssf, onChange]
-  );
+  const updateNssf = useCallback((field: keyof EmployeeNssfInfo, value: any) => {
+    onChange("nssf_info", { ...nssf, [field]: value });
+    if (field === "identity_code") onChange("nssf_number", value);
+  }, [nssf, onChange]);
 
   const handleToggleRegister = (checked: boolean) => {
     onChange("register_nssf", checked);
@@ -103,7 +77,6 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* Register NSSF Checkbox */}
       <div className="flex items-center gap-2 pt-1">
         <label className="inline-flex items-center gap-2 text-xs font-normal text-slate-800 cursor-pointer select-none">
           <input
@@ -116,7 +89,6 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
         </label>
       </div>
 
-      {/* Expanded NSSF Form Fields if Checked */}
       {isRegistered && (
         <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-150">
           <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">NSSF Details</h3>
@@ -140,10 +112,9 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
             <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
               <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">Joining Date</label>
               <div className="sm:col-span-2">
-                <input
-                  type="date"
+                <DatePickerDMY
                   value={nssf.joining_date || ""}
-                  onChange={(e) => updateNssf("joining_date", e.target.value)}
+                  onChange={(iso) => updateNssf("joining_date", iso)}
                   className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                 />
               </div>
@@ -155,7 +126,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                 <select
                   value={nssf.monthly_wage_type || "Formula"}
                   onChange={(e) => updateNssf("monthly_wage_type", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="Formula">Formula</option>
                   <option value="Gross Salary">Gross Salary</option>
@@ -171,7 +142,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                 <select
                   value={nssf.monthly_wage || "Taxable Salary"}
                   onChange={(e) => updateNssf("monthly_wage", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="Taxable Salary">Taxable Salary</option>
                   <option value="Basic Salary">Basic Salary</option>
@@ -189,7 +160,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                   value={nssf.remark || ""}
                   onChange={(e) => updateNssf("remark", e.target.value)}
                   placeholder="Remark"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
             </div>

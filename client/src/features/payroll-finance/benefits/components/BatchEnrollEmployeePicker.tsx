@@ -30,7 +30,7 @@ export const BatchEnrollEmployeePicker = memo(function BatchEnrollEmployeePicker
   const filteredEmployees = employees.filter((emp) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
-    return `${emp.first_name} ${emp.last_name} ${emp.role || ""} ${emp.department || ""}`.toLowerCase().includes(q);
+    return `${emp.last_name} ${emp.first_name} ${emp.role || ""} ${emp.department || ""}`.toLowerCase().includes(q);
   });
 
   const allSelected = enrollEmployeeIds.length === employees.length;
@@ -79,7 +79,7 @@ export const BatchEnrollEmployeePicker = memo(function BatchEnrollEmployeePicker
             .map((emp) => (
               <div
                 key={emp.id}
-                title={`${emp.first_name} ${emp.last_name}`}
+                title={`${emp.last_name} ${emp.first_name}`}
                 className="w-7 h-7 rounded-lg bg-[#253C7D]/10 border-2 border-white shadow-xs overflow-hidden flex items-center justify-center text-[10px] font-bold text-[#253C7D] flex-shrink-0"
               >
                 {emp.avatar_url ? (
@@ -173,7 +173,7 @@ export const BatchEnrollEmployeePicker = memo(function BatchEnrollEmployeePicker
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-bold truncate ${isSelected ? "text-[#253C7D]" : "text-gray-900"}`}>
-                        {emp.first_name} {emp.last_name}
+                        {emp.last_name} {emp.first_name}
                       </p>
                       <p className="text-xs text-gray-400 truncate">
                         {emp.role || "—"}{emp.department ? ` · ${emp.department}` : ""}

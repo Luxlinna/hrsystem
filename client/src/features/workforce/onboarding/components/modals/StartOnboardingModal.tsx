@@ -88,7 +88,7 @@ export const StartOnboardingModal = memo(function StartOnboardingModal({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-extrabold text-xs text-gray-900 truncate">
-                            {emp.first_name} {emp.last_name}
+                            {emp.last_name} {emp.first_name}
                           </p>
                           {emp.branches?.name && (
                             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[9px] shrink-0">

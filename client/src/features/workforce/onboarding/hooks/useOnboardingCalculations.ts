@@ -57,7 +57,7 @@ export function useOnboardingCalculations(
       (e) =>
         e.first_name.toLowerCase().includes(q) ||
         e.last_name.toLowerCase().includes(q) ||
-        `${e.first_name} ${e.last_name}`.toLowerCase().includes(q) ||
+        `${e.last_name} ${e.first_name}`.toLowerCase().includes(q) ||
         (e.role && e.role.toLowerCase().includes(q)) ||
         (e.department && e.department.toLowerCase().includes(q)) ||
         (e.branches?.name && e.branches.name.toLowerCase().includes(q))

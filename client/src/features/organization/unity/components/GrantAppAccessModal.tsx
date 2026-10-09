@@ -34,7 +34,7 @@ export const GrantAppAccessModal = memo(function GrantAppAccessModal({
   const filteredEmployees = availableEmployees.filter((e) => {
     if (!empSearch.trim()) return true;
     const q = empSearch.toLowerCase().trim();
-    const name = `${e.first_name} ${e.last_name}`.toLowerCase();
+    const name = `${e.last_name} ${e.first_name}`.toLowerCase();
     const role = (e.role || "").toLowerCase();
     const dept = (e.department || "").toLowerCase();
     return name.includes(q) || role.includes(q) || dept.includes(q);

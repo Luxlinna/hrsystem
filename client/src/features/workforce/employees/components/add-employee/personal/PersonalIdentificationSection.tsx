@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { PersonalSectionProps } from "./types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 export const PersonalIdentificationSection = memo(function PersonalIdentificationSection({
   form,
@@ -89,12 +90,11 @@ export const PersonalIdentificationSection = memo(function PersonalIdentificatio
                     />
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="date"
+                    <DatePickerDMY
                       value={idItem.expiration_date}
-                      onChange={(e) => {
+                      onChange={(iso) => {
                         const updated = [...(form.identifications || [])];
-                        updated[idx] = { ...updated[idx], expiration_date: e.target.value };
+                        updated[idx] = { ...updated[idx], expiration_date: iso };
                         onChange("identifications", updated);
                       }}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:border-[#253C7D]"

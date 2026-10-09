@@ -59,6 +59,9 @@ export interface EmployeeExit {
     biometric_user_id?: string | null;
     employee_code?: string | null;
     contract_type?: string | null;
+    start_date?: string | null;
+    join_date?: string | null;
+    contract_effective_date?: string | null;
     branches?: { id?: string; name: string } | null;
   } | null;
 }
@@ -110,6 +113,9 @@ export interface ExitEmployee {
   biometric_user_id?: string | null;
   employee_code?: string | null;
   contract_type?: string | null;
+  start_date?: string | null;
+  join_date?: string | null;
+  contract_effective_date?: string | null;
   branches?: { id?: string; name: string } | null;
 }
 

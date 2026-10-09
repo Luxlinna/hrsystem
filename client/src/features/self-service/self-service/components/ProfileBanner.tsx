@@ -24,13 +24,13 @@ export function ProfileBanner({ employee, managerName, todayAttendance, onGoToCh
   const fullName =
     employee.display_name?.trim() ||
     employee.full_name?.trim() ||
-    `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+    `${employee.last_name || ""} ${employee.first_name || ""}`.trim();
   const avatarSrc = employee.avatar_url || (employee as any).photo_url;
   const isClockedIn = Boolean(todayAttendance?.clock_in);
   const isDayDone = Boolean(todayAttendance?.clock_in && todayAttendance?.clock_out);
   const initials = fullName
     ? fullName.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : `${employee.first_name?.[0] || ""}${employee.last_name?.[0] || ""}`.toUpperCase();
+    : `${employee.last_name?.[0] || ""}${employee.first_name?.[0] || ""}`.toUpperCase();
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 mb-5 shadow-xs">

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { ComplaintSuggestion, ComplaintStatus } from "../types";
 import { ComplaintTableRow } from "./ComplaintTableRow";
 
@@ -10,7 +10,6 @@ interface ComplaintTableProps {
   onDelete: (id: string) => void;
   onUpdateStatus: (id: string, status: ComplaintStatus) => void;
   onPreviewAttachment: (url: string, name: string) => void;
-  onNew: () => void;
 }
 
 export const ComplaintTable = memo(function ComplaintTable({
@@ -21,71 +20,90 @@ export const ComplaintTable = memo(function ComplaintTable({
   onDelete,
   onUpdateStatus,
   onPreviewAttachment,
-  onNew,
 }: ComplaintTableProps) {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-slate-400">Loading records…</p>
-        </div>
-      </div>
-    );
-  }
+  const [sortField, setSortField] = useState<"entry_date" | "target_to" | null>("entry_date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  if (records.length === 0) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center py-20 gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-sky-50 flex items-center justify-center">
-          <i className="ri-feedback-line text-3xl text-sky-500" />
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-bold text-slate-900">No complaints or suggestions recorded</p>
-          <p className="text-xs text-slate-400 mt-1">
-            Log feedback, workplace grievances, or improvement suggestions for your BU.
-          </p>
-        </div>
-        <button
-          onClick={onNew}
-          className="flex items-center gap-2 px-4 py-2 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer bg-[#0284c7] hover:bg-sky-700 transition-colors"
-        >
-          <i className="ri-add-line" />
-          Create First Entry
-        </button>
-      </div>
-    );
-  }
+  const handleSort = (field: "entry_date" | "target_to") => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedRecords = [...records].sort((a, b) => {
+    if (!sortField) return 0;
+    const valA = (a[sortField] || "").toLowerCase();
+    const valB = (b[sortField] || "").toLowerCase();
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div className="bg-white border-t border-slate-100 mt-2 min-h-[180px]">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Type</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target To</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Subject &amp; Detail</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Suggestion</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Remark</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Attachment</th>
-              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+        <table className="w-full text-xs text-left">
+          <thead className="bg-white border-b border-slate-200 text-slate-700 font-semibold text-[11.5px]">
+            <tr>
+              <th className="py-2.5 px-3 w-12 font-semibold">No.</th>
+              <th
+                onClick={() => handleSort("entry_date")}
+                className="py-2.5 px-3 min-w-[110px] font-semibold cursor-pointer hover:text-[#253C7D] select-none"
+              >
+                <div className="flex items-center gap-1">
+                  <span>Filing Date</span>
+                  <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+                </div>
+              </th>
+              <th className="py-2.5 px-3 min-w-[140px] font-semibold">Filed by</th>
+              <th className="py-2.5 px-3 min-w-[180px] font-semibold">Subject</th>
+              <th
+                onClick={() => handleSort("target_to")}
+                className="py-2.5 px-3 min-w-[180px] font-semibold cursor-pointer hover:text-[#253C7D] select-none"
+              >
+                <div className="flex items-center gap-1">
+                  <span>Complaint/Suggestion To</span>
+                  <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+                </div>
+              </th>
+              <th className="py-2.5 px-3 min-w-[100px] font-semibold">Status</th>
+              <th className="py-2.5 px-3 min-w-[150px] font-semibold">Comment</th>
+              <th className="py-2.5 px-3 w-12 text-center select-none">
+                <i className="ri-settings-3-line text-slate-400 text-sm" />
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {records.map((r) => (
-              <ComplaintTableRow
-                key={r.id}
-                r={r}
-                onSelect={onSelect}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onUpdateStatus={onUpdateStatus}
-                onPreview={onPreviewAttachment}
-              />
-            ))}
+          <tbody className="divide-y divide-slate-100 bg-white">
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="py-16 text-center text-xs text-slate-400">
+                  <div className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  Loading records...
+                </td>
+              </tr>
+            ) : sortedRecords.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-14 text-center text-sm font-bold text-slate-800">
+                  No records found
+                </td>
+              </tr>
+            ) : (
+              sortedRecords.map((r, idx) => (
+                <ComplaintTableRow
+                  key={r.id}
+                  r={r}
+                  index={idx + 1}
+                  onSelect={onSelect}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onUpdateStatus={onUpdateStatus}
+                  onPreview={onPreviewAttachment}
+                />
+              ))
+            )}
           </tbody>
         </table>
       </div>

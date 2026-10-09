@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import type { Employee } from "../../../types";
+import { formatDMY } from "../../../dateUtils";
 
 interface Props {
   employee: Employee;
@@ -49,8 +50,8 @@ export const ProfileEducationTrainingAndWorkSection = memo(function ProfileEduca
                     <td className="py-2 px-3">{edu.institue || "-"}</td>
                     <td className="py-2 px-3">{edu.subject || "-"}</td>
                     <td className="py-2 px-3">{edu.degree || "-"}</td>
-                    <td className="py-2 px-3">{edu.start_date || "-"}</td>
-                    <td className="py-2 px-3">{edu.end_date || "-"}</td>
+                    <td className="py-2 px-3">{formatDMY(edu.start_date)}</td>
+                    <td className="py-2 px-3">{formatDMY(edu.end_date)}</td>
                     <td className="py-2 px-3">{edu.remark || "-"}</td>
                   </tr>
                 ))
@@ -92,8 +93,8 @@ export const ProfileEducationTrainingAndWorkSection = memo(function ProfileEduca
                     <td className="py-2 px-3 text-center">{idx + 1}</td>
                     <td className="py-2 px-3">{tr.institue || "-"}</td>
                     <td className="py-2 px-3">{tr.subject || "-"}</td>
-                    <td className="py-2 px-3">{tr.start_date || "-"}</td>
-                    <td className="py-2 px-3">{tr.end_date || "-"}</td>
+                    <td className="py-2 px-3">{formatDMY(tr.start_date)}</td>
+                    <td className="py-2 px-3">{formatDMY(tr.end_date)}</td>
                     <td className="py-2 px-3">{tr.remark || "-"}</td>
                     <td className="py-2 px-3">{tr.attachment || "-"}</td>
                   </tr>
@@ -127,7 +128,7 @@ export const ProfileEducationTrainingAndWorkSection = memo(function ProfileEduca
                 <th className="py-2 px-3">Company Name</th>
                 <th className="py-2 px-3">Start Date</th>
                 <th className="py-2 px-3">End Date</th>
-                <th className="py-2 px-3">Designation</th>
+                <th className="py-2 px-3">Position</th>
                 <th className="py-2 px-3">Supervisor Name</th>
                 <th className="py-2 px-3">Supervisor phone number</th>
                 <th className="py-2 px-3">Remark</th>
@@ -146,8 +147,8 @@ export const ProfileEducationTrainingAndWorkSection = memo(function ProfileEduca
                   <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-2 px-3 text-center">{idx + 1}</td>
                     <td className="py-2 px-3">{work.company_name || "-"}</td>
-                    <td className="py-2 px-3">{work.start_date || "-"}</td>
-                    <td className="py-2 px-3">{work.end_date || "-"}</td>
+                    <td className="py-2 px-3">{formatDMY(work.start_date)}</td>
+                    <td className="py-2 px-3">{formatDMY(work.end_date)}</td>
                     <td className="py-2 px-3">{work.designation || "-"}</td>
                     <td className="py-2 px-3">{work.supervisor_name || "-"}</td>
                     <td className="py-2 px-3">

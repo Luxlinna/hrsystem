@@ -1,5 +1,7 @@
 import { memo } from "react";
 import type { BasicInfoSectionProps } from "./types";
+import { formatDMY } from "../../../dateUtils";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 export const ProfileHiringTermsFields = memo(function ProfileHiringTermsFields({
   employee,
@@ -59,27 +61,25 @@ export const ProfileHiringTermsFields = memo(function ProfileHiringTermsFields({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="text-[10px] text-gray-400 block mb-0.5">Start</span>
-              <input
-                type="date"
+              <DatePickerDMY
                 value={form.contract_effective_date || form.start_date || form.join_date || ""}
-                onChange={(e) => setForm({ ...form, contract_effective_date: e.target.value })}
+                onChange={(iso) => setForm({ ...form, contract_effective_date: iso })}
                 className="w-full px-2 py-1 rounded-lg border border-gray-300 text-xs font-mono focus:outline-none focus:border-[#253C7D]"
               />
             </div>
             <div>
               <span className="text-[10px] text-gray-400 block mb-0.5">End</span>
-              <input
-                type="date"
+              <DatePickerDMY
                 value={form.contract_end_date || form.fdc_end_date || ""}
-                onChange={(e) => setForm({ ...form, contract_end_date: e.target.value })}
+                onChange={(iso) => setForm({ ...form, contract_end_date: iso })}
                 className="w-full px-2 py-1 rounded-lg border border-gray-300 text-xs font-mono focus:outline-none focus:border-[#253C7D]"
               />
             </div>
           </div>
         ) : (
           <p className="text-xs text-slate-800 font-mono font-bold">
-            {employee.contract_effective_date || employee.start_date || employee.join_date || "—"}{" "}
-            to {employee.contract_end_date || employee.fdc_end_date || "—"}
+            {formatDMY(employee.contract_effective_date || employee.start_date || employee.join_date)}{" "}
+            to {formatDMY(employee.contract_end_date || employee.fdc_end_date)}
           </p>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { EmployeeFamilyMemberItem } from "../../../types";
 import { formatDMY } from "../../../dateUtils";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface Props {
   fam: EmployeeFamilyMemberItem;
@@ -57,10 +58,9 @@ export const ProfileFamilyMemberRow = memo(function ProfileFamilyMemberRow({
           </select>
         </td>
         <td className="py-2 px-2.5">
-          <input
-            type="date"
+          <DatePickerDMY
             value={fam.date_of_birth || ""}
-            onChange={(e) => onUpdate(idx, "date_of_birth", e.target.value)}
+            onChange={(iso) => onUpdate(idx, "date_of_birth", iso)}
             className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-mono focus:outline-none focus:border-[#253C7D] bg-white"
           />
         </td>

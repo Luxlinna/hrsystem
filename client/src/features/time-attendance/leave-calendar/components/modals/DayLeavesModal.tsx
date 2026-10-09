@@ -61,7 +61,7 @@ export const DayLeavesModal = memo(function DayLeavesModal({
                   </div>
                   <div className="min-w-0">
                     <p className="font-extrabold text-xs text-gray-900 truncate">
-                      {l.employees?.first_name} {l.employees?.last_name}
+                      {l.employees?.last_name} {l.employees?.first_name}
                     </p>
                     <p className="text-[10px] text-gray-400 font-medium truncate">
                       {l.employees?.department}

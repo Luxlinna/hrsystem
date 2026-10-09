@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { OnboardingRequest, OnboardingDoc } from "../../types";
 import { STAGES } from "../../constants";
 import { initials, getOverallProgress } from "../../onboardingUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface OnboardingTableViewProps {
   requests: OnboardingRequest[];
@@ -37,7 +38,7 @@ export const OnboardingTableView = memo(function OnboardingTableView({
           <tbody className="divide-y divide-gray-100">
             {requests.map((req) => {
               const emp = req.employees;
-              const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Staff";
+              const fullName = emp ? formatKhmerFullName(emp) : "Unknown Staff";
               const progress = getOverallProgress(req, documents);
               const stageLabel = STAGES.find((s) => s.key === req.stage)?.shortLabel || req.stage;
 

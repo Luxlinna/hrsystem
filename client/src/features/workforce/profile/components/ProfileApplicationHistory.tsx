@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { formatDMY } from "@/features/workforce/employees/dateUtils";
 
 interface ProfileApplicationHistoryProps {
   applications: any[];
@@ -65,11 +66,7 @@ export function ProfileApplicationHistory({ applications }: ProfileApplicationHi
                     <span>
                       Applied:{" "}
                       <strong className="text-gray-600">
-                        {new Date(app.applied_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {formatDMY(app.applied_at)}
                       </strong>
                     </span>
                     {app.source && (

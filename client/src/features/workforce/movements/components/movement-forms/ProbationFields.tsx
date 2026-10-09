@@ -1,4 +1,5 @@
 import React from "react";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface Props {
   probationMonths: number;
@@ -34,10 +35,9 @@ export const ProbationFields: React.FC<Props> = ({
         <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
           Probation Review / End Date
         </label>
-        <input
-          type="date"
+        <DatePickerDMY
           value={probationEndDate}
-          onChange={(e) => onEndDateChange(e.target.value)}
+          onChange={onEndDateChange}
           className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200"
         />
       </div>

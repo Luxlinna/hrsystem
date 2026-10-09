@@ -118,10 +118,10 @@ export const EditHiringTermsTab = memo(function EditHiringTermsTab({
             {buManagers.length > 0 && (
               <optgroup label={`${formData.bu_full_name || "BU"} — Managers`}>
                 {buManagers.map((m) => {
-                  const val = `${m.first_name} ${m.last_name} (${m.realRole})`;
+                  const val = `${m.last_name} ${m.first_name} (${m.realRole})`;
                   return (
                     <option key={m.id} value={val}>
-                      {m.first_name} {m.last_name} — {m.realRole}
+                      {m.last_name} {m.first_name} — {m.realRole}
                     </option>
                   );
                 })}
@@ -132,10 +132,10 @@ export const EditHiringTermsTab = memo(function EditHiringTermsTab({
             {buCeos.length > 0 && (
               <optgroup label={`${formData.bu_full_name || "BU"} — BU CEO`}>
                 {buCeos.map((m) => {
-                  const val = `${m.first_name} ${m.last_name} (${m.realRole})`;
+                  const val = `${m.last_name} ${m.first_name} (${m.realRole})`;
                   return (
                     <option key={m.id} value={val}>
-                      {m.first_name} {m.last_name} — {m.realRole}
+                      {m.last_name} {m.first_name} — {m.realRole}
                     </option>
                   );
                 })}

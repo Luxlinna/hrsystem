@@ -20,7 +20,7 @@ export function exportCalendarCSV(
     "Reason",
   ];
   const rows = filteredLeaves.map((l) => [
-    `"${l.employees?.first_name || ""} ${l.employees?.last_name || ""}"`,
+    `"${l.employees?.last_name || ""} ${l.employees?.first_name || ""}"`,
     `"${l.employees?.department || ""}"`,
     `"${l.employees?.role || ""}"`,
     `"${LEAVE_TYPE_CONFIG[l.leave_type]?.label || l.leave_type}"`,

@@ -27,8 +27,8 @@ export function hydrateFormFromParsedRow(
     ...INITIAL_EMPLOYEE_FORM,
     first_name: firstName,
     last_name: lastName,
-    full_name: row.fullName || `${firstName} ${lastName}`.trim(),
-    display_name: row.fullName || `${firstName} ${lastName}`.trim(),
+    full_name: row.fullName || `${lastName} ${firstName}`.trim(),
+    display_name: row.fullName || `${lastName} ${firstName}`.trim(),
     kh_name: row.khName || "",
     employee_code: row.employeeCode || "",
     gender: row.gender === "Female" ? "Female" : row.gender === "Other" ? "Other" : "Male",
@@ -78,7 +78,7 @@ export function extractParsedRowFromForm(
   form: EmployeeFormState,
   rowNumber: number
 ): ParsedEmployeeRow {
-  const fullName = form.full_name || `${form.first_name} ${form.last_name}`.trim();
+  const fullName = form.full_name || `${form.last_name} ${form.first_name}`.trim();
   const errors: string[] = [];
   if (!fullName) errors.push("Missing Full Name");
 

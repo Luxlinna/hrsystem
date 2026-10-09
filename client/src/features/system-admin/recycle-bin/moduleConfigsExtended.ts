@@ -1,5 +1,6 @@
 import type { ModuleConfig } from "./types";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 const formatEmailOrPhone = (email?: string | null) => {
   if (!email) return "";
@@ -20,7 +21,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Training Enrollments",
     icon: "ri-bookmark-line",
     select: "id, status, deleted_at, deleted_by, training_courses(title), employees!inner(first_name, last_name, branch_id)",
-    label: (r) => `${r.training_courses?.title || "Training"} · ${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+    label: (r) => `${r.training_courses?.title || "Training"} · ${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim(),
     detail: (r) => `Enrollment · ${r.status}`,
     applyBranchFilter: (q, b) => q.eq("employees.branch_id", b),
   },
@@ -37,7 +38,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Onboarding Requests",
     icon: "ri-user-star-line",
     select: "id, stage, status, deleted_at, deleted_by, employees!inner(first_name, last_name, branch_id)",
-    label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Candidate",
+    label: (r) => `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim() || "Candidate",
     detail: (r) => `Onboarding · stage ${r.stage}`,
     applyBranchFilter: (q, b) => q.eq("employees.branch_id", b),
   },
@@ -54,7 +55,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Employees",
     icon: "ri-team-line",
     select: "id, first_name, last_name, email, role, department, deleted_at, deleted_by, branch_id",
-    label: (r) => `${r.first_name} ${r.last_name}`,
+    label: (r) => formatKhmerFullName(r),
     detail: (r) => `${r.role || "Employee"} · ${r.department || "No department"}${r.email ? ` · ${formatEmailOrPhone(r.email)}` : ""}`,
     applyBranchFilter: (q, b) => q.eq("branch_id", b),
   },
@@ -72,7 +73,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Attendance Records",
     icon: "ri-fingerprint-line",
     select: "id, date, status, deleted_at, deleted_by, employees!inner(first_name, last_name, branch_id)",
-    label: (r) => `${r.employees?.first_name || "Unknown"} ${r.employees?.last_name || "employee"} · ${r.date}`,
+    label: (r) => `${r.employees?.last_name || "employee"} ${r.employees?.first_name || "Unknown"} · ${r.date}`,
     detail: (r) => `Attendance · ${r.status}`,
     applyBranchFilter: (q, b) => q.eq("employees.branch_id", b),
   },
@@ -101,7 +102,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Shift Assignments",
     icon: "ri-calendar-schedule-line",
     select: "id, status, employee:employees!inner(first_name, last_name, branch_id), deleted_at, deleted_by",
-    label: (r) => `${r.employee?.first_name || "?"} ${r.employee?.last_name || "?"}`,
+    label: (r) => `${r.employee?.last_name || "?"} ${r.employee?.first_name || "?"}`,
     detail: (r) => `Shift Assignment · ${r.status}`,
     applyBranchFilter: (q, b) => q.eq("employee.branch_id", b),
   },
@@ -110,7 +111,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Leave Requests",
     icon: "ri-calendar-event-line",
     select: "id, leave_type, start_date, end_date, days, deleted_at, deleted_by, employees!inner(first_name, last_name, branch_id)",
-    label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""} (${r.leave_type})`,
+    label: (r) => `${r.employees?.last_name || ""} ${r.employees?.first_name || ""} (${r.leave_type})`,
     detail: (r) => `Leave · ${r.start_date} to ${r.end_date} (${r.days} days)`,
     applyBranchFilter: (q, b) => q.eq("employees.branch_id", b),
   },

@@ -80,7 +80,7 @@ export function useRecycleBinData() {
 
     const userEmail = (user?.email || "").toLowerCase().trim();
     const actorFullName = myEmployee
-      ? `${myEmployee.first_name} ${myEmployee.last_name}`.toLowerCase().trim()
+      ? `${myEmployee.last_name} ${myEmployee.first_name}`.toLowerCase().trim()
       : "";
     const employeeId = myEmployee?.id || "";
 

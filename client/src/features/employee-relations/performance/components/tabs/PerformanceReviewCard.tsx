@@ -28,7 +28,7 @@ export const PerformanceReviewCard = memo(function PerformanceReviewCard({
           </div>
           <div>
             <p className="text-[14px] font-semibold text-gray-900">
-              {r.employee?.first_name} {r.employee?.last_name}
+              {r.employee?.last_name} {r.employee?.first_name}
             </p>
             <p className="text-[11px] text-gray-500">
               {r.employee?.role} &middot; {r.employee?.department}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { matchEmployeeSearch } from "@/features/workforce/employees/searchUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import type { SearchResult } from "./types";
 import { MODULE_SEARCH_RESULTS, pathToModule } from "./constants";
 
@@ -67,7 +68,7 @@ export function useGlobalSearch(can: (module: string) => boolean) {
         const staffId = e.biometric_user_id || e.employee_code || "";
         const idPart = staffId ? `ID: ${staffId}` : "";
         const sublabel = [idPart, buName, e.role || "Staff"].filter(Boolean).join(" · ");
-        const label = `${e.first_name || ""} ${e.last_name || ""}${e.kh_name ? ` (${e.kh_name})` : ""}`.trim();
+        const label = `${formatKhmerFullName(e)}${e.kh_name ? ` (${e.kh_name})` : ""}`.trim();
 
         results.push({
           id: `emp-${e.id}`,

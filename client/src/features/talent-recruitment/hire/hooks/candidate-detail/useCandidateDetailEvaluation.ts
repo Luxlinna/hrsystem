@@ -7,6 +7,7 @@ import { STAGE_CONFIG } from "../../constants";
 import { getStageInterview } from "../../constants/evidenceConfig";
 import { notifyInterviewScheduledOrCompleted } from "../../services/notifications/recruitmentEventTriggers";
 import { parseInterviewPanelFromNotes, isUserInvitedToInterview } from "../../utils/interviewPanelHelper";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface UseCandidateDetailEvaluationProps {
   id: string | undefined;
@@ -158,7 +159,7 @@ export function useCandidateDetailEvaluation({
         const panelNames = panelInfo?.panelMembers?.length
           ? panelInfo.panelMembers.map((m) => m.name)
           : existingIv?.employees
-          ? [`${existingIv.employees.first_name} ${existingIv.employees.last_name}`.trim()]
+          ? [formatKhmerFullName(existingIv.employees)]
           : [payload.evaluatorName];
 
         await notifyInterviewScheduledOrCompleted({
@@ -170,7 +171,7 @@ export function useCandidateDetailEvaluation({
           actorName: payload.evaluatorName || actorName,
           score: payload.overallScore,
           recruiterEmployeeId: candidate.assigned_recruiter_id || null,
-          recruiterName: candidate.assigned_recruiter ? `${candidate.assigned_recruiter.first_name} ${candidate.assigned_recruiter.last_name}` : null,
+          recruiterName: candidate.assigned_recruiter ? formatKhmerFullName(candidate.assigned_recruiter) : null,
           interviewerEmployeeId: existingIv?.interviewer_id || null,
           interviewerName: payload.evaluatorName || panelNames[0] || null,
           interviewerEmployeeIds: panelIds,

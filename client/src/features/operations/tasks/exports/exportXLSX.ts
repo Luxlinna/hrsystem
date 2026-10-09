@@ -10,7 +10,7 @@ export const exportTasksXLSX = async (tasks: Task[], filename = "tasks_report.xl
   const data = tasks.map((t) => ({
     Title: t.title,
     Description: t.description || "",
-    Assignee: t.employees ? `${t.employees.first_name} ${t.employees.last_name}` : "Unassigned",
+    Assignee: t.employees ? `${t.employees.last_name} ${t.employees.first_name}` : "Unassigned",
     Department: t.employees?.department || "—",
     Priority: t.priority,
     Status: STATUS_CONFIG[t.status]?.label || t.status,

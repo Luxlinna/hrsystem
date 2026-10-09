@@ -2,6 +2,7 @@ import { toast } from "@/components/Toast";
 import { calcHours } from "../constants";
 import type { AttendanceRecord } from "../types";
 import type { DateBounds } from "./attendanceDateRangeUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function exportAttendanceToCSV(
   records: AttendanceRecord[],
@@ -25,7 +26,7 @@ export function exportAttendanceToCSV(
     "Notes",
   ];
   const rows = records.map((r) => [
-    `"${r.employees ? (r.employees.display_name || r.employees.full_name || `${r.employees.first_name} ${r.employees.last_name}`) : "Unknown"}"`,
+    `"${r.employees ? formatKhmerFullName(r.employees) : "Unknown"}"`,
     `"${r.employees?.department || ""}"`,
     `"${r.employees?.role || ""}"`,
     `"${r.work_location?.name || ""}"`,

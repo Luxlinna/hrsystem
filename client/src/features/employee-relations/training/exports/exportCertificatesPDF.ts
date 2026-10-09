@@ -6,7 +6,7 @@ export function exportCertificatesPDF(certificates: Enrollment[], title = "Emplo
   const rows = certificates.length > 0
     ? certificates
         .map((c) => {
-          const empName = `${c.employees?.first_name || ""} ${c.employees?.last_name || ""}`.trim() || "Staff Member";
+          const empName = `${c.employees?.last_name || ""} ${c.employees?.first_name || ""}`.trim() || "Staff Member";
           const dept = c.employees?.department || "—";
           const courseTitle = c.training_courses?.title || "Training Module";
           const completedDate = c.completed_at ? new Date(c.completed_at).toLocaleDateString() : "—";

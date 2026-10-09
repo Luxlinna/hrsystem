@@ -23,12 +23,12 @@ export const UnityActivityFeed = memo(function UnityActivityFeed({
                 <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-xs font-bold flex-shrink-0 mt-0.5">
-                  {emp?.first_name?.[0]}{emp?.last_name?.[0]}
+                  {emp?.last_name?.[0]}{emp?.first_name?.[0]}
                 </div>
               )}
               <div className="flex-1">
                 <p className="text-[12px] text-gray-900">
-                  <span className="font-semibold">{emp?.first_name} {emp?.last_name}</span>
+                  <span className="font-semibold">{emp?.last_name} {emp?.first_name}</span>
                   {" "}{actionLabels[log.action] || log.action}{" "}
                   <span className="font-medium text-[#253C7D]">in {app?.name}</span>
                 </p>

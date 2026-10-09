@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { EmployeeEmploymentHistoryItem } from "../../../types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface PersonalEmploymentRowProps {
   emp: EmployeeEmploymentHistoryItem;
@@ -27,18 +28,16 @@ export const PersonalEmploymentRow = memo(function PersonalEmploymentRow({
         />
       </td>
       <td className="py-2 px-2.5">
-        <input
-          type="date"
+        <DatePickerDMY
           value={emp.start_date}
-          onChange={(e) => onUpdate(idx, { ...emp, start_date: e.target.value })}
+          onChange={(iso) => onUpdate(idx, { ...emp, start_date: iso })}
           className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
         />
       </td>
       <td className="py-2 px-2.5">
-        <input
-          type="date"
+        <DatePickerDMY
           value={emp.end_date}
-          onChange={(e) => onUpdate(idx, { ...emp, end_date: e.target.value })}
+          onChange={(iso) => onUpdate(idx, { ...emp, end_date: iso })}
           className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
         />
       </td>

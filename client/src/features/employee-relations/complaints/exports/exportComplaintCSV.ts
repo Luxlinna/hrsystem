@@ -1,5 +1,6 @@
 import type { ComplaintSuggestion } from "../types";
 import { COMPLAINT_TYPE_CONFIG, COMPLAINT_STATUS_CONFIG } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 function csvEscape(val: unknown): string {
   const s = val == null ? "" : String(val);
@@ -30,7 +31,7 @@ export function exportComplaintCSV(records: ComplaintSuggestion[]): void {
     r.entry_date,
     COMPLAINT_TYPE_CONFIG[r.type]?.label ?? r.type,
     r.target_to,
-    r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "General",
+    r.employees ? formatKhmerFullName(r.employees) : "General",
     r.subject,
     r.details,
     r.suggestion ?? "",

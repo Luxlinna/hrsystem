@@ -34,7 +34,7 @@ export function nodeMatchesFilters(
   const deptOk = !deptFilter || n.department === deptFilter;
   const searchOk =
     !searchTerm ||
-    `${n.first_name} ${n.last_name} ${n.role} ${n.department}`
+    `${n.last_name} ${n.first_name} ${n.role} ${n.department}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
   return deptOk && searchOk;

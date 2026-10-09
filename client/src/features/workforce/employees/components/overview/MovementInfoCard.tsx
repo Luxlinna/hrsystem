@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { Employee } from "../../types";
 import { fetchMovementsByEmployeeId } from "@/features/workforce/movements/services/movementService";
 import type { EmployeeMovement } from "@/features/workforce/movements/types";
 import { EmployeeMovementCard } from "./movements/EmployeeMovementCard";
 import { EmployeeMovementAttachmentSection } from "./movements/EmployeeMovementAttachmentSection";
 import { EditMovementInfoModal } from "./movements/EditMovementInfoModal";
+import { buildInitialEmploymentRecord } from "./movements/movementDisplayUtils";
 
 interface MovementInfoCardProps {
   employee: Employee;
@@ -22,13 +23,27 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
     setLoading(true);
     try {
       const data = await fetchMovementsByEmployeeId(employee.id);
-      setMovements(data);
+      const sorted = [...(data || [])].sort((a, b) => {
+        const timeA = new Date(a.effective_date || a.created_at || 0).getTime();
+        const timeB = new Date(b.effective_date || b.created_at || 0).getTime();
+        return timeB - timeA;
+      });
+      if (sorted.length > 0) {
+        setMovements(sorted);
+      } else if (employee) {
+        setMovements(buildInitialEmploymentRecord(employee));
+      } else {
+        setMovements([]);
+      }
     } catch (err) {
       console.warn("Could not load employee movements:", err);
+      if (employee) {
+        setMovements(buildInitialEmploymentRecord(employee));
+      }
     } finally {
       setLoading(false);
     }
-  }, [employee.id]);
+  }, [employee]);
 
   useEffect(() => {
     loadEmployeeMovements();
@@ -40,34 +55,33 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
   const handleMovementSaved = (updated: EmployeeMovement) => {
     setMovements((prev) => {
       const exists = prev.some((m) => m.id === updated.id);
-      if (exists) {
-        return prev.map((m) => (m.id === updated.id ? updated : m));
-      }
-      return [updated, ...prev];
+      const next = exists ? prev.map((m) => (m.id === updated.id ? updated : m)) : [updated, ...prev];
+      return [...next].sort((a, b) => {
+        const timeA = new Date(a.effective_date || a.created_at || 0).getTime();
+        const timeB = new Date(b.effective_date || b.created_at || 0).getTime();
+        return timeB - timeA;
+      });
     });
     loadEmployeeMovements();
   };
 
-  const displayMovements = movements;
-
-  const totalCount = displayMovements.length;
-  const pagedList = displayMovements.slice(0, visibleCount);
+  const totalCount = movements.length;
+  const pagedList = movements.slice(0, visibleCount);
   const currentShown = pagedList.length;
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 rounded-sm sm:rounded-md p-5 sm:p-6 shadow-xs space-y-6">
-      {/* Top Header */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[13px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
           EMPLOYEE MOVEMENT INFO
         </h3>
 
         <div className="flex items-center gap-2">
-          {displayMovements.length > 0 && (
+          {movements.length > 0 && (
             <button
               type="button"
               onClick={() => {
-                setEditingMovement(displayMovements[0] || null);
+                setEditingMovement(movements[0] || null);
                 setShowEditModal(true);
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded border border-sky-400 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-xs transition-colors cursor-pointer"
@@ -87,10 +101,9 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
         </div>
       </div>
 
-      {/* Movements List */}
       {loading && movements.length === 0 ? (
         <div className="py-8 text-center text-xs text-gray-400">Loading movements...</div>
-      ) : displayMovements.length === 0 ? (
+      ) : movements.length === 0 ? (
         <div className="text-center py-10 bg-slate-50/50 dark:bg-slate-800/30 rounded border border-dashed border-slate-200 dark:border-slate-700 text-xs text-slate-500">
           <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
             <i className="ri-history-line text-lg" />
@@ -105,7 +118,7 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
               key={m.id || idx}
               movement={m}
               employee={employee}
-              isCurrent={m.title?.toLowerCase() === "join" || idx === pagedList.length - 1}
+              isCurrent={idx === 0}
               privacyHidden={privacyHidden}
               onClickDetails={(item) => {
                 setEditingMovement(item);
@@ -116,7 +129,6 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
         </div>
       )}
 
-      {/* Counter */}
       {totalCount > 0 && (
         <div className="flex items-center justify-between pt-1 text-xs text-gray-500 dark:text-slate-400">
           {visibleCount < totalCount ? (
@@ -136,14 +148,12 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
         </div>
       )}
 
-      {/* Attachment Info Section */}
       <EmployeeMovementAttachmentSection
         employee={employee}
-        movements={displayMovements}
+        movements={movements}
         categoryKey="movement"
       />
 
-      {/* Edit Movement Info Modal */}
       <EditMovementInfoModal
         open={showEditModal}
         onClose={() => setShowEditModal(false)}

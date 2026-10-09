@@ -33,7 +33,7 @@ export const ToolActivityTab = memo(function ToolActivityTab({
           color: "text-slate-600 bg-slate-100",
         };
         const empName = u.employees
-          ? `${u.employees.first_name} ${u.employees.last_name}`
+          ? `${u.employees.last_name} ${u.employees.first_name}`
           : "User";
 
         return (

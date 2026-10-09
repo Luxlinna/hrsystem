@@ -55,11 +55,16 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
     );
   }
 
+  const buName = e?.bu_full_name || e?.branches?.name || e?.code_bu || "—";
+  const empLevel = (e as any)?.employee_level || (e as any)?.level || "—";
+
   const infoFields = [
     { label: "Employee Code", value: employeeCode, icon: "ri-hashtag" },
-    { label: "Designation", value: designation, icon: "ri-briefcase-line" },
+    { label: "Position", value: designation, icon: "ri-briefcase-line" },
     { label: "Department", value: department, icon: "ri-building-line" },
     { label: "Supervisor", value: supervisor, icon: "ri-user-star-line" },
+    { label: "Business Unit", value: buName, icon: "ri-community-line" },
+    { label: "Employee Level", value: empLevel, icon: "ri-medal-line" },
     { label: "Employee Type", value: empType, icon: "ri-time-line" },
     { label: "Contract Type", value: contractType, icon: "ri-file-text-line" },
     { label: "Work Site", value: site, icon: "ri-map-pin-line" },

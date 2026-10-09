@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useClickOutside } from "./useClickOutside";
 import type { NotificationRow } from "./types";
 import { stripEmojis } from "@/features/system-admin/notifications/notificationUtils";
+import { formatDMY } from "@/features/workforce/employees/dateUtils";
 
 interface NotificationDropdownProps {
   open: boolean;
@@ -99,7 +100,7 @@ const NotificationDropdown = memo(function NotificationDropdown({
                         {stripEmojis(n.message)}
                       </p>
                       <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1 font-medium">
-                        {new Date(n.created_at).toLocaleDateString()}
+                        {formatDMY(n.created_at)}
                       </p>
                     </div>
                   </div>

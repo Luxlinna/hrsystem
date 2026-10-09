@@ -32,7 +32,7 @@ export const GenerateDraftPanel = memo(function GenerateDraftPanel({
           <span className="font-bold text-slate-900 truncate block">{offer.candidate_name}</span>
         </div>
         <div className="p-2 bg-white/80 rounded-lg border border-blue-100">
-          <span className="text-slate-500 block font-semibold text-[10px] uppercase">Designation</span>
+          <span className="text-slate-500 block font-semibold text-[10px] uppercase">Position</span>
           <span className="font-bold text-slate-900 truncate block">{offer.job_title}</span>
         </div>
         <div className="p-2 bg-white/80 rounded-lg border border-blue-100">

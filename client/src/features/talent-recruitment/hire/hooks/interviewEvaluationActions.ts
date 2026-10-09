@@ -3,6 +3,7 @@ import { toast } from "@/components/Toast";
 import type { Interview, Candidate, Job, CandidateDocument } from "../types";
 import { notifyInterviewScheduledOrCompleted } from "../services/notifications/recruitmentEventTriggers";
 import { parseInterviewPanelFromNotes, isUserInvitedToInterview } from "../utils/interviewPanelHelper";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export async function executeSaveInterviewEvaluation(params: {
   payload: {
@@ -164,14 +165,14 @@ export async function executeSaveInterviewEvaluation(params: {
   const matchedJob = jobs.find((j) => j.id === matchedCand?.job_posting_id);
   const recruiterId = matchedCand?.assigned_recruiter_id || null;
   const recruiterName = matchedCand?.assigned_recruiter
-    ? `${matchedCand.assigned_recruiter.first_name} ${matchedCand.assigned_recruiter.last_name}`
+    ? formatKhmerFullName(matchedCand.assigned_recruiter)
     : null;
 
   const panelInfo = interview?.notes ? parseInterviewPanelFromNotes(interview.notes) : null;
   const panelNames = panelInfo?.panelMembers?.length
     ? panelInfo.panelMembers.map((m) => m.name)
     : interview?.employees
-    ? [`${interview.employees.first_name} ${interview.employees.last_name}`.trim()]
+    ? [formatKhmerFullName(interview.employees)]
     : [payload.evaluatorName];
 
   const panelIds = panelInfo?.panelIds?.length

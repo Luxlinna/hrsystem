@@ -1,28 +1,28 @@
 import { supabase } from "@/lib/supabase";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { EmployeeMovement, MovementFormData } from "../types";
-import { getStoredLocalMovements, saveLocalMovement } from "./movementStorage";
+import {
+  getStoredLocalMovements,
+  saveLocalMovement,
+  deleteLocalMovement,
+  getDeletedMovementIds,
+} from "./movementStorage";
 import { buildMovementChanges, type MovementEmployeeInput } from "./movementPayloadBuilder";
-import { updateEmployeeOnMovement, persistMovementRecord } from "./movementDbSync";
+import { updateEmployeeOnMovement, persistMovementRecord, recordInitialJoiningMovement } from "./movementDbSync";
 
-export { getStoredLocalMovements, saveLocalMovement };
+export { getStoredLocalMovements, saveLocalMovement, deleteLocalMovement, recordInitialJoiningMovement };
 
 export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
+  const deletedIds = getDeletedMovementIds();
   try {
     const { data: movData, error: movErr } = await supabase
       .from("employee_movements")
-      .select(`
-        *,
-        employees (
-          id, first_name, last_name, role, department, avatar_url, branch_id,
-          branches ( name ), work_locations ( name )
-        )
-      `)
+      .select("*, employees(*, branches(name), work_locations:default_work_location_id(id, name))")
       .is("deleted_at", null)
       .order("effective_date", { ascending: false });
 
     if (!movErr && movData && movData.length > 0) {
-      return movData as EmployeeMovement[];
+      return (movData as EmployeeMovement[]).filter((m) => !deletedIds.has(m.id));
     }
 
     const { data: auditData, error: auditErr } = await supabase
@@ -33,19 +33,25 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
       .order("created_at", { ascending: false });
 
     if (!auditErr && auditData && auditData.length > 0) {
-      const employeeIds = Array.from(new Set(auditData.map((a) => a.entity_id).filter(Boolean)));
+      const filteredAudit = auditData.filter((a) => !deletedIds.has(a.id) && !deletedIds.has(a.metadata?.id));
+      const employeeIds = Array.from(new Set(filteredAudit.map((a) => a.entity_id).filter(Boolean)));
       const empMap = new Map<string, any>();
 
       if (employeeIds.length > 0) {
         const { data: emps } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name), work_locations(name)")
+          .select("*, branches(name), work_locations:default_work_location_id(id, name)")
           .in("id", employeeIds);
-
-        if (emps) emps.forEach((e) => empMap.set(e.id, e));
+        emps?.forEach((e) => {
+          empMap.set(e.id, {
+            ...e,
+            branches: Array.isArray(e.branches) ? e.branches[0] : e.branches || null,
+            work_locations: Array.isArray(e.work_locations) ? e.work_locations[0] : e.work_locations || null,
+          });
+        });
       }
 
-      const dbMovements: EmployeeMovement[] = auditData.map((a) => {
+      const dbMovements: EmployeeMovement[] = filteredAudit.map((a) => {
         const meta = a.metadata || {};
         const emp = a.entity_id ? empMap.get(a.entity_id) : null;
         return {
@@ -70,11 +76,9 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
       const local = getStoredLocalMovements();
       const combined = [...dbMovements];
       local.forEach((loc) => {
-        if (!combined.some((c) => c.id === loc.id)) {
-          combined.push(loc);
-        }
+        if (!combined.some((c) => c.id === loc.id)) combined.push(loc);
       });
-      return combined;
+      return combined.filter((m) => !deletedIds.has(m.id));
     }
 
     return getStoredLocalMovements();
@@ -89,34 +93,42 @@ export async function fetchMovementsByEmployeeId(employeeId: string): Promise<Em
   return all.filter((m) => m.employee_id === employeeId || m.employees?.id === employeeId);
 }
 
+export async function deleteMovement(id: string): Promise<boolean> {
+  try {
+    deleteLocalMovement(id);
+    await Promise.allSettled([
+      supabase.from("employee_movements").delete().eq("id", id),
+      supabase.from("employee_movements").update({ deleted_at: new Date().toISOString() }).eq("id", id),
+      supabase.from("audit_logs").delete().eq("id", id),
+    ]);
+    window.dispatchEvent(new CustomEvent("employee-movement-created"));
+    return true;
+  } catch (err) {
+    console.warn("Delete movement fallback:", err);
+    deleteLocalMovement(id);
+    window.dispatchEvent(new CustomEvent("employee-movement-created"));
+    return true;
+  }
+}
+
 interface CreateMovementParams {
   form: MovementFormData;
   employee: MovementEmployeeInput;
-  currentUser?: {
-    id?: string;
-    email?: string;
-    displayName?: string;
-  } | null;
+  currentUser?: { id?: string; email?: string; displayName?: string } | null;
 }
 
 export async function recordEmployeeMovement({
-  form,
-  employee,
-  currentUser,
+  form, employee, currentUser,
 }: CreateMovementParams): Promise<EmployeeMovement> {
   let documentUrl: string | null = null;
   let documentName: string | null = null;
 
   if (form.document_file) {
     try {
-      const s3Item = await uploadFileToS3(
-        form.document_file,
-        `employees/${employee.id}/movements`
-      );
+      const s3Item = await uploadFileToS3(form.document_file, `employees/${employee.id}/movements`);
       documentUrl = s3Item.url;
       documentName = form.document_file.name;
-    } catch (uploadErr) {
-      console.warn("Movement document AWS S3 upload notice:", uploadErr);
+    } catch {
       documentName = form.document_file.name;
       documentUrl = URL.createObjectURL(form.document_file);
     }
@@ -157,6 +169,6 @@ export async function recordEmployeeMovement({
   await persistMovementRecord(newMovement, employee, employeeUpdates, actorName);
   saveLocalMovement(newMovement);
   window.dispatchEvent(new CustomEvent("employee-movement-created", { detail: newMovement }));
-
   return newMovement;
 }
+

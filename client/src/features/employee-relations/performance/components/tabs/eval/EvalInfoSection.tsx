@@ -50,7 +50,7 @@ export function EvalInfoSection({
               <div className="px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] font-semibold text-gray-800 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <i className="ri-user-smile-line text-[#253C7D]" />
-                  {emp ? `${emp.first_name} ${emp.last_name}` : "You"}
+                  {emp ? `${emp.last_name} ${emp.first_name}` : "You"}
                 </span>
                 <span className="text-[11px] font-normal text-gray-400 bg-white px-2 py-0.5 rounded-md border border-gray-200">Locked</span>
               </div>
@@ -86,7 +86,7 @@ export function EvalInfoSection({
               ...(emp.employee_code ? [{ label: "Employee ID", value: emp.employee_code, icon: "ri-id-card-line" }] : []),
               ...(rev ? [{
                 label: "Evaluator",
-                value: `${rev.first_name} ${rev.last_name}${rev.id === emp.reports_to || rev.is_direct_manager ? " (Direct Manager)" : ""}`,
+                value: `${rev.last_name} ${rev.first_name}${rev.id === emp.reports_to || rev.is_direct_manager ? " (Direct Manager)" : ""}`,
                 icon: "ri-user-star-line"
               }] : []),
             ].map(({ label, value, icon }) => (

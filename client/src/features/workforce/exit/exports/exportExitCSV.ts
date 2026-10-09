@@ -1,5 +1,6 @@
 import type { EmployeeExit } from "../types";
 import { EXIT_TYPE_CONFIG, REASON_TYPE_CONFIG } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 function csvEscape(val: unknown): string {
   const s = val == null ? "" : String(val);
@@ -16,7 +17,7 @@ export function exportExitCSV(exits: EmployeeExit[]): void {
 
   const rows = exits.map((ex, i) => [
     i + 1,
-    `${ex.employees?.first_name ?? ""} ${ex.employees?.last_name ?? ""}`.trim(),
+    formatKhmerFullName(ex.employees),
     ex.employees?.department ?? "",
     ex.employees?.role ?? "",
     EXIT_TYPE_CONFIG[ex.exit_type]?.label ?? ex.exit_type,

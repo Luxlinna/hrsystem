@@ -13,7 +13,7 @@ export async function exportCalendarXLSX(
   if (filteredLeaves.length === 0) return false;
 
   const data = filteredLeaves.map((l) => ({
-    "Employee Name": `${l.employees?.first_name || ""} ${l.employees?.last_name || ""}`.trim() || "Unknown",
+    "Employee Name": `${l.employees?.last_name || ""} ${l.employees?.first_name || ""}`.trim() || "Unknown",
     Department: l.employees?.department || "—",
     Role: l.employees?.role || "—",
     "Leave Type": LEAVE_TYPE_CONFIG[l.leave_type]?.label || l.leave_type,

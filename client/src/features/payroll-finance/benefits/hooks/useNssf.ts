@@ -137,7 +137,7 @@ export function useNssf() {
     const matchSearch =
       !q ||
       e.id.toLowerCase().includes(q) ||
-      `${e.first_name} ${e.last_name}`.toLowerCase().includes(q) ||
+      `${e.last_name} ${e.first_name}`.toLowerCase().includes(q) ||
       (e.kh_name || "").toLowerCase().includes(q) ||
       (e.nssf_number || "").toLowerCase().includes(q);
 

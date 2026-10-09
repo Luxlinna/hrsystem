@@ -16,7 +16,7 @@ export function exportGoalsCSV(goals: Goal[], employees: Employee[]): boolean {
 
   const rows = goals.map((g) => {
     const emp = employeeMap.get(g.employee_id);
-    const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Team Member";
+    const empName = emp ? `${emp.last_name} ${emp.first_name}` : "Team Member";
     const dept = emp?.department || "—";
 
     return [

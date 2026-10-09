@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../../types";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 const CONTRACT_TYPE_OPTIONS = [
   "FDC (Fixed Duration Contract)",
@@ -52,11 +53,10 @@ export const TermsContractInfoSection = memo(function TermsContractInfoSection({
           <label className="block text-xs font-extrabold text-slate-700 mb-1">
             Effective Date <span className="text-rose-500">*</span>
           </label>
-          <input
-            type="date"
+          <DatePickerDMY
             required
             value={form.contract_effective_date || form.start_date || ""}
-            onChange={(e) => onChange("contract_effective_date", e.target.value)}
+            onChange={(val) => onChange("contract_effective_date", val)}
             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all shadow-2xs"
           />
         </div>
@@ -66,12 +66,11 @@ export const TermsContractInfoSection = memo(function TermsContractInfoSection({
           <label className="block text-xs font-extrabold text-slate-700 mb-1">
             Contract End Date <span className="text-rose-500">*</span>
           </label>
-          <input
-            type="date"
+          <DatePickerDMY
             value={form.contract_end_date || form.fdc_end_date || ""}
-            onChange={(e) => {
-              onChange("contract_end_date", e.target.value);
-              onChange("fdc_end_date", e.target.value);
+            onChange={(val) => {
+              onChange("contract_end_date", val);
+              onChange("fdc_end_date", val);
             }}
             className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all shadow-2xs"
           />

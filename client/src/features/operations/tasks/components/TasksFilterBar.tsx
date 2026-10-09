@@ -102,7 +102,7 @@ export const TasksFilterBar = memo(function TasksFilterBar({
             <option value="all">All Assignees</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.first_name} {e.last_name}
+                {e.last_name} {e.first_name}
               </option>
             ))}
           </select>

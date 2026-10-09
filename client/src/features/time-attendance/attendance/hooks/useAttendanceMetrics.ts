@@ -131,7 +131,7 @@ export function useAttendanceMetrics({
       if (filterDepartment !== "all" && e.department !== filterDepartment) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const name = `${e.display_name || ""} ${e.full_name || ""} ${e.first_name} ${e.last_name}`.toLowerCase();
+        const name = `${e.display_name || ""} ${e.full_name || ""} ${e.last_name} ${e.first_name}`.toLowerCase();
         const roleName = (e.role || "").toLowerCase();
         const dept = (e.department || "").toLowerCase();
         const bioId = (e.biometric_user_id || "").toLowerCase();

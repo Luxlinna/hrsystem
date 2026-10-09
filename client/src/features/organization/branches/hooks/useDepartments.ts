@@ -47,7 +47,7 @@ export function useDepartments(branchId?: string) {
         setEmployees(
           data.map((e) => ({
             id: e.id,
-            name: `${e.first_name} ${e.last_name}`.trim(),
+            name: `${e.last_name} ${e.first_name}`.trim(),
             role: e.role,
             avatar_url: e.avatar_url,
           }))

@@ -50,7 +50,7 @@ export const EnrollmentTableView = memo(function EnrollmentTableView({
                           to={`/employees/${emp?.id}`}
                           className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors"
                         >
-                          {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                          {emp ? `${emp.last_name} ${emp.first_name}` : "—"}
                         </Link>
                         <p className="text-[11px] text-gray-400 font-medium">{emp?.role}</p>
                       </div>

@@ -42,7 +42,7 @@ export function usePayrollApprovalFilters(
       if (deptFilter !== "all" && r.employees?.department !== deptFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const name = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+        const name = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.toLowerCase();
         const role = (r.employees?.role || "").toLowerCase();
         const dept = (r.employees?.department || "").toLowerCase();
         const month = (r.month || "").toLowerCase();

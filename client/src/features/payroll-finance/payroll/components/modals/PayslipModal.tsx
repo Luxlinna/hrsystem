@@ -14,7 +14,7 @@ export const PayslipModal = memo(function PayslipModal({
   if (!record) return null;
 
   const empName = record.employees
-    ? `${record.employees.first_name} ${record.employees.last_name}`
+    ? `${record.employees.last_name} ${record.employees.first_name}`
     : "Employee";
   const gross = Number(record.base_salary) + Number(record.bonus);
 

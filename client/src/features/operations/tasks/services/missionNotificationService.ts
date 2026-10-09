@@ -46,9 +46,9 @@ export async function notifyMissionInvitation(payload: MissionNotificationPayloa
     taskId,
   } = payload;
 
-  const leadName = `${primaryEmployee.first_name} ${primaryEmployee.last_name}`.trim();
+  const leadName = `${primaryEmployee.last_name} ${primaryEmployee.first_name}`.trim();
   const teamList = teamMembers.length
-    ? teamMembers.map((m) => `${m.first_name} ${m.last_name}`.trim()).join(", ")
+    ? teamMembers.map((m) => `${m.last_name} ${m.first_name}`.trim()).join(", ")
     : null;
 
   // 1. Send notification to the Telegram notification group
@@ -91,7 +91,7 @@ export async function notifyMissionInvitation(payload: MissionNotificationPayloa
           employeeId: emp.id,
           email: emp.email,
           phone: emp.phone,
-          name: `${emp.first_name} ${emp.last_name}`.trim(),
+          name: `${emp.last_name} ${emp.first_name}`.trim(),
         });
 
         if (userId) {
@@ -129,7 +129,7 @@ export async function notifyMissionCheckIn(params: {
       .eq("id", employeeId)
       .maybeSingle();
 
-    const empName = emp ? `${emp.first_name} ${emp.last_name}`.trim() : "Mission Member";
+    const empName = emp ? `${emp.last_name} ${emp.first_name}`.trim() : "Mission Member";
     const empRole = emp?.role || "Team Member";
     const empDept = emp?.department || "Operations";
 

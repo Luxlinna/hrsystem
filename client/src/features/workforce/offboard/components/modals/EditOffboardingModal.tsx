@@ -1,6 +1,8 @@
 import { memo } from "react";
 import type { Offboarding, EditOffboardingForm } from "../../types";
 import { EXIT_REASONS, STATUS_CONFIG } from "../../constants";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface EditOffboardingModalProps {
   editingOffboarding: Offboarding | null;
@@ -22,7 +24,7 @@ export const EditOffboardingModal = memo(function EditOffboardingModal({
   if (!editingOffboarding) return null;
 
   const emp = editingOffboarding.employees;
-  const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Departing Staff";
+  const fullName = emp ? formatKhmerFullName(emp) : "Departing Staff";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -65,11 +67,10 @@ export const EditOffboardingModal = memo(function EditOffboardingModal({
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
               Effective Last Working Day
             </label>
-            <input
-              type="date"
+            <DatePickerDMY
               required
               value={editForm.last_day}
-              onChange={(e) => setEditForm({ ...editForm, last_day: e.target.value })}
+              onChange={(iso) => setEditForm({ ...editForm, last_day: iso })}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-medium focus:bg-white focus:outline-none focus:border-[#253C7D]"
             />
           </div>

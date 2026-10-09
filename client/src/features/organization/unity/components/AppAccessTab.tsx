@@ -32,7 +32,7 @@ export const AppAccessTab = memo(function AppAccessTab({
         {appAccesses.map((access) => {
           const emp = access.employees;
           if (!emp) return null;
-          const empName = `${emp.first_name} ${emp.last_name}`;
+          const empName = `${emp.last_name} ${emp.first_name}`;
 
           return (
             <div

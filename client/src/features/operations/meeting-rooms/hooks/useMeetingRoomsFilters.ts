@@ -70,7 +70,7 @@ export function useMeetingRoomsFilters(
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const title = (b.title || "").toLowerCase();
-        const empName = `${b.employees?.first_name || ""} ${b.employees?.last_name || ""}`.toLowerCase();
+        const empName = `${b.employees?.last_name || ""} ${b.employees?.first_name || ""}`.toLowerCase();
         const dept = (b.employees?.department || "").toLowerCase();
         if (!title.includes(q) && !empName.includes(q) && !dept.includes(q)) {
           return false;

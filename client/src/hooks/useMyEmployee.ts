@@ -13,6 +13,10 @@ export interface MyEmployee {
   role: string | null;
   department: string | null;
   avatar_url: string | null;
+  contract_type?: string | null;
+  start_date?: string | null;
+  join_date?: string | null;
+  contract_effective_date?: string | null;
 }
 
 interface UseMyEmployeeReturn {
@@ -52,7 +56,9 @@ export function useMyEmployee(): UseMyEmployeeReturn {
     const empQuery = applyUserEmployeeFilter(
       supabase
         .from("employees")
-        .select("id, first_name, last_name, display_name, full_name, role, department, avatar_url, email"),
+        .select(
+          "id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, contract_type, start_date, join_date, contract_effective_date"
+        ),
       email
     );
     const { data: rows } = await empQuery

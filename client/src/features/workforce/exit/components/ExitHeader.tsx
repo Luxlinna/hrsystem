@@ -1,83 +1,150 @@
-import { memo } from "react";
+import { memo, useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { EmployeeExit } from "../types";
 
 interface ExitHeaderProps {
   onRecord: () => void;
   exits: EmployeeExit[];
-  onExportCSV: () => void;
-  onExportXLSX: () => void;
+  canViewEmployees?: boolean;
+  canViewChangeStatus?: boolean;
+  canViewWarnings?: boolean;
+  canViewComplaints?: boolean;
+  canManage?: boolean;
   canManageSettings?: boolean;
+  canCreateExit?: boolean;
   onOpenSettings?: () => void;
 }
 
 export const ExitHeader = memo(function ExitHeader({
   onRecord,
-  onExportCSV,
-  onExportXLSX,
-  canManageSettings,
+  canViewEmployees = false,
+  canViewChangeStatus = false,
+  canViewWarnings = false,
+  canViewComplaints = false,
+  canManage = false,
+  canManageSettings = false,
+  canCreateExit = false,
   onOpenSettings,
 }: ExitHeaderProps) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDropdown]);
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-      <div>
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#1a2e5e,#3554a5)" }}>
-            <i className="ri-logout-box-r-line text-white text-base" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Exit Management</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Record and track employee departures</p>
-          </div>
-        </div>
+    <div className="flex items-center justify-between pt-1 pb-3">
+      {/* Title */}
+      <div className="flex items-center gap-3">
+        <h1 className="text-xl font-normal text-slate-700 dark:text-slate-200 tracking-tight">
+          Exits
+        </h1>
       </div>
 
-      <div className="flex items-center gap-2.5">
-        {/* Settings Button (BU CEO Admin, SuperAdmin, or permitted role) */}
-        {canManageSettings && onOpenSettings && (
+      {/* Top Right Actions */}
+      <div className="flex items-center gap-2">
+        <div className="relative" ref={dropdownRef}>
           <button
             type="button"
-            onClick={onOpenSettings}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer shadow-xs"
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="px-4 py-1.5 rounded-sm bg-[#1b62a5] hover:bg-[#154e85] text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
           >
-            <i className="ri-settings-3-line text-[#253C7D] text-sm" />
-            Setting
+            <span>Exits</span>
+            <i className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${showDropdown ? "rotate-180" : ""}`} />
           </button>
-        )}
 
-        {/* Export dropdown */}
-        <div className="relative group">
-          <button className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer shadow-xs">
-            <i className="ri-download-line" />
-            Export
-            <i className="ri-arrow-down-s-line text-gray-400" />
-          </button>
-          <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-            <button
-              onClick={onExportXLSX}
-              className="flex items-center gap-2 w-full px-3.5 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
+          {showDropdown && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 top-8 w-56 rounded-md bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
             >
-              <i className="ri-file-excel-2-line text-green-600" />Excel
-            </button>
-            <button
-              onClick={onExportCSV}
-              className="flex items-center gap-2 w-full px-3.5 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer border-t border-gray-100"
-            >
-              <i className="ri-file-text-line text-blue-500" />CSV
-            </button>
-          </div>
+              {/* Workforce Navigation */}
+              <div className="py-0.5">
+                {canViewEmployees && (
+                  <Link
+                    to="/employees"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-team-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Employees</span>
+                  </Link>
+                )}
+
+                {canViewChangeStatus && (
+                  <Link
+                    to="/change-statuses"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-route-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Change Status</span>
+                  </Link>
+                )}
+
+                <Link
+                  to="/exit"
+                  onClick={() => setShowDropdown(false)}
+                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-sky-600 bg-sky-50/70 dark:bg-sky-950/40 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-user-unfollow-line text-base text-sky-600 shrink-0 w-5 text-center" />
+                  <span>Exits</span>
+                </Link>
+
+                {canViewWarnings && (
+                  <Link
+                    to="/warnings"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-error-warning-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Warnings</span>
+                  </Link>
+                )}
+
+                {canViewComplaints && (
+                  <Link
+                    to="/complaints"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs font-normal text-slate-700 dark:text-slate-200 hover:text-sky-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-feedback-line text-base text-slate-400 shrink-0 w-5 text-center" />
+                    <span>Complaints/Suggestions</span>
+                  </Link>
+                )}
+              </div>
+
+              {/* Actions for managers/admins */}
+              {(canManage || canCreateExit) && (
+                <div className="border-t border-slate-100 dark:border-slate-700 pt-1 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDropdown(false);
+                      onRecord();
+                    }}
+                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <i className="ri-add-circle-line text-sm text-[#1b62a5] shrink-0 w-5 text-center" />
+                    <span>Create New Exit</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-
-        {/* Record Exit */}
-        <button
-          onClick={onRecord}
-          className="flex items-center gap-2 px-4 py-2 text-white text-xs font-bold rounded-xl shadow-lg transition-all cursor-pointer"
-          style={{ background: "linear-gradient(135deg,#253C7D,#3554a5)" }}
-        >
-          <i className="ri-add-line text-sm" />
-          Record Exit
-        </button>
       </div>
     </div>
   );
 });
+
+

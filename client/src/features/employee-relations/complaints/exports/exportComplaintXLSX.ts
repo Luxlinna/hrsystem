@@ -1,5 +1,6 @@
 import type { ComplaintSuggestion } from "../types";
 import { COMPLAINT_TYPE_CONFIG, COMPLAINT_STATUS_CONFIG } from "../constants";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export async function exportComplaintXLSX(records: ComplaintSuggestion[]): Promise<void> {
   const XLSX = await import("xlsx");
@@ -9,7 +10,7 @@ export async function exportComplaintXLSX(records: ComplaintSuggestion[]): Promi
     "Date": r.entry_date,
     "Category": COMPLAINT_TYPE_CONFIG[r.type]?.label ?? r.type,
     "Target To": r.target_to,
-    "Employee": r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "General",
+    "Employee": r.employees ? formatKhmerFullName(r.employees) : "General",
     "Subject": r.subject,
     "Details": r.details,
     "Suggestion": r.suggestion ?? "",

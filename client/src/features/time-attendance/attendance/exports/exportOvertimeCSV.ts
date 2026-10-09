@@ -1,5 +1,6 @@
 import { toast } from "@/components/Toast";
 import type { OvertimeRecord } from "../types/overtimeTypes";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export function exportOvertimeCSV(records: OvertimeRecord[]) {
   if (!records || records.length === 0) {
@@ -26,7 +27,7 @@ export function exportOvertimeCSV(records: OvertimeRecord[]) {
   ];
 
   const rows = records.map((r) => [
-    `"${r.employees ? (r.employees.display_name || r.employees.full_name || `${r.employees.first_name} ${r.employees.last_name}`) : "Unknown"}"`,
+    `"${r.employees ? formatKhmerFullName(r.employees) : "Unknown"}"`,
     `"${r.employees?.department || ""}"`,
     `"${r.employees?.role || ""}"`,
     `"${r.overtime_type}"`,

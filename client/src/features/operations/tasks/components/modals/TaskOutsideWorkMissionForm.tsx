@@ -84,7 +84,7 @@ export const TaskOutsideWorkMissionForm = memo(function TaskOutsideWorkMissionFo
   const supervisorName = useMemo(() => {
     if (!selectedEmployee?.reports_to) return "Taing Mey";
     const sup = employees.find((e) => e.id === selectedEmployee.reports_to);
-    return sup ? `${sup.first_name || ""} ${sup.last_name || ""}`.trim() : "Taing Mey";
+    return sup ? `${sup.last_name || ""} ${sup.first_name || ""}`.trim() : "Taing Mey";
   }, [selectedEmployee, employees]);
 
   const siteName =
@@ -129,7 +129,7 @@ export const TaskOutsideWorkMissionForm = memo(function TaskOutsideWorkMissionFo
               <option value="">Select Employee...</option>
               {employees.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.first_name} {e.last_name} ({(e as any).employee_code || (e as any).biometric_user_id || "No Code"})
+                  {e.last_name} {e.first_name} ({(e as any).employee_code || (e as any).biometric_user_id || "No Code"})
                 </option>
               ))}
             </select>
@@ -140,7 +140,7 @@ export const TaskOutsideWorkMissionForm = memo(function TaskOutsideWorkMissionFo
           employee={selectedEmployee as any}
           fallbackName={
             selectedEmployee
-              ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+              ? `${selectedEmployee.last_name} ${selectedEmployee.first_name}`
               : "Select Employee"
           }
           empCode={empCode}

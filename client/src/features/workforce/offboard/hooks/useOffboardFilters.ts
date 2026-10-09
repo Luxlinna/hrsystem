@@ -40,7 +40,7 @@ export function useOffboardFilters(offboardings: Offboarding[], employees: Emplo
       if (filterStatus !== "all" && o.status !== filterStatus) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const empName = `${o.employees?.first_name || ""} ${o.employees?.last_name || ""}`.toLowerCase();
+        const empName = `${o.employees?.last_name || ""} ${o.employees?.first_name || ""}`.toLowerCase();
         const roleName = (o.employees?.role || "").toLowerCase();
         const deptName = (o.employees?.department || "").toLowerCase();
         const reason = (o.reason || "").toLowerCase();
@@ -58,7 +58,7 @@ export function useOffboardFilters(offboardings: Offboarding[], employees: Emplo
       (o.tasks || []).map((t) => ({
         ...t,
         offboardingStatus: o.status,
-        employeeName: `${o.employees?.first_name || ""} ${o.employees?.last_name || ""}`,
+        employeeName: `${o.employees?.last_name || ""} ${o.employees?.first_name || ""}`,
         employeeRole: o.employees?.role || "Team Member",
         employeeDept: o.employees?.department || "General",
         employeeAvatar: o.employees?.avatar_url,

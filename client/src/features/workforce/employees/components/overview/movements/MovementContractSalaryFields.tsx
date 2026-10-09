@@ -1,5 +1,6 @@
 import React from "react";
 import type { MovementFormValues } from "./MovementFormFields";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 interface Props {
   values: MovementFormValues;
@@ -23,19 +24,17 @@ export const MovementContractSalaryFields: React.FC<Props> = ({ values, onChange
         </div>
         <div>
           <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Contract Start Date</label>
-          <input
-            type="date"
+          <DatePickerDMY
             value={values.contractStartDate}
-            onChange={(e) => onChange("contractStartDate", e.target.value)}
+            onChange={(val) => onChange("contractStartDate", val)}
             className="w-full px-3 py-2 border rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
         <div>
           <label className="block font-semibold text-gray-700 dark:text-slate-300 mb-1">Contract End Date</label>
-          <input
-            type="date"
+          <DatePickerDMY
             value={values.contractEndDate}
-            onChange={(e) => onChange("contractEndDate", e.target.value)}
+            onChange={(val) => onChange("contractEndDate", val)}
             className="w-full px-3 py-2 border rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>

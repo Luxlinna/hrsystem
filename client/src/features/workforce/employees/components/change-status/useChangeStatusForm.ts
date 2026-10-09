@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/Toast";
 import type { BranchOption } from "./types";
 import { submitChangeStatus } from "./changeStatusSubmit";
+import { formatKhmerFullName } from "../../nameUtils";
 
 interface UseChangeStatusFormParams {
   isOpen: boolean;
@@ -222,7 +223,7 @@ export function useChangeStatusForm({
 
   useEffect(() => {
     if (selectedEmployee) {
-      setEmpSearchQuery(`${selectedEmployee.first_name} ${selectedEmployee.last_name}`);
+      setEmpSearchQuery(formatKhmerFullName(selectedEmployee));
       const branchName = selectedEmployee.branches?.name || selectedEmployee.bu_full_name || selectedEmployee.company ||
         buList.find((b) => b.id === selectedEmployee.branch_id)?.name || "";
       const siteName = selectedEmployee.work_locations?.name || selectedEmployee.site || "";
@@ -244,7 +245,7 @@ export function useChangeStatusForm({
     const q = empSearchQuery.trim().toLowerCase();
     if (!q) return employees;
     return employees.filter((e) => {
-      const name = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+      const name = formatKhmerFullName(e).toLowerCase();
       const codeBu = (e.code_bu || e.branches?.name || e.bu_full_name || "").toLowerCase();
       const role = (e.role || "").toLowerCase();
       const dept = (e.department || "").toLowerCase();
@@ -284,7 +285,7 @@ export function useChangeStatusForm({
         dbWorkLocations,
         user,
       });
-      toast("Success", `Status change recorded for ${selectedEmployee.first_name} ${selectedEmployee.last_name}`, "success");
+      toast("Success", `Status change recorded for ${formatKhmerFullName(selectedEmployee)}`, "success");
       onSuccess?.();
       onClose();
     } catch (err: any) {

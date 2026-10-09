@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 export interface SearchableEmployee {
   id: string;
@@ -27,7 +28,7 @@ interface Props {
 
 export function getSearchableEmployeeDisplayName(e?: SearchableEmployee | null): string {
   if (!e) return "";
-  return e.display_name?.trim() || e.full_name?.trim() || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "Employee";
+  return e.display_name?.trim() || e.full_name?.trim() || formatKhmerFullName(e) || "Employee";
 }
 
 export function getSearchableEmployeeInitials(e?: SearchableEmployee | null): string {
@@ -62,7 +63,7 @@ export default function EmployeeSearchSelect({
     const q = query.trim().toLowerCase();
     if (!q) return true;
     const name = getSearchableEmployeeDisplayName(e).toLowerCase();
-    const raw = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+    const raw = `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase();
     return `${name} ${raw} ${e.employee_id || ""} ${e.department || ""} ${e.role || ""} ${e.app_role || ""} ${e.branch_name || ""}`.toLowerCase().includes(q);
   });
 

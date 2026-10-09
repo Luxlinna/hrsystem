@@ -1,9 +1,13 @@
-import { memo } from "react";
+import { memo, useState, useRef } from "react";
 import type { ComplaintSuggestion, ComplaintStatus } from "../types";
-import { COMPLAINT_TYPE_CONFIG, COMPLAINT_STATUS_CONFIG } from "../constants";
+import { COMPLAINT_STATUS_CONFIG } from "../constants";
+import { formatDMY } from "@/features/workforce/employees/dateUtils";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
+import { ComplaintRowMenu } from "./ComplaintRowMenu";
 
 interface ComplaintTableRowProps {
   r: ComplaintSuggestion;
+  index: number;
   onSelect: (item: ComplaintSuggestion) => void;
   onEdit: (record: ComplaintSuggestion) => void;
   onDelete: (id: string) => void;
@@ -13,63 +17,62 @@ interface ComplaintTableRowProps {
 
 export const ComplaintTableRow = memo(function ComplaintTableRow({
   r,
+  index,
   onSelect,
   onEdit,
   onDelete,
   onUpdateStatus,
   onPreview,
 }: ComplaintTableRowProps) {
-  const typeCfg = COMPLAINT_TYPE_CONFIG[r.type] ?? COMPLAINT_TYPE_CONFIG.complaint;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const statusCfg = COMPLAINT_STATUS_CONFIG[r.status] ?? COMPLAINT_STATUS_CONFIG.pending;
 
+  const filedBy =
+    r.show_identity === false
+      ? "Anonymous"
+      : r.employees
+      ? formatKhmerFullName(r.employees) || "—"
+      : "—";
+
   return (
-    <tr className="hover:bg-gray-50/70 transition-colors group">
-      <td className="px-5 py-3.5 whitespace-nowrap">
-        <span className="text-xs font-semibold text-gray-800">{r.entry_date}</span>
+    <tr className="hover:bg-slate-50/70 transition-colors group">
+      {/* 1. No. */}
+      <td className="py-2.5 px-3 text-slate-500 font-medium">{index}</td>
+
+      {/* 2. Filing Date */}
+      <td className="py-2.5 px-3 whitespace-nowrap text-slate-700 font-mono">
+        {formatDMY(r.entry_date)}
       </td>
 
-      <td className="px-4 py-3.5 whitespace-nowrap">
-        <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${typeCfg.bg} ${typeCfg.text} ${typeCfg.border}`}>
-          <i className={`${typeCfg.icon} text-[10px]`} />
-          {typeCfg.label}
+      {/* 3. Filed by */}
+      <td className="py-2.5 px-3">
+        <span className={`font-medium ${r.show_identity === false ? "text-amber-600 italic" : "text-slate-800"}`}>
+          {filedBy}
         </span>
       </td>
 
-      <td className="px-4 py-3.5 whitespace-nowrap">
-        <div className="flex items-center gap-1.5">
-          <i className="ri-user-shared-line text-xs text-gray-400" />
-          <span className="text-xs font-semibold text-gray-900">{r.target_to}</span>
-        </div>
-        {r.show_identity === false ? (
-          <p className="text-[10px] text-amber-600 font-medium mt-0.5 flex items-center gap-1">
-            <i className="ri-shield-user-line text-[11px]" />
-            Anonymous
-          </p>
-        ) : r.employees ? (
-          <p className="text-[10px] text-gray-400 mt-0.5">
-            By: {r.employees.first_name} {r.employees.last_name}
-          </p>
-        ) : null}
+      {/* 4. Subject */}
+      <td className="py-2.5 px-3 max-w-[240px]">
+        <button
+          type="button"
+          onClick={() => onSelect(r)}
+          className="text-left font-medium text-slate-900 hover:text-[#253C7D] truncate block w-full cursor-pointer"
+          title={r.subject}
+        >
+          {r.subject || "—"}
+        </button>
       </td>
 
-      <td className="px-4 py-3.5 max-w-64 cursor-pointer" onClick={() => onSelect(r)}>
-        <p className="text-xs font-bold text-gray-900 truncate hover:text-[#0284c7]">
-          {r.subject}
-        </p>
-        <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5">
-          {r.details.replace(/<[^>]*>?/gm, "")}
-        </p>
+      {/* 5. Complaint/Suggestion To */}
+      <td className="py-2.5 px-3 max-w-[200px] text-slate-700 truncate" title={r.target_to}>
+        {r.target_to || "—"}
       </td>
 
-      <td className="px-4 py-3.5 max-w-44">
-        <p className="text-xs text-gray-600 truncate">
-          {r.suggestion ? r.suggestion.replace(/<[^>]*>?/gm, "") : <span className="text-gray-300">—</span>}
-        </p>
-      </td>
-
-      <td className="px-4 py-3.5 whitespace-nowrap">
+      {/* 6. Status */}
+      <td className="py-2.5 px-3 whitespace-nowrap">
         <div className="relative inline-block">
-          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
             <i className={`${statusCfg.icon} text-[10px]`} />
             {statusCfg.label}
           </span>
@@ -87,50 +90,40 @@ export const ComplaintTableRow = memo(function ComplaintTableRow({
         </div>
       </td>
 
-      <td className="px-4 py-3.5 max-w-44">
-        <p className="text-xs text-gray-600 truncate">{r.remark || <span className="text-gray-300">—</span>}</p>
+      {/* 7. Comment */}
+      <td className="py-2.5 px-3 max-w-[220px]">
+        <span className="text-slate-600 truncate block" title={r.remark || r.details}>
+          {r.remark || r.details?.replace(/<[^>]*>?/gm, "") || "—"}
+        </span>
       </td>
 
-      <td className="px-4 py-3.5 whitespace-nowrap">
-        {r.attachment_url ? (
-          <button
-            type="button"
-            onClick={() => onPreview(r.attachment_url!, r.attachment_name || "Attachment")}
-            className="inline-flex items-center gap-1.5 text-xs text-sky-700 hover:text-sky-900 font-semibold py-1 px-2.5 rounded-lg bg-sky-50 hover:bg-sky-100 transition-colors cursor-pointer"
-            title="Click to view file"
-          >
-            <i className="ri-attachment-line text-xs" />
-            <span className="max-w-24 truncate">{r.attachment_name || "File"}</span>
-          </button>
-        ) : (
-          <span className="text-xs text-gray-300">—</span>
-        )}
-      </td>
+      {/* 8. Settings Action Menu (Always Visible) */}
+      <td className="py-2.5 px-3 text-center whitespace-nowrap w-14 relative" onClick={(e) => e.stopPropagation()}>
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setMenuOpen(!menuOpen)}
+          className={`h-6 w-11 rounded-[3px] inline-flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-2xs ${
+            menuOpen
+              ? "bg-[#253C7D] text-white border border-[#253C7D]"
+              : "bg-white text-[#253C7D] border border-[#253C7D] hover:bg-slate-50"
+          }`}
+          title="Row Options"
+        >
+          <i className="ri-settings-3-fill text-xs" />
+          <i className="ri-arrow-down-s-line text-[11px]" />
+        </button>
 
-      <td className="px-4 py-3.5 whitespace-nowrap">
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => onSelect(r)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
-            title="View details"
-          >
-            <i className="ri-eye-line text-sm" />
-          </button>
-          <button
-            onClick={() => onEdit(r)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-            title="Edit entry"
-          >
-            <i className="ri-edit-line text-sm" />
-          </button>
-          <button
-            onClick={() => onDelete(r.id)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-            title="Delete"
-          >
-            <i className="ri-delete-bin-line text-sm" />
-          </button>
-        </div>
+        <ComplaintRowMenu
+          isOpen={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          buttonRef={buttonRef}
+          record={r}
+          onView={onSelect}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onPreview={onPreview}
+        />
       </td>
     </tr>
   );

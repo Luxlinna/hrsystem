@@ -23,7 +23,7 @@ export const TaskTableRow = memo(function TaskTableRow({
   const priority = PRIORITY_META[task.priority];
   const overdue = isOverdue(task);
   const assigneeName = task.employees
-    ? `${task.employees.first_name} ${task.employees.last_name}`
+    ? `${task.employees.last_name} ${task.employees.first_name}`
     : "Unassigned";
 
   return (

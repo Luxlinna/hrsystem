@@ -22,7 +22,7 @@ export const PerformanceGoalCard = memo(function PerformanceGoalCard({
           <p className="text-[14px] font-semibold text-gray-900 leading-tight">{g.title}</p>
           {emp && (
             <p className="text-[11px] text-gray-500 mt-1">
-              {emp.first_name} {emp.last_name} &middot; {emp.department}
+              {emp.last_name} {emp.first_name} &middot; {emp.department}
             </p>
           )}
         </div>

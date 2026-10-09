@@ -56,7 +56,7 @@ export const ItemizedRecordsTableView = memo(function ItemizedRecordsTableView({
                       )}
                       <div>
                         <span className="font-extrabold text-gray-900 block">
-                          {emp ? `${emp.first_name} ${emp.last_name}` : "Employee"}
+                          {emp ? `${emp.last_name} ${emp.first_name}` : "Employee"}
                         </span>
                         <span className="text-[10px] text-gray-400">{emp?.role || "Staff"}</span>
                       </div>

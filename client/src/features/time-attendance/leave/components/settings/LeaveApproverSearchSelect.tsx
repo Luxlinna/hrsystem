@@ -40,7 +40,7 @@ export function LeaveApproverSearchSelect({
     const q = search.toLowerCase().trim();
     return cleanEmployees.filter((e) => {
       const name = getLeaveEmployeeName(e).toLowerCase();
-      const firstLast = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+      const firstLast = `${e.last_name || ""} ${e.first_name || ""}`.toLowerCase();
       const role = (e.role || "").toLowerCase();
       const dept = (e.department || "").toLowerCase();
       const code = (e.employee_code || "").toLowerCase();

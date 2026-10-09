@@ -7,6 +7,7 @@ import { queryCandidateDuplicates, findDuplicateCandidate, type DuplicateMatchRe
 import { DuplicateCandidateWarningModal } from "./DuplicateCandidateWarningModal";
 import { CandidateCvPreviewModal } from "./CandidateCvPreviewModal";
 import { isEmployeeHrRecruiter, HR_ADMIN_DIVISION_REGEX } from "../../hooks/useHrRecruiters";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -496,7 +497,7 @@ export const CandidateModal = memo(function CandidateModal({
                   <option value="">Unassigned</option>
                   {hrEmployees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} — {emp.role || "HR Officer"} (HR Division)
+                      {formatKhmerFullName(emp)} — {emp.role || "HR Officer"} (HR Division)
                     </option>
                   ))}
                 </select>

@@ -45,7 +45,7 @@ export const OvertimeTab = memo(function OvertimeTab({
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
+        const empName = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.toLowerCase();
         const empDisplay = (r.employees?.display_name || "").toLowerCase();
         const empFull = (r.employees?.full_name || "").toLowerCase();
         const reason = (r.reason || "").toLowerCase();

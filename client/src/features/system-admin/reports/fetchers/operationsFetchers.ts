@@ -19,7 +19,7 @@ export const fetchDailyLogsReport = async (config: ReportConfig): Promise<Report
       const isDeleted = Boolean(r.deleted_at);
       return {
         id: r.id,
-        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+        employee: `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim(),
         department: r.employees?.department || "—",
         branch: r.employees?.branches?.name || "—",
         date: r.log_date,
@@ -64,7 +64,7 @@ export const fetchMeetingRoomsReport = async (config: ReportConfig): Promise<Rep
   const fmtTime = (t: string | null) => (t ? new Date(`2000-01-01T${t}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "");
   const mapped = (data || [])
     .map((r: any) => {
-      const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim();
+      const empName = `${r.employees?.last_name || ""} ${r.employees?.first_name || ""}`.trim();
       const roomFloor = r.meeting_rooms?.floor || (r.meeting_rooms?.name?.includes("VIP") ? 5 : 3);
       const roomDisplay = r.meeting_rooms?.name
         ? `${r.meeting_rooms.name} (Floor ${roomFloor})`

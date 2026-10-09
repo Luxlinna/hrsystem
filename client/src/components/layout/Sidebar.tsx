@@ -6,6 +6,7 @@ import { isBootstrapAdminEmail, usePermissions } from "@/hooks/usePermissions";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useTheme } from "@/context/ThemeContext";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 import { DRAWER_GROUPS as navGroups } from "./topbar/constants";
 
@@ -27,7 +28,7 @@ export default function Sidebar() {
 
   const isExpanded = !collapsed || hovered;
   const displayName =
-    (myEmployee && (myEmployee.display_name?.trim() || myEmployee.full_name?.trim() || `${myEmployee.first_name} ${myEmployee.last_name}`.trim())) ||
+    (myEmployee && (myEmployee.display_name?.trim() || myEmployee.full_name?.trim() || formatKhmerFullName(myEmployee))) ||
     (user?.user_metadata?.display_name as string) ||
     user?.email?.split("@")[0] ||
     "HR Admin";

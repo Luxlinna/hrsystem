@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { PersonalSectionProps } from "./types";
+import { DatePickerDMY } from "@/components/common/DatePickerDMY";
 
 export const PersonalEducationSection = memo(function PersonalEducationSection({
   form,
@@ -107,24 +108,22 @@ export const PersonalEducationSection = memo(function PersonalEducationSection({
                     </select>
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="date"
+                    <DatePickerDMY
                       value={edu.start_date}
-                      onChange={(e) => {
+                      onChange={(iso) => {
                         const updated = [...(form.education_history || [])];
-                        updated[idx] = { ...updated[idx], start_date: e.target.value };
+                        updated[idx] = { ...updated[idx], start_date: iso };
                         onChange("education_history", updated);
                       }}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
                     />
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="date"
+                    <DatePickerDMY
                       value={edu.end_date}
-                      onChange={(e) => {
+                      onChange={(iso) => {
                         const updated = [...(form.education_history || [])];
-                        updated[idx] = { ...updated[idx], end_date: e.target.value };
+                        updated[idx] = { ...updated[idx], end_date: iso };
                         onChange("education_history", updated);
                       }}
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:border-[#253C7D]"

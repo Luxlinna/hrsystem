@@ -1,4 +1,5 @@
 import type { Offboarding } from "../types";
+import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -7,7 +8,7 @@ const getXLSX = async () => {
 export async function exportOffboardingsXLSX(offboardings: Offboarding[]): Promise<boolean> {
   const data = offboardings.length > 0
     ? offboardings.map((o) => {
-        const empName = `${o.employees?.first_name || ""} ${o.employees?.last_name || ""}`.trim() || "Employee";
+        const empName = formatKhmerFullName(o.employees);
         const dept = o.employees?.department || "—";
         const branch = o.employees?.branches?.name || "Main Branch";
         const role = o.employees?.role || "Staff";

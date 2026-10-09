@@ -86,14 +86,14 @@ export function useCreateOffboarding({
         entityId: data.id,
         actorName,
         actorRole: roleName,
-        description: `Offboarding started for ${emp ? `${emp.first_name} ${emp.last_name}` : "an employee"}`,
+        description: `Offboarding started for ${emp ? `${emp.last_name} ${emp.first_name}` : "an employee"}`,
       });
 
       notify({
         source: "offboard",
         type: "warning",
         title: "Offboarding started",
-        message: `Exit process started for ${emp ? `${emp.first_name} ${emp.last_name}` : "an employee"}, last day ${newForm.last_day}.`,
+        message: `Exit process started for ${emp ? `${emp.last_name} ${emp.first_name}` : "an employee"}, last day ${newForm.last_day}.`,
         entityId: data.id,
       });
       loadData();

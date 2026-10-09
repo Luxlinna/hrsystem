@@ -22,8 +22,8 @@ export const BranchStaffDeptGroup = memo(function BranchStaffDeptGroup({
   const sortedEmployees = [...employees].sort((a, b) => {
     const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
     if (idComp !== 0) return idComp;
-    const nameA = `${a.first_name || ""} ${a.last_name || ""}`;
-    const nameB = `${b.first_name || ""} ${b.last_name || ""}`;
+    const nameA = `${a.last_name || ""} ${a.first_name || ""}`;
+    const nameB = `${b.last_name || ""} ${b.first_name || ""}`;
     return nameA.localeCompare(nameB);
   });
 
