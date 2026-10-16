@@ -3037,3 +3037,18 @@ enum one_time_token_type {
 
   @@schema("auth")
 }
+
+model leave_entitlement_rules {
+  id               String   @id
+  code             String   @unique
+  name             String
+  leave_type_codes String[] @default([])
+  total_employee   Int?     @default(0)
+  remark           String?  @default("")
+  status           String   @default("Active")
+  target_criteria  Json?    @default("{}")
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}

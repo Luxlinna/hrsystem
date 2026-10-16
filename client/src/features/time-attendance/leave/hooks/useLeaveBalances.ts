@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from "react";
 import type { LeaveRequest, Employee, LeaveTypePolicy, LeaveStats } from "../types";
 import { toYMD } from "../dateUtils";
+import { isContractAllowedAL, calculateJoinMonthProrateAL } from "../utils/annualLeaveProrateUtils";
 
 interface UseLeaveBalancesProps {
   requests: LeaveRequest[];
@@ -25,6 +26,23 @@ export function useLeaveBalances({
         const emp =
           employees.find((e) => e.id === employeeId) ||
           (myEmployee?.id === employeeId ? myEmployee : null);
+
+        // If employee is on Probation/Internship, AL is locked per policy
+        if (emp?.contract_type && !isContractAllowedAL(emp.contract_type)) {
+          return 0;
+        }
+
+        // If employee joined in current year, calculate prorated annual leave
+        const dateStr = emp?.start_date || emp?.join_date;
+        if (dateStr) {
+          const joinDate = new Date(dateStr);
+          if (!isNaN(joinDate.getTime()) && joinDate.getFullYear() === currentYear) {
+            const startMonthProrate = calculateJoinMonthProrateAL(joinDate);
+            const remainingMonths = 12 - (joinDate.getMonth() + 1);
+            return Math.min(18, Math.round((startMonthProrate + remainingMonths * 1.5) * 10) / 10);
+          }
+        }
+
         return emp?.annual_leave_days ?? 18;
       }
       if (type === "maternity") {

@@ -54,11 +54,12 @@ export interface Employee {
   start_date?: string | null;
   employment_type?: string | null;
   contract_type?: string | null;
+  nationality?: string | null;
   branches?: {
     id?: string;
-    name: string;
+    name?: string;
     location?: string | null;
-  } | null;
+  } | any;
 }
 
 export interface LeaveTypePolicy {

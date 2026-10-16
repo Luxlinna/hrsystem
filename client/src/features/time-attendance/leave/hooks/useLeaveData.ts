@@ -55,7 +55,7 @@ export function useLeaveData() {
       setHrApprovers(hrStaff || []);
 
       const EMPLOYEE_FIELDS =
-        "id, first_name, last_name, display_name, full_name, role, position, department, division, site, bu_full_name, code_bu, join_date, start_date, employment_type, contract_type, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id, branches(id, name)";
+        "id, first_name, last_name, display_name, full_name, role, position, department, division, site, bu_full_name, code_bu, join_date, start_date, employment_type, contract_type, nationality, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id, branches(id, name)";
 
       const meQuery = applyUserEmployeeFilter(
         supabase.from("employees").select(EMPLOYEE_FIELDS),

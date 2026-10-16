@@ -159,6 +159,8 @@ export default function Leave() {
           searchQuery={settings.searchQuery}
           setSearchQuery={settings.setSearchQuery}
           canModify={canModifyLeaveSettings}
+          employees={l.employees}
+          availableLeaveCodes={settings.leaveTypes.map((t) => t.code)}
           onCreateNew={() => {
             settings.setEditingType(null);
             setViewMode("create_type");
