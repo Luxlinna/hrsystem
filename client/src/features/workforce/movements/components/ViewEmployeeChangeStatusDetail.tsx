@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { EmployeeMovement } from "../types";
 import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import { DetailEmployeeInfo } from "./detail/DetailEmployeeInfo";
 import { DetailContractAndRateItems } from "./detail/DetailContractAndRateItems";
 import { MovementHistoryGridCard } from "./detail/MovementHistoryGridCard";
+import { fetchMovementsByEmployeeId } from "../services/movementService";
 import { DEFAULT_PAYROLL_RATE_ITEMS } from "@/features/workforce/employees/constants";
 
 interface ViewEmployeeChangeStatusDetailProps {
@@ -34,7 +35,7 @@ const resolveSalaryNum = (...candidates: any[]): string => {
       }
     }
   }
-  return "1,300.00";
+  return "100.00";
 };
 
 export const ViewEmployeeChangeStatusDetail: React.FC<ViewEmployeeChangeStatusDetailProps> = ({
@@ -42,25 +43,68 @@ export const ViewEmployeeChangeStatusDetail: React.FC<ViewEmployeeChangeStatusDe
   onBack,
 }) => {
   const [showRate, setShowRate] = useState(false);
-  const emp = movement.employees;
+  const [allMovements, setAllMovements] = useState<EmployeeMovement[]>([movement]);
+  const [selectedRecordId, setSelectedRecordId] = useState<string>(movement.id);
+  const [viewAll, setViewAll] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!movement.employee_id) return;
+    fetchMovementsByEmployeeId(movement.employee_id)
+      .then((records) => {
+        if (records && records.length > 0) {
+          // Sort chronologically ascending (Join -> ... -> Latest)
+          const sorted = [...records].sort((a, b) => {
+            const tA = new Date(a.effective_date || a.created_at || 0).getTime();
+            const tB = new Date(b.effective_date || b.created_at || 0).getTime();
+            return tA - tB;
+          });
+          setAllMovements(sorted);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to load employee movements:", err);
+      });
+  }, [movement.employee_id]);
+
+  const activeMovement = allMovements.find((m) => m.id === selectedRecordId) || movement;
+  const emp = activeMovement.employees || movement.employees;
   const fullName = formatKhmerFullName(emp);
 
-  const employeeCode = (emp as any)?.employee_code || (emp as any)?.candidate_code || (emp as any)?.id?.slice(0, 8) || movement.employee_id?.slice(0, 8) || "1116";
-  const designation = (emp as any)?.position || emp?.role || "Staff";
-  const department = (emp?.department || "—").toUpperCase();
-  const supervisorName = (emp as any)?.line_manager || (emp as any)?.supervisor || (emp as any)?.reports_to || "—";
-  const employmentType = (emp as any)?.employment_type || "FULL-TIME";
-  const contractType = (emp as any)?.contract_type || "PERMANENT (UDC)";
-  const siteName = (emp as any)?.work_locations?.name || (emp as any)?.site || "—";
-  const joiningDate = formatDate((emp as any)?.join_date || (emp as any)?.start_date);
+  const employeeCode = (emp as any)?.employee_code || (emp as any)?.candidate_code || (emp as any)?.id?.slice(0, 8) || movement.employee_id?.slice(0, 8) || "117";
+  const designation = activeMovement.new_values?.position || activeMovement.new_values?.role || (emp as any)?.position || emp?.role || "Staff";
+  const department = (activeMovement.new_values?.department || emp?.department || "—").toUpperCase();
+  const supervisorName = activeMovement.new_values?.supervisor || (emp as any)?.line_manager || (emp as any)?.supervisor || (emp as any)?.reports_to || "—";
+  const employmentType = (activeMovement.new_values?.employment_type || (emp as any)?.employment_type || "FULL-TIME").toUpperCase();
+  const contractType = activeMovement.new_values?.contract_type || (emp as any)?.contract_type || "2-YEAR FDC";
+  const siteName = activeMovement.new_values?.site || (emp as any)?.work_locations?.name || (emp as any)?.site || "—";
+  const joiningDate = formatDate((emp as any)?.join_date || (emp as any)?.start_date || activeMovement.effective_date);
 
   const salary = resolveSalaryNum(
-    movement.new_values?.salary,
-    movement.new_values?.new_salary,
-    movement.new_values?.rate,
+    activeMovement.new_values?.salary,
+    activeMovement.new_values?.new_salary,
+    activeMovement.new_values?.rate,
     (emp as any)?.contract_rate,
     (emp as any)?.basic_salary
   );
+
+  const contractStart = formatDate((emp as any)?.contract_start_date || (emp as any)?.start_date || activeMovement.effective_date);
+  let contractEnd = (emp as any)?.contract_end_date ? formatDate((emp as any)?.contract_end_date) : "";
+  if (!contractEnd || contractEnd === "—") {
+    if (contractType.toUpperCase().includes("2-YEAR") || contractType.toUpperCase().includes("2 YEAR")) {
+      try {
+        const s = new Date((emp as any)?.start_date || activeMovement.effective_date);
+        if (!isNaN(s.getTime())) {
+          const end = new Date(s);
+          end.setFullYear(end.getFullYear() + 2);
+          contractEnd = formatDate(end.toISOString());
+        }
+      } catch {
+        contractEnd = "Ongoing";
+      }
+    } else {
+      contractEnd = "Ongoing";
+    }
+  }
 
   const rateItems = (emp as any)?.rate_items && (emp as any).rate_items.length > 0
     ? (emp as any).rate_items
@@ -100,26 +144,77 @@ export const ViewEmployeeChangeStatusDetail: React.FC<ViewEmployeeChangeStatusDe
         />
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
             <h2 className="text-xs font-bold text-[#29ABE2] uppercase tracking-wider">
-              CHANGE STATUS INFO
+              CHANGE STATUS INFO {allMovements.length > 1 && `(${allMovements.length} Records)`}
             </h2>
+
+            {allMovements.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {allMovements.map((m) => {
+                  const isSelected = !viewAll && m.id === activeMovement.id;
+                  const label = m.title || m.movement_type?.replace(/_/g, " ") || "Record";
+                  const date = formatDate(m.effective_date);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setViewAll(false);
+                        setSelectedRecordId(m.id);
+                      }}
+                      className={`px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-[#253C7D] text-white font-semibold shadow-2xs"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700 font-normal"
+                      }`}
+                    >
+                      {label} ({date})
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setViewAll(!viewAll)}
+                  className={`px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                    viewAll
+                      ? "bg-[#253C7D] text-white font-semibold shadow-2xs"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 font-normal"
+                  }`}
+                >
+                  View All
+                </button>
+              </div>
+            )}
           </div>
 
-          <MovementHistoryGridCard
-            movement={movement}
-            isCurrent={true}
-          />
+          {viewAll ? (
+            <div className="space-y-6">
+              {allMovements.map((m, idx) => (
+                <MovementHistoryGridCard
+                  key={m.id || idx}
+                  movement={m}
+                  isCurrent={idx === allMovements.length - 1}
+                />
+              ))}
+            </div>
+          ) : (
+            <MovementHistoryGridCard
+              movement={activeMovement}
+              isCurrent={activeMovement.id === allMovements[allMovements.length - 1]?.id}
+            />
+          )}
         </div>
 
         <DetailContractAndRateItems
           contractType={contractType}
-          contractPeriod={`${formatDate((emp as any)?.start_date)} - Ongoing`}
+          contractPeriod={`${contractStart} - ${contractEnd}`}
           rateItems={rateItems}
-          documentUrl={movement.document_url}
-          documentName={movement.document_name}
+          documentUrl={activeMovement.document_url || movement.document_url}
+          documentName={activeMovement.document_name || movement.document_name}
         />
       </div>
     </div>
   );
 };
+

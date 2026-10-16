@@ -14,7 +14,7 @@ interface MovementInfoCardProps {
 export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) => {
   const [movements, setMovements] = useState<EmployeeMovement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [privacyHidden, setPrivacyHidden] = useState<boolean>(true);
+  const [privacyHidden, setPrivacyHidden] = useState<boolean>(false);
   const [visibleCount, setVisibleCount] = useState<number>(5);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [editingMovement, setEditingMovement] = useState<EmployeeMovement | null>(null);
@@ -112,7 +112,7 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
           <p className="text-[11px] text-slate-400 mt-0.5">Status change history will appear here once recorded</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {pagedList.map((m, idx) => (
             <EmployeeMovementCard
               key={m.id || idx}

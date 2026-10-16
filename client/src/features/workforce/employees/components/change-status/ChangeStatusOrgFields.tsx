@@ -154,7 +154,7 @@ export const ChangeStatusOrgFields: React.FC<Props> = ({
       </FieldRow>
 
       {/* Department */}
-      <FieldRow label="Department" required>
+      <FieldRow label="Department">
         <SearchableSelect
           options={departments}
           value={department}

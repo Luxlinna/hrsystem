@@ -91,7 +91,7 @@ export const OrgHierarchyFields = memo(function OrgHierarchyFields({
       {/* Department */}
       <div>
         <label className="block text-xs font-extrabold text-slate-700 mb-1">
-          Department <span className="text-rose-500">*</span>
+          Department
         </label>
         <select
           value={form.department}

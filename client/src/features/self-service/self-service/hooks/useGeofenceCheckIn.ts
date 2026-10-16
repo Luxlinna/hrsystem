@@ -32,9 +32,11 @@ export function useGeofenceCheckIn({
       showToast("error", "You have an outside work task today. Please check in via Task Management.");
       return;
     }
-    if (branchLoading) return;
     if (!branch?.latitude || !branch?.longitude) {
-      onWithinRange();
+      setCheckInMessage(
+        `Branch GPS coordinates are not configured for "${branch?.name || "your branch"}". Check-in is strictly restricted to within ${branch?.geofence_radius_m || 100}m of the office building. Please contact HR Admin.`
+      );
+      setCheckInStep("denied");
       return;
     }
 

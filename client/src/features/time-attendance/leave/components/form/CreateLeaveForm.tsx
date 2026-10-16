@@ -112,7 +112,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
 
   return (
     <div className={isEmbedded ? "w-full font-sans pb-6" : "min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-2 sm:p-5 font-sans"}>
-      <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 sm:p-6 shadow-xs">
+      <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 sm:p-6 shadow-xs overflow-hidden">
         {/* Header with Back and Title — On mobile step 2, back button goes back to step 1 */}
         <LeaveFormHeader
           onBack={mobileStep === 2 ? () => { setMobileStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); } : onBack}

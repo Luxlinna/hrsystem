@@ -80,11 +80,11 @@ export function LeaveFormDatesSection({
         </div>
       </div>
 
-      {/* From Date & To Date — 2 Equal Columns Side-by-Side to Fit Date Text Length */}
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
+      {/* From Date & To Date — Width Fits Text Header */}
+      <div className="flex flex-wrap items-end gap-3 sm:gap-4 w-full">
         {/* From Date */}
-        <div className="space-y-1 min-w-0">
-          <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+        <div className="space-y-1">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
             From Date <span className="text-rose-500">*</span>
           </label>
           <input
@@ -92,30 +92,33 @@ export function LeaveFormDatesSection({
             required
             value={formData.start_date}
             onChange={handleStartDateChange}
-            className="w-full px-2.5 sm:px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs cursor-pointer transition-all"
+            className="w-32 sm:w-36 max-w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs cursor-pointer transition-all"
           />
         </div>
 
         {/* To Date */}
-        <div className="space-y-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
-            <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
-              To Date <span className="text-rose-500">*</span>
-            </label>
-            {requestedDays > 0 && (
-              <span className="text-[10px] sm:text-[10.5px] font-bold text-[#253C7D] dark:text-blue-300 shrink-0">
-                <span className="hidden sm:inline">Duration: </span>{requestedDays} {requestedDays === 1 ? "day" : "days"}
-              </span>
-            )}
-          </div>
+        <div className="space-y-1">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
+            To Date <span className="text-rose-500">*</span>
+          </label>
           <input
             type="date"
             required
             value={formData.end_date}
             onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
-            className="w-full px-2.5 sm:px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs cursor-pointer transition-all"
+            className="w-32 sm:w-36 max-w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs cursor-pointer transition-all"
           />
         </div>
+
+        {/* Duration Badge */}
+        {requestedDays > 0 && (
+          <div className="pb-0.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800 text-[11px] font-bold text-[#253C7D] dark:text-blue-300">
+              <i className="ri-time-line text-xs" />
+              <span>{requestedDays} {requestedDays === 1 ? "day" : "days"}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Reason — Full Width */}
