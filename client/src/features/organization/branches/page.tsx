@@ -23,9 +23,10 @@ export default function Branches() {
 
   const [activeTab, setActiveTabState] = useState<BranchTabType>(() => {
     const urlTab = searchParams.get("tab") as BranchTabType | null;
-    if (urlTab) return urlTab;
+    if (urlTab && (urlTab as string) !== "approval-flow") return urlTab;
     const storedTab = localStorage.getItem(TAB_STORAGE_KEY) as BranchTabType | null;
-    return storedTab || "profile";
+    if (storedTab && (storedTab as string) !== "approval-flow") return storedTab;
+    return "profile";
   });
 
   const urlBu = searchParams.get("bu");
@@ -77,11 +78,13 @@ export default function Branches() {
 
   useEffect(() => {
     const urlTab = searchParams.get("tab") as BranchTabType | null;
-    if (urlTab && urlTab !== activeTab) {
+    if ((urlTab as string) === "approval-flow") {
+      handleTabChange("profile");
+    } else if (urlTab && urlTab !== activeTab) {
       setActiveTabState(urlTab);
       localStorage.setItem(TAB_STORAGE_KEY, urlTab);
     }
-  }, [searchParams, activeTab]);
+  }, [searchParams, activeTab, handleTabChange]);
 
   const currentBranch = useMemo(() => {
     if (urlBu) {

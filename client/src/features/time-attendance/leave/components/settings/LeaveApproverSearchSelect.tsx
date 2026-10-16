@@ -182,7 +182,7 @@ export function LeaveApproverSearchSelect({
                           )}
                         </div>
                         <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
-                          {e.role || "Staff Member"}
+                          {e.position || e.role || "Staff Member"}
                         </div>
                       </div>
                     </div>

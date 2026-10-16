@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import type { LeaveTypeSetting } from "../../services/leaveSettingsService";
 import { LeaveEntitlementRulesTabContent } from "./LeaveEntitlementRulesTabContent";
+import { LeaveApprovalFlowTabContent } from "./approval-flow/LeaveApprovalFlowTabContent";
 
 interface LeaveSettingsViewProps {
   leaveTypes: LeaveTypeSetting[];
@@ -8,7 +9,7 @@ interface LeaveSettingsViewProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   canModify?: boolean;
-  employees?: Array<{ id: string; nationality?: string | null }>;
+  employees?: Array<{ id: string; nationality?: string | null; first_name?: string; last_name?: string; role?: string; department?: string; full_name?: string }>;
   availableLeaveCodes?: string[];
   onCreateNew: () => void;
   onEdit: (type: LeaveTypeSetting) => void;
@@ -17,7 +18,45 @@ interface LeaveSettingsViewProps {
   onBack: () => void;
 }
 
-type LeaveSystemTab = "leave_type" | "entitlement_rule" | "approval_leave" | "settings";
+type LeaveSystemTab =
+  | "leave_type"
+  | "entitlement_rule"
+  | "blackout_date"
+  | "compensatory_rule"
+  | "leave_hourly"
+  | "approval_flow"
+  | "settings";
+
+const VALID_SETTINGS_TABS: LeaveSystemTab[] = [
+  "leave_type",
+  "entitlement_rule",
+  "blackout_date",
+  "compensatory_rule",
+  "leave_hourly",
+  "approval_flow",
+  "settings",
+];
+
+function getInitialSettingsTab(): LeaveSystemTab {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab")?.replace(/-/g, "_") as LeaveSystemTab;
+    if (tabParam && VALID_SETTINGS_TABS.includes(tabParam)) {
+      return tabParam;
+    }
+    const hash = window.location.hash?.replace(/^#/, "").replace(/-/g, "_") as LeaveSystemTab;
+    if (hash && VALID_SETTINGS_TABS.includes(hash)) {
+      return hash;
+    }
+    const stored = localStorage.getItem("hrsystem_leave_settings_active_tab") as LeaveSystemTab;
+    if (stored && VALID_SETTINGS_TABS.includes(stored)) {
+      return stored;
+    }
+  } catch {
+    // fallback
+  }
+  return "leave_type";
+}
 
 export const LeaveSettingsView: React.FC<LeaveSettingsViewProps> = ({
   leaveTypes,
@@ -33,7 +72,39 @@ export const LeaveSettingsView: React.FC<LeaveSettingsViewProps> = ({
   onToggleActive,
   onBack,
 }) => {
-  const [activeTab, setActiveTab] = useState<LeaveSystemTab>("leave_type");
+  const [activeTab, setActiveTabState] = useState<LeaveSystemTab>(getInitialSettingsTab);
+
+  const handleSelectTab = (tab: LeaveSystemTab) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem("hrsystem_leave_settings_active_tab", tab);
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      // ignore
+    }
+  };
+
+  React.useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.get("tab")) {
+        url.searchParams.set("tab", activeTab);
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch {
+      // ignore
+    }
+  }, [activeTab]);
+  React.useEffect(() => {
+    const handlePopState = () => {
+      setActiveTabState(getInitialSettingsTab());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "disabled">("all");
   const [periodFilter, setPeriodFilter] = useState<"all" | "daily" | "hourly">("all");
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
@@ -136,100 +207,106 @@ export const LeaveSettingsView: React.FC<LeaveSettingsViewProps> = ({
 
   return (
     <div className="w-full space-y-5 font-sans pb-12">
-      {/* Page Title & Back to Hub */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            <span>Time & Attendance</span>
-            <i className="ri-arrow-right-s-line text-xs" />
-            <span>Leave Management</span>
-            <i className="ri-arrow-right-s-line text-xs" />
-            <span className="text-[#253C7D] font-bold">Leave System</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-            Leave System
-            {!canModify && (
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                View Only
-              </span>
-            )}
-          </h1>
-        </div>
+      {/* Page Title & Back Button (Matching Screenshot 1) */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
+        <h1 className="text-xl sm:text-2xl font-normal text-slate-600 dark:text-slate-200 tracking-tight">
+          Leave Setting
+        </h1>
 
-        <div className="flex items-center gap-2.5">
-          {canModify && (
-            <button
-              type="button"
-              onClick={onCreateNew}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-            >
-              <i className="ri-add-line text-sm" />
-              <span>Create Leave Type</span>
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs font-bold shadow-2xs transition-all cursor-pointer"
-          >
-            <i className="ri-arrow-left-line text-sm text-[#253C7D]" />
-            <span>Leave Hub</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#e2e8f0] hover:bg-[#cbd5e1] text-slate-700 text-xs font-medium rounded transition-colors cursor-pointer shadow-2xs"
+        >
+          <i className="ri-arrow-left-line text-xs" />
+          <span>Back</span>
+        </button>
       </div>
 
-      {/* 4 System Tabs — Matching Mockup Style */}
-      <div className="w-full bg-slate-100 dark:bg-slate-800/60 rounded-xl p-1 flex items-center gap-1 overflow-x-auto shadow-2xs">
+      {/* 7 System Tabs — Matching Screenshot 1 Underline Style */}
+      <div className="w-full border-b border-slate-200 dark:border-slate-800 flex items-center gap-6 overflow-x-auto text-xs font-normal">
         <button
           type="button"
-          onClick={() => setActiveTab("leave_type")}
-          className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+          onClick={() => handleSelectTab("leave_type")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === "leave_type"
-              ? "bg-[#FFE600] text-black shadow-xs font-black"
-              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
           }`}
         >
-          <i className="ri-list-settings-line text-sm" />
-          <span>Leave Type</span>
+          Leave Type
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab("entitlement_rule")}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+          onClick={() => handleSelectTab("entitlement_rule")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === "entitlement_rule"
-              ? "bg-[#FFE600] text-black shadow-xs font-black"
-              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
           }`}
         >
-          <i className="ri-scales-3-line text-sm" />
-          <span>Leave Entitlement Rule</span>
+          Leave Entitlement Rule
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab("approval_leave")}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-            activeTab === "approval_leave"
-              ? "bg-[#FFE600] text-black shadow-xs font-black"
-              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50"
+          onClick={() => handleSelectTab("blackout_date")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
+            activeTab === "blackout_date"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
           }`}
         >
-          <i className="ri-user-follow-line text-sm" />
-          <span>Approval Leave</span>
+          Blackout Date Rule
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab("settings")}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+          onClick={() => handleSelectTab("compensatory_rule")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
+            activeTab === "compensatory_rule"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+          }`}
+        >
+          Compensatory Rule
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectTab("leave_hourly")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
+            activeTab === "leave_hourly"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+          }`}
+        >
+          Leave Hourly Rule
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectTab("approval_flow")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
+            activeTab === "approval_flow"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
+          }`}
+        >
+          Approval Flow
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectTab("settings")}
+          className={`pb-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === "settings"
-              ? "bg-[#FFE600] text-black shadow-xs font-black"
-              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-white/50"
+              ? "text-slate-800 dark:text-white font-bold border-b-2 border-[#29ABE2] -mb-px"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
           }`}
         >
-          <i className="ri-settings-4-line text-sm" />
-          <span>Settings</span>
+          Settings
         </button>
       </div>
 
@@ -476,6 +553,17 @@ export const LeaveSettingsView: React.FC<LeaveSettingsViewProps> = ({
                   </div>
                 )}
               </div>
+
+              {canModify && (
+                <button
+                  type="button"
+                  onClick={onCreateNew}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded text-xs font-bold transition-all shadow-xs cursor-pointer ml-auto sm:ml-0"
+                >
+                  <i className="ri-add-line text-sm" />
+                  <span>Create Leave Type</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -879,51 +967,168 @@ export const LeaveSettingsView: React.FC<LeaveSettingsViewProps> = ({
         </div>
       )}
 
-      {/* TAB 3: APPROVAL LEAVE */}
-      {activeTab === "approval_leave" && (
-        <div className="space-y-4">
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <i className="ri-user-follow-line text-[#253C7D] text-lg" />
-              <span>Hierarchical Leave Approval Workflow</span>
+      {/* TAB 3: BLACKOUT DATE RULE */}
+      {activeTab === "blackout_date" && (
+        <div className="space-y-6 font-sans">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-bold text-[#29ABE2] uppercase tracking-wider">
+              BLACKOUT DATE RULE INFO
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Leave requests are processed through a 2-tier approval flow: Line Manager approval followed by HR Division review.
-            </p>
 
-            <div className="space-y-3 pt-2">
-              <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40 dark:bg-blue-950/20 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#253C7D] text-white flex items-center justify-center font-bold text-xs">
-                    1
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs text-slate-900 dark:text-white">Tier 1: Direct Line Manager</h3>
-                    <p className="text-[11px] text-slate-500">Initial operational review and scheduling approval.</p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                  Required
-                </span>
-              </div>
+            {canModify && (
+              <button
+                type="button"
+                onClick={() => alert("Add Blackout Date Rule feature")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#29ABE2] text-[#29ABE2] hover:bg-sky-50 dark:hover:bg-sky-950/30 text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+              >
+                <i className="ri-add-circle-line text-sm" />
+                <span>Add Blackout Date Rule</span>
+              </button>
+            )}
+          </div>
 
-              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/20 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                    2
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs text-slate-900 dark:text-white">Tier 2: HR & Admin Division Director</h3>
-                    <p className="text-[11px] text-slate-500">Compliance validation, balance deduction verification, and final sign-off.</p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                  Final Sign-off
-                </span>
-              </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded shadow-2xs overflow-hidden">
+            <div className="px-4 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                Company Operational Blackout Periods
+              </span>
+            </div>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-semibold">
+                  <tr>
+                    <th className="py-2.5 px-3 w-12 font-semibold">No.</th>
+                    <th className="py-2.5 px-3 font-semibold">Rule Name</th>
+                    <th className="py-2.5 px-3 font-semibold">Date Range</th>
+                    <th className="py-2.5 px-3 font-semibold">Restricted Leave Types</th>
+                    <th className="py-2.5 px-3 font-semibold">Applies To</th>
+                    <th className="py-2.5 px-3 font-semibold">Exception Authority</th>
+                    <th className="py-2.5 px-3 text-center font-semibold w-24">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300">
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
+                      No records found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 4: COMPENSATORY RULE */}
+      {activeTab === "compensatory_rule" && (
+        <div className="space-y-6 font-sans">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-bold text-[#29ABE2] uppercase tracking-wider">
+              COMPENSATORY RULE INFO
+            </h2>
+
+            {canModify && (
+              <button
+                type="button"
+                onClick={() => alert("Add Compensatory Rule feature")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#29ABE2] text-[#29ABE2] hover:bg-sky-50 dark:hover:bg-sky-950/30 text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+              >
+                <i className="ri-add-circle-line text-sm" />
+                <span>Add Compensatory Rule</span>
+              </button>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded shadow-2xs overflow-hidden">
+            <div className="px-4 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                Compensatory Time-Off (Comp Leave) Conversion Rules
+              </span>
+            </div>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-semibold">
+                  <tr>
+                    <th className="py-2.5 px-3 w-12 font-semibold">No.</th>
+                    <th className="py-2.5 px-3 font-semibold">Rule Name</th>
+                    <th className="py-2.5 px-3 font-semibold">Source Event</th>
+                    <th className="py-2.5 px-3 font-semibold">Credit Ratio</th>
+                    <th className="py-2.5 px-3 font-semibold">Validity Period</th>
+                    <th className="py-2.5 px-3 font-semibold">Max Cap</th>
+                    <th className="py-2.5 px-3 text-center font-semibold w-24">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300">
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
+                      No records found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: LEAVE HOURLY RULE */}
+      {activeTab === "leave_hourly" && (
+        <div className="space-y-6 font-sans">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-bold text-[#29ABE2] uppercase tracking-wider">
+              LEAVE HOURLY RULE INFO
+            </h2>
+
+            {canModify && (
+              <button
+                type="button"
+                onClick={() => alert("Add Leave Hourly Rule feature")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#29ABE2] text-[#29ABE2] hover:bg-sky-50 dark:hover:bg-sky-950/30 text-xs font-medium transition-colors cursor-pointer shadow-2xs"
+              >
+                <i className="ri-add-circle-line text-sm" />
+                <span>Add Leave Hourly Rule</span>
+              </button>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded shadow-2xs overflow-hidden">
+            <div className="px-4 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                Short-Term Hourly Leave Configurations
+              </span>
+            </div>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-semibold">
+                  <tr>
+                    <th className="py-2.5 px-3 w-12 font-semibold">No.</th>
+                    <th className="py-2.5 px-3 font-semibold">Rule Name</th>
+                    <th className="py-2.5 px-3 font-semibold">Min Slot</th>
+                    <th className="py-2.5 px-3 font-semibold">Max Daily Limit</th>
+                    <th className="py-2.5 px-3 font-semibold">Deduction Method</th>
+                    <th className="py-2.5 px-3 font-semibold">Advance Request</th>
+                    <th className="py-2.5 px-3 text-center font-semibold w-24">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300">
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
+                      No records found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: APPROVAL FLOW (Exact Match to Screenshot 1, 2, 3) */}
+      {activeTab === "approval_flow" && (
+        <LeaveApprovalFlowTabContent
+          canModify={canModify}
+          employees={employees}
+        />
       )}
 
       {/* TAB 4: SETTINGS */}
