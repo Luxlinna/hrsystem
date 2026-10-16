@@ -1,126 +1,58 @@
 import React from "react";
-import type { LeaveFormData, LeaveTypeBalanceStats } from "../../types";
+import type { LeaveTypeBalanceStats } from "../../types";
 
 interface LeaveFormTypeBalancesProps {
-  formData: LeaveFormData;
-  setFormData: React.Dispatch<React.SetStateAction<LeaveFormData>>;
-  activeTypeCfg: { code: string; label: string };
   currentStats: LeaveTypeBalanceStats;
-  handleSelectSpecialCategory?: (catId: string) => void;
-  handleSelectMaternityCategory?: (catId: string) => void;
-  handleApply90DaysMaternity?: () => void;
 }
 
 export function LeaveFormTypeBalances({
-  formData,
-  setFormData,
-  activeTypeCfg,
   currentStats,
 }: LeaveFormTypeBalancesProps) {
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value;
-    setFormData((prev) => {
-      let nextCat = "";
-      let nextEnd = prev.end_date;
-      if (newType === "maternity" && prev.start_date) {
-        const d = new Date(prev.start_date);
-        d.setDate(d.getDate() + 89);
-        nextEnd = d.toISOString().split("T")[0];
-        nextCat = "Standard Delivery (Labour Law Art. 182)";
-      }
-      return { ...prev, leave_type: newType, category_law: nextCat, end_date: nextEnd };
-    });
-  };
-
   return (
-    <div className="space-y-2.5 pt-1">
-      {/* Section Header */}
-      <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-[#1e293b] dark:text-slate-100">
-        <div className="w-6 h-6 rounded-lg bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-2xs">
-          <i className="ri-calendar-todo-fill" />
-        </div>
-        <span>Leave Type Info</span>
-      </div>
-
-      {/* Type Dropdown */}
-      <div className="space-y-1">
-        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-          Leave Type <span className="text-rose-500">*</span>
-        </label>
-        <div className="relative">
-          <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10">
-            {formData.leave_type === "annual" ? (
-              <i className="ri-sun-line text-emerald-600 text-sm" />
-            ) : formData.leave_type === "sick" ? (
-              <i className="ri-heart-pulse-line text-rose-500 text-sm" />
-            ) : formData.leave_type === "maternity" ? (
-              <i className="ri-parent-line text-purple-500 text-sm" />
-            ) : formData.leave_type === "special" ? (
-              <i className="ri-star-line text-amber-500 text-sm" />
-            ) : formData.leave_type === "study" ? (
-              <i className="ri-book-open-line text-blue-500 text-sm" />
-            ) : (
-              <i className="ri-calendar-event-line text-slate-500 text-sm" />
-            )}
+    <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden my-2.5">
+      <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+        {/* Total Leave Entitlement */}
+        <div className="p-2.5 sm:p-4 flex flex-col justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="flex items-center justify-between gap-1 mb-1 sm:mb-2">
+            <span className="text-base sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-none">
+              {currentStats.balance}
+            </span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-blue-50/90 dark:bg-blue-950/50 text-[#253C7D] dark:text-blue-300 flex items-center justify-center text-xs sm:text-sm shrink-0">
+              <i className="ri-calendar-line" />
+            </div>
           </div>
-          <select
-            value={formData.leave_type}
-            onChange={handleTypeChange}
-            className="w-full pl-8 pr-8 py-2.5 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-[11px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] cursor-pointer appearance-none shadow-2xs"
-          >
-            <option value="annual">AL — Annual Leave</option>
-            <option value="sick">SL — Sick Leave</option>
-            <option value="special">SP — Special Leave (Labour Law Art. 171)</option>
-            <option value="maternity">ML — Maternity Leave (90 Days Statutory)</option>
-            <option value="unpaid">UL — Unpaid Leave</option>
-            <option value="paternity">PL — Paternity Leave</option>
-            <option value="bereavement">BL — Bereavement Leave</option>
-            <option value="study">STL — Study Leave</option>
-          </select>
-          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 z-10">
-            <i className="ri-arrow-down-s-line text-sm" />
+          <div className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight">
+            Total Leave Entitlement
           </div>
         </div>
-      </div>
 
-      {/* Entitlement Summary Stat Cards */}
-      <div className="space-y-1 pt-0.5">
-        <label className="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300">
-          {activeTypeCfg.code} Entitlement
-        </label>
-        
-        <div className="grid grid-cols-3 gap-1.5">
-          {/* Balance */}
-          <div className="p-1.5 py-1.5 bg-[#e0f2fe] dark:bg-sky-950/40 rounded-xl text-center flex flex-col justify-between min-h-[50px] shadow-2xs">
-            <span className="text-[8px] sm:text-[8.5px] font-bold text-[#0369a1] dark:text-sky-300 uppercase tracking-tight truncate">
-              {activeTypeCfg.code} BALANCE
+        {/* Total Leave Used */}
+        <div className="p-2.5 sm:p-4 flex flex-col justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="flex items-center justify-between gap-1 mb-1 sm:mb-2">
+            <span className="text-base sm:text-2xl font-bold text-amber-500 dark:text-amber-400 tracking-tight leading-none">
+              {currentStats.used}
             </span>
-            <div className="text-xs sm:text-[13px] font-black text-[#0c4a6e] dark:text-sky-100 my-0.2">
-              {currentStats.balance} <span className="text-[9px] font-normal text-slate-500">days</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 dark:text-amber-400 flex items-center justify-center text-xs sm:text-sm shrink-0">
+              <i className="ri-time-line" />
             </div>
-            <i className="ri-calendar-line text-[11px] text-[#0284c7] mx-auto" />
           </div>
-
-          {/* Used */}
-          <div className="p-1.5 py-1.5 bg-[#fef3c7] dark:bg-amber-950/40 rounded-xl text-center flex flex-col justify-between min-h-[50px] shadow-2xs">
-            <span className="text-[8px] sm:text-[8.5px] font-bold text-[#b45309] dark:text-amber-300 uppercase tracking-tight truncate">
-              {activeTypeCfg.code} USED
-            </span>
-            <div className="text-xs sm:text-[13px] font-black text-[#78350f] dark:text-amber-100 my-0.2">
-              {currentStats.used} <span className="text-[9px] font-normal text-slate-500">days</span>
-            </div>
-            <i className="ri-time-line text-[11px] text-[#d97706] mx-auto" />
+          <div className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight">
+            Total Leave Used
           </div>
+        </div>
 
-          {/* Available */}
-          <div className="p-1.5 py-1.5 bg-[#dcfce7] dark:bg-emerald-950/40 rounded-xl text-center flex flex-col justify-between min-h-[50px] shadow-2xs">
-            <span className="text-[8px] sm:text-[8.5px] font-bold text-[#15803d] dark:text-emerald-300 uppercase tracking-tight truncate">
-              {activeTypeCfg.code} AVAILABLE
+        {/* Total Leave Available */}
+        <div className="p-2.5 sm:p-4 flex flex-col justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="flex items-center justify-between gap-1 mb-1 sm:mb-2">
+            <span className="text-base sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight leading-none">
+              {currentStats.available}
             </span>
-            <div className="text-xs sm:text-[13px] font-black text-[#14532d] dark:text-emerald-100 my-0.2">
-              {currentStats.available} <span className="text-[9px] font-normal text-slate-500">days</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 dark:text-emerald-400 flex items-center justify-center text-xs sm:text-sm shrink-0">
+              <i className="ri-checkbox-circle-line" />
             </div>
-            <i className="ri-checkbox-circle-line text-[11px] text-[#16a34a] mx-auto" />
+          </div>
+          <div className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight">
+            Total Leave Available
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { calculateDays } from "../../dateUtils";
 import { exportLeaveApplicationSlip } from "../../exports/exportLeaveApplicationSlip";
 import { matchLeaveEmployee } from "./leaveEmployeeMatch";
 import { findLineManager } from "./leaveFormHelpers";
+import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
 
 interface UseCreateLeaveFormStateParams {
   employees: Employee[];
@@ -57,6 +58,12 @@ export function useCreateLeaveFormState({
   const lineManager = useMemo(() => {
     return findLineManager(employees, selectedEmployee, activeEmpId, myEmployee, myApproverName);
   }, [selectedEmployee, employees, activeEmpId, myEmployee, myApproverName]);
+
+  const supervisorName = useMemo(() => {
+    if (lineManager) return getLeaveEmployeeName(lineManager);
+    if (myApproverName && activeEmpId === myEmployee?.id) return myApproverName;
+    return "Mrs. Chea Tiengchanvathna";
+  }, [lineManager, myApproverName, activeEmpId, myEmployee]);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((e) => matchLeaveEmployee(e, employeeSearch));
@@ -167,6 +174,7 @@ export function useCreateLeaveFormState({
     fileInputRef,
     selectedEmployee,
     lineManager,
+    supervisorName,
     filteredEmployees,
     requestedDays,
     activeTypeCfg,

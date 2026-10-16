@@ -54,8 +54,11 @@ export function useLeaveData() {
         .is("deleted_at", null).order("first_name");
       setHrApprovers(hrStaff || []);
 
+      const EMPLOYEE_FIELDS =
+        "id, first_name, last_name, display_name, full_name, role, position, department, division, site, bu_full_name, code_bu, join_date, start_date, employment_type, contract_type, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id, branches(id, name)";
+
       const meQuery = applyUserEmployeeFilter(
-        supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to, employee_code, biometric_user_id"),
+        supabase.from("employees").select(EMPLOYEE_FIELDS),
         user.email
       );
       const { data: rows } = await meQuery.limit(5);
@@ -65,7 +68,7 @@ export function useLeaveData() {
       setMyEmployee(me);
 
       if (me?.reports_to) {
-        const { data: mgr } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name").eq("id", me.reports_to).maybeSingle();
+        const { data: mgr } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, position, avatar_url").eq("id", me.reports_to).maybeSingle();
         setMyApproverName(mgr ? getLeaveEmployeeName(mgr) : "");
       } else {
         setMyApproverName("");
@@ -79,7 +82,7 @@ export function useLeaveData() {
           filters.push(`and(first_name.ilike.${me.first_name.trim()},last_name.ilike.${me.last_name.trim()})`);
         }
         if (filters.length > 0) {
-          const { data: sibs } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id").or(filters.join(",")).is("deleted_at", null);
+          const { data: sibs } = await supabase.from("employees").select(EMPLOYEE_FIELDS).or(filters.join(",")).is("deleted_at", null);
           if (sibs && sibs.length > 0) {
             mySiblings = sibs;
           }
@@ -88,7 +91,7 @@ export function useLeaveData() {
       const myEmpIds = mySiblings.map((s) => s.id);
 
       if (canViewAll || canViewOwnBranch || isSuperAdmin) {
-        let teamQuery = supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id").is("deleted_at", null).order("first_name");
+        let teamQuery = supabase.from("employees").select(EMPLOYEE_FIELDS).is("deleted_at", null).order("first_name");
         if (targetBranch && !isSuperAdmin) teamQuery = teamQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
         const { data: team } = await teamQuery;
         const allTeam = [...mySiblings, ...(team || []).filter((e) => !myEmpIds.includes(e.id))];
@@ -109,7 +112,7 @@ export function useLeaveData() {
 
       if (!me) { setEmployees([]); setRequests([]); setLoading(false); return; }
 
-      const { data: directReports } = await supabase.from("employees").select("id, first_name, last_name, display_name, full_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to, employee_code, biometric_user_id").in("reports_to", myEmpIds).is("deleted_at", null);
+      const { data: directReports } = await supabase.from("employees").select(EMPLOYEE_FIELDS).in("reports_to", myEmpIds).is("deleted_at", null);
       const combinedTeam = [...mySiblings, ...(directReports || []).filter((e) => !myEmpIds.includes(e.id))];
       setEmployees(combinedTeam);
 

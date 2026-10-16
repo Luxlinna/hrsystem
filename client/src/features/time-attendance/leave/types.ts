@@ -45,6 +45,15 @@ export interface Employee {
   employee_id?: string | null;
   employee_code?: string | null;
   biometric_user_id?: string | null;
+  position?: string | null;
+  division?: string | null;
+  site?: string | null;
+  bu_full_name?: string | null;
+  code_bu?: string | null;
+  join_date?: string | null;
+  start_date?: string | null;
+  employment_type?: string | null;
+  contract_type?: string | null;
   branches?: {
     id?: string;
     name: string;

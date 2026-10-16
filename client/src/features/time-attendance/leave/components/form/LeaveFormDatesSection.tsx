@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import type { LeaveFormData, LeaveTypeBalanceStats } from "../../types";
 
 interface LeaveFormDatesSectionProps {
@@ -10,15 +10,10 @@ interface LeaveFormDatesSectionProps {
   currentStats: LeaveTypeBalanceStats;
   remainingAfterLeave: number;
   isOverBalance: boolean;
+  handleSelectSpecialCategory?: (catId: string) => void;
+  handleSelectMaternityCategory?: (catId: string) => void;
+  handleApply90DaysMaternity?: () => void;
 }
-
-const COMMON_REASONS = [
-  "Personal appointment & errands",
-  "Family matter / personal obligation",
-  "Medical appointment / recovery",
-  "Annual rest & vacation",
-  "Urgent emergency leave",
-];
 
 export function LeaveFormDatesSection({
   formData,
@@ -26,11 +21,23 @@ export function LeaveFormDatesSection({
   requestedDays,
   showDeductionPeriod,
   setShowDeductionPeriod,
-  currentStats,
   remainingAfterLeave,
   isOverBalance,
 }: LeaveFormDatesSectionProps) {
-  const [selectedQuickReason, setSelectedQuickReason] = useState("");
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    setFormData((prev) => {
+      let nextCat = "";
+      let nextEnd = prev.end_date;
+      if (newType === "maternity" && prev.start_date) {
+        const d = new Date(prev.start_date);
+        d.setDate(d.getDate() + 89);
+        nextEnd = d.toISOString().split("T")[0];
+        nextCat = "Standard Delivery (Labour Law Art. 182)";
+      }
+      return { ...prev, leave_type: newType, category_law: nextCat, end_date: nextEnd };
+    });
+  };
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStart = e.target.value;
@@ -41,140 +48,148 @@ export function LeaveFormDatesSection({
         d.setDate(d.getDate() + 89);
         nextEnd = d.toISOString().split("T")[0];
       }
-      return { ...prev, start_date: newStart, end_date: nextEnd };
+      return { ...prev, start_date: newStart, end_date: nextEnd || newStart };
     });
   };
 
-  const handleQuickReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setSelectedQuickReason(val);
-    if (val && !formData.reason.includes(val)) {
-      setFormData((prev) => ({
-        ...prev,
-        reason: prev.reason ? `${val} - ${prev.reason}` : val,
-      }));
-    }
-  };
-
   return (
-    <div className="space-y-2.5">
-      {/* Top Banner Notice */}
-      <div className="flex items-center gap-2 p-2 px-2.5 rounded-xl bg-[#d1fae5]/80 dark:bg-emerald-950/40 border border-[#a7f3d0] dark:border-emerald-800/60 text-[#065f46] dark:text-emerald-300 text-[9.5px] sm:text-[10.5px] font-semibold">
-        <div className="w-3.5 h-3.5 rounded-full bg-[#059669] text-white flex items-center justify-center text-[9px] shrink-0">
-          <i className="ri-check-line font-bold" />
-        </div>
-        <span>Standard Annual Leave deduction. Document upload is optional.</span>
-      </div>
-
-      {/* From Date & To Date (Compact Single Line) */}
-      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-        {/* From Date */}
-        <div className="space-y-1">
-          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            From Date <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="date"
-              required
-              value={formData.start_date}
-              onChange={handleStartDateChange}
-              className="w-36 sm:w-40 px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2563eb] shadow-2xs cursor-pointer"
-            />
-          </div>
-        </div>
-
-        {/* To Date */}
-        <div className="space-y-1">
-          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            To Date <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="date"
-              required
-              value={formData.end_date}
-              onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
-              className="w-36 sm:w-40 px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2563eb] shadow-2xs cursor-pointer"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Reason Dropdown & Textarea */}
-      <div className="space-y-1.5">
-        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-          Reason <span className="text-rose-500">*</span>
+    <div className="space-y-2.5 w-full my-2.5">
+      {/* Leave Type — Spans Full Width */}
+      <div className="space-y-1 w-full">
+        <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
+          Leave Type <span className="text-rose-500">*</span>
         </label>
-        
-        {/* Quick Reason Dropdown */}
-        <div className="relative">
+        <div className="relative w-full">
           <select
-            value={selectedQuickReason}
-            onChange={handleQuickReasonChange}
-            className="w-full pl-3 pr-8 py-2 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 font-medium focus:outline-none focus:border-[#2563eb] cursor-pointer appearance-none shadow-2xs"
+            value={formData.leave_type}
+            onChange={handleTypeChange}
+            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 cursor-pointer transition-all shadow-2xs appearance-none pr-9"
           >
-            <option value="">Select or enter reason</option>
-            {COMMON_REASONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
+            <option value="annual">Annual Leave (ការឈប់សម្រាកប្រចាំឆ្នាំ)</option>
+            <option value="sick">Sick Leave (ការឈប់សម្រាកដោយជំងឺ)</option>
+            <option value="special">Special Leave (ការឈប់សម្រាកពិសេស)</option>
+            <option value="maternity">Maternity Leave (ការឈប់សម្រាកលំហែមាតុភាព)</option>
+            <option value="paternity">Paternity Leave (ការឈប់សម្រាកបិតុភាព)</option>
+            <option value="unpaid">Unpaid Leave (ការឈប់សម្រាកគ្មានប្រាក់ឈ្នួល)</option>
+            <option value="bereavement">Bereavement Leave (ការឈប់សម្រាកបុណ្យសព)</option>
+            <option value="study">Study Leave (ការឈប់សម្រាកការសិក្សា)</option>
           </select>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
             <i className="ri-arrow-down-s-line text-sm" />
           </div>
         </div>
+      </div>
 
-        {/* Textarea with Character Counter */}
-        <div className="relative">
-          <textarea
+      {/* From Date & To Date — 2 Equal Columns Side-by-Side to Fit Date Text Length */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
+        {/* From Date */}
+        <div className="space-y-1 min-w-0">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+            From Date <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="date"
             required
-            rows={2.5}
-            maxLength={500}
-            value={formData.reason}
-            onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
-            placeholder="Add more details (optional)..."
-            className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-[13px] font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#253C7D] shadow-2xs resize-none"
+            value={formData.start_date}
+            onChange={handleStartDateChange}
+            className="w-full px-2.5 sm:px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs cursor-pointer transition-all"
           />
-          <div className="absolute right-3 bottom-2 text-[9.5px] text-slate-400 font-mono pointer-events-none">
-            {formData.reason.length}/500
+        </div>
+
+        {/* To Date */}
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+              To Date <span className="text-rose-500">*</span>
+            </label>
+            {requestedDays > 0 && (
+              <span className="text-[10px] sm:text-[10.5px] font-bold text-[#253C7D] dark:text-blue-300 shrink-0">
+                <span className="hidden sm:inline">Duration: </span>{requestedDays} {requestedDays === 1 ? "day" : "days"}
+              </span>
+            )}
           </div>
+          <input
+            type="date"
+            required
+            value={formData.end_date}
+            onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
+            className="w-full px-2.5 sm:px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs cursor-pointer transition-all"
+          />
         </div>
       </div>
 
-      {/* Deduction Toggle Button */}
-      <button
-        type="button"
-        onClick={() => setShowDeductionPeriod((prev) => !prev)}
-        className="w-full py-2 px-3 bg-white dark:bg-slate-800 hover:bg-blue-50/50 border border-[#253C7D]/60 text-[#253C7D] dark:text-blue-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-      >
-        <i className="ri-calendar-event-line" />
-        <span>Show deduction period</span>
-        {requestedDays > 0 && (
-          <span className="ml-1 px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#253C7D] dark:text-blue-200 font-bold text-[10px]">
-            {requestedDays}d
-          </span>
-        )}
-      </button>
+      {/* Reason — Full Width */}
+      <div className="space-y-1 w-full">
+        <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
+          Reason <span className="text-rose-500">*</span>
+        </label>
+        <input
+          type="text"
+          required
+          value={formData.reason}
+          onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
+          placeholder="Go to hometown"
+          className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs transition-all"
+        />
+      </div>
 
-      {/* Deduction Breakdown Details */}
-      {showDeductionPeriod && (
-        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] space-y-1 animate-in fade-in-50">
-          <div className="flex justify-between text-slate-600 dark:text-slate-300">
-            <span>Requested Period:</span>
-            <span className="font-bold text-slate-900 dark:text-white">
-              {requestedDays} {requestedDays === 1 ? "day" : "days"}
-            </span>
-          </div>
-          <div className="flex justify-between font-bold border-t border-slate-200 dark:border-slate-700 pt-1">
-            <span className="text-slate-800 dark:text-slate-200">Balance After Leave:</span>
-            <span className={isOverBalance ? "text-rose-600" : "text-emerald-600"}>
-              {remainingAfterLeave} days
-            </span>
-          </div>
+      {/* Remark — Full Width with 0/500 counter inline */}
+      <div className="space-y-1 w-full">
+        <div className="flex items-center justify-between">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
+            Remark
+          </label>
+          <span className="text-[10px] text-slate-400">
+            {formData.remark?.length || 0}/500
+          </span>
         </div>
-      )}
+        <input
+          type="text"
+          maxLength={500}
+          value={formData.remark || ""}
+          onChange={(e) => setFormData((prev) => ({ ...prev, remark: e.target.value }))}
+          placeholder="Approval by HRM already"
+          className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 shadow-2xs transition-all"
+        />
+      </div>
+
+      {/* Show deduction period — Phone 2 Mockup Style */}
+      <div className="pt-0.5 w-full">
+        <button
+          type="button"
+          onClick={() => setShowDeductionPeriod((prev) => !prev)}
+          className="w-full py-2 px-3 bg-blue-50/70 hover:bg-blue-100/70 dark:bg-sky-950/40 border border-blue-100 dark:border-sky-900/60 text-[#1e3a8a] dark:text-sky-300 rounded-xl text-[11.5px] font-bold flex items-center justify-between shadow-2xs transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <i className="ri-calendar-event-fill text-[#253C7D] dark:text-sky-400 text-xs sm:text-sm" />
+            <span>{showDeductionPeriod ? "Hide deduction period" : "Show deduction period"}</span>
+            {requestedDays > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900 text-[#1e3a8a] dark:text-blue-200 text-[9.5px] font-extrabold ml-1">
+                {requestedDays}d
+              </span>
+            )}
+          </div>
+          <i className={`ri-arrow-${showDeductionPeriod ? "down" : "right"}-s-line text-slate-400 text-sm`} />
+        </button>
+
+        {/* Deduction Breakdown Details */}
+        {showDeductionPeriod && (
+          <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] space-y-1.5 w-full animate-in fade-in-50 zoom-in-95 duration-100 shadow-2xs">
+            <div className="flex justify-between items-center text-slate-600 dark:text-slate-300">
+              <span className="font-medium">Requested Period:</span>
+              <span className="font-extrabold text-slate-900 dark:text-white">
+                {requestedDays} {requestedDays === 1 ? "day" : "days"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center font-bold border-t border-slate-200 dark:border-slate-700 pt-1.5">
+              <span className="text-slate-700 dark:text-slate-200">Balance After Leave:</span>
+              <span className={isOverBalance ? "text-rose-600 font-extrabold" : "text-emerald-600 font-extrabold"}>
+                {remainingAfterLeave} days
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

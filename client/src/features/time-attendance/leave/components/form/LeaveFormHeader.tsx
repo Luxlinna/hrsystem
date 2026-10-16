@@ -18,12 +18,9 @@ export function LeaveFormHeader({ onBack }: LeaveFormHeaderProps) {
           <i className="ri-arrow-left-line text-sm" />
           <span>Leave Hub</span>
         </button>
-        <h1 className="text-xl sm:text-2xl font-black text-[#172554] dark:text-white tracking-tight">
-          Create Leave Request
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+          Create Leave
         </h1>
-        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-          Take the time you need. We&apos;re here to support you.
-        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import type { Employee, LeaveFormData, LeaveTypeBalanceStats } from "../../types";
 import { useCreateLeaveFormState } from "./useCreateLeaveFormState";
 import { LeaveFormHeader } from "./LeaveFormHeader";
@@ -41,11 +41,14 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
   isBranchAdmin = false,
   isDirectHrApproval,
   myApproverName,
+  hrApprovers = [],
   getLeaveTypeStats,
   onSubmit,
   formMode = "self",
   isEmbedded = false,
 }: CreateLeaveFormProps) {
+  const [mobileStep, setMobileStep] = useState<1 | 2>(1);
+
   const {
     activeEmpId,
     employeeSearch,
@@ -60,6 +63,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
     fileInputRef,
     selectedEmployee,
     lineManager,
+    supervisorName,
     filteredEmployees,
     requestedDays,
     activeTypeCfg,
@@ -83,7 +87,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
     getLeaveTypeStats,
   });
 
-  const isEmployeeSelectorEditable = canManage && formMode !== "self" && employees.length > 1;
+  const isEmployeeSelectorEditable = canManage || isSuperAdmin || formMode !== "self" || employees.length > 1;
 
   const isDirectApproval = useMemo(() => {
     if (isDirectHrApproval !== undefined) return isDirectHrApproval;
@@ -107,87 +111,132 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
   }, [formMode, myEmployee, selectedEmployee, isDirectApproval]);
 
   return (
-    <div className={isEmbedded ? "w-full space-y-3 font-sans pb-10 sm:pb-0" : "min-h-screen bg-[#f0f4f9] dark:bg-slate-950 p-3 sm:p-5 lg:p-7 pb-24 sm:pb-8 font-sans"}>
-      <div className="max-w-4xl mx-auto space-y-3 sm:space-y-3.5">
-        {/* Header with Back and Title */}
-        <LeaveFormHeader onBack={onBack} isSuperAdmin={isSuperAdmin} formMode={formMode} />
+    <div className={isEmbedded ? "w-full font-sans pb-6" : "min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-2 sm:p-5 font-sans"}>
+      <div className="max-w-7xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 sm:p-6 shadow-xs">
+        {/* Header with Back and Title — On mobile step 2, back button goes back to step 1 */}
+        <LeaveFormHeader
+          onBack={mobileStep === 2 ? () => { setMobileStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); } : onBack}
+          isSuperAdmin={isSuperAdmin}
+          formMode={formMode}
+        />
 
-        <form onSubmit={onSubmit} className="space-y-3 sm:space-y-3.5">
-          {/* Card 1: Main Form Grid (Employee, Leave Type, Dates, Reason) */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-3.5 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {/* Left Column: Employee & Leave Type Info */}
-              <div className="space-y-3">
-                {isEmployeeSelectorEditable && (
-                  <LeaveFormEmployeeSection
-                    selectedEmployee={selectedEmployee}
-                    isEmployeeSelectorEditable={isEmployeeSelectorEditable}
-                    isEmpDropdownOpen={isEmpDropdownOpen}
-                    setIsEmpDropdownOpen={setIsEmpDropdownOpen}
-                    empDropdownRef={empDropdownRef}
-                    employeeSearch={employeeSearch}
-                    setEmployeeSearch={setEmployeeSearch}
-                    filteredEmployees={filteredEmployees}
-                    activeEmpId={activeEmpId}
-                    onSelectEmployee={(empId) => setFormData((prev) => ({ ...prev, employee_id: empId }))}
-                  />
-                )}
+        <form onSubmit={onSubmit} className="space-y-2.5 pt-0.5">
+          {/* Step 1: Employee Info & Entitlement — Always visible on desktop, on mobile visible when mobileStep === 1 */}
+          <div className={`space-y-2.5 ${mobileStep === 1 ? "block" : "hidden md:block"}`}>
+            {/* Section 1: Employee Info */}
+            <LeaveFormEmployeeSection
+              selectedEmployee={selectedEmployee}
+              isEmployeeSelectorEditable={isEmployeeSelectorEditable}
+              isEmpDropdownOpen={isEmpDropdownOpen}
+              setIsEmpDropdownOpen={setIsEmpDropdownOpen}
+              empDropdownRef={empDropdownRef}
+              employeeSearch={employeeSearch}
+              setEmployeeSearch={setEmployeeSearch}
+              filteredEmployees={filteredEmployees}
+              activeEmpId={activeEmpId}
+              onSelectEmployee={(empId) => setFormData((prev) => ({ ...prev, employee_id: empId }))}
+              supervisorName={supervisorName}
+            />
 
-                <LeaveFormTypeBalances
-                  formData={formData}
-                  setFormData={setFormData}
-                  activeTypeCfg={activeTypeCfg}
-                  currentStats={currentStats}
-                  handleSelectSpecialCategory={handleSelectSpecialCategory}
-                  handleSelectMaternityCategory={handleSelectMaternityCategory}
-                  handleApply90DaysMaternity={handleApply90DaysMaternity}
-                />
-              </div>
+            {/* Section 2: Entitlement Cards */}
+            <LeaveFormTypeBalances
+              currentStats={currentStats}
+            />
 
-              {/* Right Column: Dates, Reason, Deduction Toggle */}
-              <div className="md:border-l md:border-slate-100 dark:md:border-slate-800 md:pl-5 space-y-3">
-                <LeaveFormDatesSection
-                  formData={formData}
-                  setFormData={setFormData}
-                  requestedDays={requestedDays}
-                  showDeductionPeriod={showDeductionPeriod}
-                  setShowDeductionPeriod={setShowDeductionPeriod}
-                  currentStats={currentStats}
-                  remainingAfterLeave={remainingAfterLeave}
-                  isOverBalance={isOverBalance}
-                />
-              </div>
+            {/* Mobile Step 1 Actions: Cancel & Next (Phone 1 Mockup) */}
+            <div className="md:hidden pt-1.5 flex items-center gap-2 w-full">
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex-1 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 text-center transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileStep(2);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="flex-1 py-2 bg-[#253C7D] hover:bg-[#1e3064] active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-sm shadow-[#253C7D]/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <i className="ri-send-plane-fill text-xs" />
+                <span>Next</span>
+              </button>
             </div>
           </div>
 
-          {/* Card 2: Approval Workflow Chain */}
-          <LeaveFormApproversSection
-            lineManager={lineManager}
-            myApproverName={myApproverName}
-            isDirectHrApproval={isDirectApproval}
-            applicantTier={applicantTier}
-          />
+          {/* Step 2: Leave Details, Attachment, Approvers — Always visible on desktop, on mobile visible when mobileStep === 2 */}
+          <div className={`space-y-2.5 ${mobileStep === 2 ? "block" : "hidden md:block"}`}>
+            {/* Section 3: Leave Form Fields (Leave Type, Dates, Reason, Remark, Show deduction period) */}
+            <LeaveFormDatesSection
+              formData={formData}
+              setFormData={setFormData}
+              requestedDays={requestedDays}
+              showDeductionPeriod={showDeductionPeriod}
+              setShowDeductionPeriod={setShowDeductionPeriod}
+              currentStats={currentStats}
+              remainingAfterLeave={remainingAfterLeave}
+              isOverBalance={isOverBalance}
+              handleSelectSpecialCategory={handleSelectSpecialCategory}
+              handleSelectMaternityCategory={handleSelectMaternityCategory}
+              handleApply90DaysMaternity={handleApply90DaysMaternity}
+            />
 
-          {/* Card 3: Attachment Section */}
-          <LeaveFormAttachmentSection
-            formData={formData}
-            activeTypeCfg={activeTypeCfg}
-            fileInputRef={fileInputRef}
-            isDragOver={isDragOver}
-            setIsDragOver={setIsDragOver}
-            handleFileChange={handleFileChange}
-            handleFileDrop={handleFileDrop}
-            handleRemoveAttachment={handleRemoveAttachment}
-          />
+            {/* Section 4: Attachment Info */}
+            <LeaveFormAttachmentSection
+              formData={formData}
+              activeTypeCfg={activeTypeCfg}
+              fileInputRef={fileInputRef}
+              isDragOver={isDragOver}
+              setIsDragOver={setIsDragOver}
+              handleFileChange={handleFileChange}
+              handleFileDrop={handleFileDrop}
+              handleRemoveAttachment={handleRemoveAttachment}
+            />
 
-          {/* Submit Button */}
-          <LeaveFormActions
-            submitting={submitting}
-            isSuperAdmin={isSuperAdmin}
-            formMode={formMode}
-            onExportSlip={handleExportSlip}
-            onBack={onBack}
-          />
+            {/* Section 5: Approvers Info */}
+            <LeaveFormApproversSection
+              lineManager={lineManager}
+              myApproverName={myApproverName}
+              hrApprovers={hrApprovers}
+              selectedEmployee={selectedEmployee}
+              isDirectHrApproval={isDirectApproval}
+            />
+
+            {/* Mobile Step 2 Actions: Cancel & Submit (Phone 2 Mockup) */}
+            <div className="md:hidden pt-1.5 flex items-center gap-2 w-full">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileStep(1);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="flex-1 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 text-center transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-[1.4] py-2 bg-[#253C7D] hover:bg-[#1e3064] active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-sm shadow-[#253C7D]/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <i className="ri-send-plane-fill text-xs" />
+                <span className="truncate">{submitting ? "Submitting..." : "Submit Leave Request"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Actions: Submit & Cancel (Hidden on Mobile) */}
+          <div className="hidden md:block">
+            <LeaveFormActions
+              submitting={submitting}
+              isSuperAdmin={isSuperAdmin}
+              formMode={formMode}
+              onExportSlip={handleExportSlip}
+              onBack={onBack}
+            />
+          </div>
         </form>
       </div>
     </div>
