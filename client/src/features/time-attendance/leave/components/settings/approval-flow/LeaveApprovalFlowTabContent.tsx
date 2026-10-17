@@ -336,7 +336,8 @@ export const LeaveApprovalFlowTabContent: React.FC<LeaveApprovalFlowTabContentPr
     if (!searchGroupQuery.trim()) return groups;
     const q = searchGroupQuery.toLowerCase().trim();
     return groups.filter((g) => {
-      const matchName = g.flowName.toLowerCase().includes(q);
+      const matchName = g.flowName?.toLowerCase().includes(q);
+      const matchBU = g.businessUnit?.some((b) => b.toLowerCase().includes(q));
       const matchSite = g.site?.some((s) => s.toLowerCase().includes(q));
       const matchDept = g.department?.some((d) => d.toLowerCase().includes(q));
       const matchPos = (g.position || g.designation)?.some((p) => p.toLowerCase().includes(q));
@@ -347,7 +348,7 @@ export const LeaveApprovalFlowTabContent: React.FC<LeaveApprovalFlowTabContentPr
           st.flowTitle.toLowerCase().includes(q) ||
           st.flowType.toLowerCase().includes(q)
       );
-      return matchName || matchSite || matchDept || matchPos || matchEmpType || matchSteps;
+      return matchName || matchBU || matchSite || matchDept || matchPos || matchEmpType || matchSteps;
     });
   }, [groups, searchGroupQuery]);
 
@@ -395,7 +396,7 @@ export const LeaveApprovalFlowTabContent: React.FC<LeaveApprovalFlowTabContentPr
       <div className="flex items-center gap-0 max-w-xs sm:max-w-sm">
         <input
           type="text"
-          placeholder="Search sites, designations"
+          placeholder="Search BUs, sites, designations..."
           value={searchGroupQuery}
           onChange={(e) => setSearchGroupQuery(e.target.value)}
           className="flex-1 px-3 py-1.5 text-xs border border-slate-300 dark:border-slate-700 rounded-l bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#0088cc]"
@@ -436,13 +437,37 @@ export const LeaveApprovalFlowTabContent: React.FC<LeaveApprovalFlowTabContentPr
                 key={group.id}
                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-xs overflow-hidden"
               >
-                {/* Card Header (≡ Flow Name on left, Edit / Delete on right) */}
-                <div className="px-4 py-2.5 bg-white dark:bg-slate-900 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
+                {/* Card Header (≡ Flow Name on left, BU & Site badges, Edit / Delete on right) */}
+                <div className="px-4 py-2.5 bg-white dark:bg-slate-900 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <i className="ri-menu-line text-slate-400 text-sm cursor-grab" />
                     <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">
                       {group.flowName}
                     </span>
+
+                    {/* Business Units Badge */}
+                    {group.businessUnit && group.businessUnit.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-[10.5px] font-semibold bg-blue-50 dark:bg-blue-950/50 text-[#0088cc] dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/60 shadow-2xs">
+                        <i className="ri-building-line text-xs" />
+                        <span>BU: {group.businessUnit.join(", ")}</span>
+                      </span>
+                    )}
+
+                    {/* Sites Badge */}
+                    {group.site && group.site.length > 0 && !group.site.includes("All") && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-[10.5px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        <i className="ri-map-pin-line text-xs" />
+                        <span>Site: {group.site.join(", ")}</span>
+                      </span>
+                    )}
+
+                    {/* Department Badge */}
+                    {group.department && group.department.length > 0 && !group.department.includes("All") && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-[10.5px] font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                        <i className="ri-community-line text-xs" />
+                        <span>Dept: {group.department.join(", ")}</span>
+                      </span>
+                    )}
                   </div>
 
                   {canModify && (

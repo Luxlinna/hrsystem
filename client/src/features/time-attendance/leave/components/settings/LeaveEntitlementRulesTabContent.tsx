@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { LeaveEntitlementRule } from "../../services/leaveEntitlementRuleService";
 import {
@@ -78,7 +78,7 @@ export const LeaveEntitlementRulesTabContent: React.FC<LeaveEntitlementRulesTabC
   }, [employees]);
 
   // Load rules from service
-  const loadRules = async () => {
+  const loadRules = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchLeaveEntitlementRules();
@@ -94,7 +94,7 @@ export const LeaveEntitlementRulesTabContent: React.FC<LeaveEntitlementRulesTabC
     } finally {
       setLoading(false);
     }
-  };
+  }, [dynamicEmployeeCounts]);
 
   useEffect(() => {
     loadRules();
@@ -113,7 +113,7 @@ export const LeaveEntitlementRulesTabContent: React.FC<LeaveEntitlementRulesTabC
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [dynamicEmployeeCounts]);
+  }, [loadRules]);
 
   // Close menus on outside click or scroll
   useEffect(() => {

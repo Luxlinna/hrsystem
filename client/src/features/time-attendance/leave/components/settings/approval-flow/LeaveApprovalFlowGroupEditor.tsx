@@ -34,6 +34,7 @@ export const LeaveApprovalFlowGroupEditor: React.FC<LeaveApprovalFlowGroupEditor
 }) => {
   const [flowName, setFlowName] = useState(initialGroup?.flowName || "");
   const [sortOrder, setSortOrder] = useState<number>(initialGroup?.sortOrder ?? 15);
+  const [selectedBUs, setSelectedBUs] = useState<string[]>(initialGroup?.businessUnit || []);
   const [selectedSites, setSelectedSites] = useState<string[]>(initialGroup?.site || []);
   const [selectedDepts, setSelectedDepts] = useState<string[]>(initialGroup?.department || []);
   const [selectedPositions, setSelectedPositions] = useState<string[]>(
@@ -53,11 +54,55 @@ export const LeaveApprovalFlowGroupEditor: React.FC<LeaveApprovalFlowGroupEditor
   const [isStepModalOpen, setIsStepModalOpen] = useState(false);
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
 
+  const [orgBusinessUnits, setOrgBusinessUnits] = useState<DropdownOption[]>([]);
+  const [loadingBUs, setLoadingBUs] = useState(false);
   const [orgSites, setOrgSites] = useState<DropdownOption[]>(sites || []);
   const [orgDepartments, setOrgDepartments] = useState<string[]>(departments || []);
   const [orgPositions, setOrgPositions] = useState<string[]>(positions || designations || []);
   const [dbEmployees, setDbEmployees] = useState<Employee[]>([]);
   const [loadingSites, setLoadingSites] = useState(false);
+
+  // Load Business Units directly from branches
+  const loadOrgBUs = useCallback(async () => {
+    setLoadingBUs(true);
+    try {
+      const { data, error } = await supabase
+        .from("branches")
+        .select("id, name, company_name")
+        .is("deleted_at", null)
+        .order("name");
+
+      if (!error && data && data.length > 0) {
+        const seen = new Set<string>();
+        const buOptions: DropdownOption[] = [{ label: "All Business Units", value: "All" }];
+
+        for (const b of data) {
+          const name = (b.company_name || b.name)?.trim();
+          if (name && !seen.has(name.toLowerCase())) {
+            seen.add(name.toLowerCase());
+            buOptions.push({
+              label: name,
+              value: name,
+            });
+          }
+        }
+        setOrgBusinessUnits(buOptions);
+      } else {
+        setOrgBusinessUnits([
+          { label: "All Business Units", value: "All" },
+          { label: "UNI Holding", value: "UNI Holding" },
+          { label: "OPS SOLUTIONS CO., LTD", value: "OPS SOLUTIONS CO., LTD" },
+          { label: "PINEX AGRO CO., LTD", value: "PINEX AGRO CO., LTD" },
+          { label: "UNIQUE NOBLE INVESTMENT CO., LTD", value: "UNIQUE NOBLE INVESTMENT CO., LTD" },
+          { label: "PINEX PRO CO., LTD", value: "PINEX PRO CO., LTD" },
+        ]);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setLoadingBUs(false);
+    }
+  }, []);
 
   // Load sites directly from Org (work_locations table)
   const loadOrgSites = useCallback(async () => {
@@ -144,9 +189,10 @@ export const LeaveApprovalFlowGroupEditor: React.FC<LeaveApprovalFlowGroupEditor
   }, []);
 
   useEffect(() => {
+    loadOrgBUs();
     loadOrgSites();
     loadOrgCategories();
-  }, [loadOrgSites, loadOrgCategories]);
+  }, [loadOrgBUs, loadOrgSites, loadOrgCategories]);
 
   // Combine staff
   const allStaff = useMemo<Employee[]>(() => {
@@ -185,6 +231,7 @@ export const LeaveApprovalFlowGroupEditor: React.FC<LeaveApprovalFlowGroupEditor
       id: initialGroup?.id || `group-${Date.now()}`,
       flowName: flowName.trim() || "Leave Approval Flow",
       sortOrder: Number(sortOrder) || 15,
+      businessUnit: selectedBUs,
       site: selectedSites,
       department: selectedDepts,
       position: selectedPositions,
@@ -255,6 +302,34 @@ export const LeaveApprovalFlowGroupEditor: React.FC<LeaveApprovalFlowGroupEditor
           </h2>
 
           <div className="space-y-3 max-w-2xl text-xs">
+            {/* Business Unit / Company (Specific to their BU) */}
+            <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-2">
+              <label className="text-slate-700 dark:text-slate-300 font-normal sm:text-right pr-4">
+                Business Unit
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <OrgMultiSelectDropdown
+                    value={selectedBUs}
+                    options={orgBusinessUnits}
+                    onChange={setSelectedBUs}
+                    placeholder="Select Business Unit / Company"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadOrgBUs()}
+                  disabled={loadingBUs}
+                  className={`w-[34px] h-[34px] shrink-0 flex items-center justify-center rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-[#29ABE2] hover:border-[#29ABE2] transition-colors cursor-pointer shadow-2xs ${
+                    loadingBUs ? "animate-spin text-[#29ABE2]" : ""
+                  }`}
+                  title="Refresh Business Units from Org"
+                >
+                  <i className="ri-refresh-line text-sm" />
+                </button>
+              </div>
+            </div>
+
             {/* Site (Select from Org) */}
             <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-2">
               <label className="text-slate-700 dark:text-slate-300 font-normal sm:text-right pr-4">

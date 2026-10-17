@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { LeaveEntitlementRule } from "../../services/leaveEntitlementRuleService";
 
 interface LeaveEntitlementRuleModalProps {
@@ -22,8 +22,6 @@ export const LeaveEntitlementRuleModal: React.FC<LeaveEntitlementRuleModalProps>
   onClose,
   onSave,
 }) => {
-  if (isOpen === false) return null;
-
   const [code, setCode] = useState(rule?.code || "");
   const [name, setName] = useState(rule?.name || "");
   const [remark, setRemark] = useState(rule?.remark || "");
@@ -32,6 +30,18 @@ export const LeaveEntitlementRuleModal: React.FC<LeaveEntitlementRuleModalProps>
   );
   const [status, setStatus] = useState<"Active" | "Disabled">(rule?.status || "Active");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCode(rule?.code || "");
+      setName(rule?.name || "");
+      setRemark(rule?.remark || "");
+      setSelectedCodes(rule?.leave_type_codes || ["AL", "SL", "SP", "ML", "CL"]);
+      setStatus(rule?.status || "Active");
+    }
+  }, [isOpen, rule]);
+
+  if (!isOpen) return null;
 
   const isView = mode === "view";
 

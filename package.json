@@ -33,7 +33,8 @@
     "type:all": "npm --prefix client run type-check && npm --prefix server run type-check",
     "type:client": "npm --prefix client run type-check",
     "type:server": "npm --prefix server run type-check",
-    "type-check": "npm run type:all"
+    "type-check": "npm run type:all",
+    "snyk:test": "snyk test --all-projects --exclude=node_modules,dist --prune-repeated-subdependencies --detection-depth=2"
   },
   "dependencies": {
     "dotenv": "^17.4.2"

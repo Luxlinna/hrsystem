@@ -1,5 +1,10 @@
-import React from "react";
-import type { LeaveFormData, LeaveTypeBalanceStats } from "../../types";
+import React, { useMemo } from "react";
+import type { LeaveFormData, LeaveTypeBalanceStats, Employee } from "../../types";
+import {
+  type LeaveTypeSetting,
+  getLeaveTypeSlug,
+  getStoredLeaveTypes,
+} from "../../services/leaveSettingsService";
 
 interface LeaveFormDatesSectionProps {
   formData: LeaveFormData;
@@ -10,6 +15,17 @@ interface LeaveFormDatesSectionProps {
   currentStats: LeaveTypeBalanceStats;
   remainingAfterLeave: number;
   isOverBalance: boolean;
+  leaveTypes?: LeaveTypeSetting[];
+  activeTypeCfg?: {
+    code?: string;
+    label?: string;
+    requiresUpload?: boolean;
+    periodType?: string;
+    isUnpaid?: boolean;
+    eligibleFor?: string;
+    excludedContractTypes?: string[];
+  };
+  selectedEmployee?: Employee | null;
   handleSelectSpecialCategory?: (catId: string) => void;
   handleSelectMaternityCategory?: (catId: string) => void;
   handleApply90DaysMaternity?: () => void;
@@ -23,7 +39,17 @@ export function LeaveFormDatesSection({
   setShowDeductionPeriod,
   remainingAfterLeave,
   isOverBalance,
+  leaveTypes: propLeaveTypes,
+  activeTypeCfg,
+  selectedEmployee,
 }: LeaveFormDatesSectionProps) {
+  // Dynamic active leave types list from Settings (Leave Type tab)
+  const activeLeaveTypes = useMemo(() => {
+    const list = propLeaveTypes && propLeaveTypes.length > 0 ? propLeaveTypes : getStoredLeaveTypes();
+    const active = list.filter((t) => t.is_active);
+    return active.length > 0 ? active : list;
+  }, [propLeaveTypes]);
+
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value;
     setFormData((prev) => {
@@ -52,32 +78,86 @@ export function LeaveFormDatesSection({
     });
   };
 
+  // Eligibility and exclusion checks
+  const isGenderRestricted = useMemo(() => {
+    if (!activeTypeCfg?.eligibleFor || activeTypeCfg.eligibleFor === "both") return false;
+    if (!selectedEmployee?.gender) return false;
+    const empGender = selectedEmployee.gender.toLowerCase();
+    return (
+      (activeTypeCfg.eligibleFor === "female" && empGender === "male") ||
+      (activeTypeCfg.eligibleFor === "male" && empGender === "female")
+    );
+  }, [activeTypeCfg?.eligibleFor, selectedEmployee?.gender]);
+
+  const isContractExcluded = useMemo(() => {
+    if (!activeTypeCfg?.excludedContractTypes || activeTypeCfg.excludedContractTypes.length === 0) return false;
+    if (!selectedEmployee?.contract_type) return false;
+    return activeTypeCfg.excludedContractTypes.some(
+      (ct) => ct.toLowerCase() === selectedEmployee.contract_type?.toLowerCase()
+    );
+  }, [activeTypeCfg?.excludedContractTypes, selectedEmployee?.contract_type]);
+
   return (
     <div className="space-y-2.5 w-full my-2.5">
-      {/* Leave Type — Spans Full Width */}
+      {/* Leave Type — Spans Full Width, dynamically populated from Leave Settings */}
       <div className="space-y-1 w-full">
-        <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
-          Leave Type <span className="text-rose-500">*</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200">
+            <span>Leave Type</span>
+            <span className="text-rose-500">*</span>
+            {activeTypeCfg?.requiresUpload && (
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block"
+                title="Requires attachment / medical cert"
+              />
+            )}
+          </label>
+
+          {activeTypeCfg?.periodType && (
+            <span className="text-[10px] font-semibold text-slate-400 capitalize">
+              Period: <span className="text-slate-600 dark:text-slate-300 font-bold">{activeTypeCfg.periodType}</span>
+            </span>
+          )}
+        </div>
+
         <div className="relative w-full">
           <select
             value={formData.leave_type}
             onChange={handleTypeChange}
             className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 cursor-pointer transition-all shadow-2xs appearance-none pr-9"
           >
-            <option value="annual">Annual Leave (ការឈប់សម្រាកប្រចាំឆ្នាំ)</option>
-            <option value="sick">Sick Leave (ការឈប់សម្រាកដោយជំងឺ)</option>
-            <option value="special">Special Leave (ការឈប់សម្រាកពិសេស)</option>
-            <option value="maternity">Maternity Leave (ការឈប់សម្រាកលំហែមាតុភាព)</option>
-            <option value="paternity">Paternity Leave (ការឈប់សម្រាកបិតុភាព)</option>
-            <option value="unpaid">Unpaid Leave (ការឈប់សម្រាកគ្មានប្រាក់ឈ្នួល)</option>
-            <option value="bereavement">Bereavement Leave (ការឈប់សម្រាកបុណ្យសព)</option>
-            <option value="study">Study Leave (ការឈប់សម្រាកការសិក្សា)</option>
+            {activeLeaveTypes.map((type) => {
+              const slug = getLeaveTypeSlug(type);
+              return (
+                <option key={type.id || type.code} value={slug}>
+                  {type.name}
+                </option>
+              );
+            })}
           </select>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
             <i className="ri-arrow-down-s-line text-sm" />
           </div>
         </div>
+
+        {/* Dynamic policy notices */}
+        {isGenderRestricted && (
+          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-[11px] font-medium flex items-center gap-1.5">
+            <i className="ri-error-warning-line text-xs shrink-0" />
+            <span>
+              Notice: {activeTypeCfg?.label || "This leave type"} is designated for {activeTypeCfg?.eligibleFor} employees under policy.
+            </span>
+          </div>
+        )}
+
+        {isContractExcluded && (
+          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-[11px] font-medium flex items-center gap-1.5">
+            <i className="ri-information-line text-xs shrink-0" />
+            <span>
+              Notice: Not entitled under contract type &quot;{selectedEmployee?.contract_type}&quot;.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* From Date & To Date — Width Fits Text Header */}

@@ -2,6 +2,7 @@ import { useMemo, useCallback } from "react";
 import type { LeaveRequest, Employee, LeaveTypePolicy, LeaveStats } from "../types";
 import { toYMD } from "../dateUtils";
 import { isContractAllowedAL, calculateJoinMonthProrateAL } from "../utils/annualLeaveProrateUtils";
+import { getLeaveTypeSlug } from "../services/leaveSettingsService";
 
 interface UseLeaveBalancesProps {
   requests: LeaveRequest[];
@@ -22,7 +23,9 @@ export function useLeaveBalances({
 
   const getEntitlement = useCallback(
     (employeeId: string, type: string): number | null => {
-      if (type === "annual") {
+      const slug = getLeaveTypeSlug(type);
+
+      if (slug === "annual") {
         const emp =
           employees.find((e) => e.id === employeeId) ||
           (myEmployee?.id === employeeId ? myEmployee : null);
@@ -45,30 +48,46 @@ export function useLeaveBalances({
 
         return emp?.annual_leave_days ?? 18;
       }
-      if (type === "maternity") {
+
+      if (slug === "maternity") {
         return 90;
       }
-      if (type === "sick") {
-        const policy = leaveTypePolicies.find((p) => p.type === "sick");
+
+      if (slug === "sick") {
+        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "sick");
         return policy ? policy.default_days : 30;
       }
-      if (type === "special") {
-        const policy = leaveTypePolicies.find((p) => p.type === "special");
+
+      if (slug === "special") {
+        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "special");
         return policy ? policy.default_days : 7;
       }
-      const policy = leaveTypePolicies.find((p) => p.type === type);
-      return policy ? policy.default_days : null;
+
+      if (slug === "compensatory") {
+        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "compensatory");
+        return policy ? policy.default_days : 0;
+      }
+
+      if (slug === "unpaid") {
+        return 0;
+      }
+
+      const policy = leaveTypePolicies.find(
+        (p) => getLeaveTypeSlug(p.type) === slug || p.type.toLowerCase() === type.toLowerCase()
+      );
+      return policy ? policy.default_days : 0;
     },
-    [employees, myEmployee, leaveTypePolicies]
+    [employees, myEmployee, leaveTypePolicies, currentYear]
   );
 
   const getUsedDays = useCallback(
     (employeeId: string, type: string): number => {
+      const targetSlug = getLeaveTypeSlug(type);
       return requests
         .filter(
           (r) =>
             r.employee_id === employeeId &&
-            r.leave_type === type &&
+            (getLeaveTypeSlug(r.leave_type) === targetSlug || r.leave_type === type) &&
             r.status === "approved" &&
             new Date(r.start_date).getFullYear() === currentYear
         )
@@ -79,11 +98,12 @@ export function useLeaveBalances({
 
   const getPendingDays = useCallback(
     (employeeId: string, type: string): number => {
+      const targetSlug = getLeaveTypeSlug(type);
       return requests
         .filter(
           (r) =>
             r.employee_id === employeeId &&
-            r.leave_type === type &&
+            (getLeaveTypeSlug(r.leave_type) === targetSlug || r.leave_type === type) &&
             r.status === "pending" &&
             new Date(r.start_date).getFullYear() === currentYear
         )

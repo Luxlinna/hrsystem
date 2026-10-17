@@ -95,6 +95,7 @@ export default function Leave() {
         getLeaveTypeStats={l.getLeaveTypeStats}
         onSubmit={l.handleSubmitRequest}
         formMode={formMode}
+        leaveTypes={settings.leaveTypes}
       />
     );
   }

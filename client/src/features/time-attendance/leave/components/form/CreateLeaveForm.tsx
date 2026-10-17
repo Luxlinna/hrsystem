@@ -27,6 +27,7 @@ export interface CreateLeaveFormProps {
   onSubmit: (e: React.FormEvent) => Promise<void>;
   formMode?: "self" | "for_employee";
   isEmbedded?: boolean;
+  leaveTypes?: import("../../services/leaveSettingsService").LeaveTypeSetting[];
 }
 
 export const CreateLeaveForm = memo(function CreateLeaveForm({
@@ -46,6 +47,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
   onSubmit,
   formMode = "self",
   isEmbedded = false,
+  leaveTypes,
 }: CreateLeaveFormProps) {
   const [mobileStep, setMobileStep] = useState<1 | 2>(1);
 
@@ -66,6 +68,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
     supervisorName,
     filteredEmployees,
     requestedDays,
+    activeLeaveTypes,
     activeTypeCfg,
     currentStats,
     remainingAfterLeave,
@@ -85,6 +88,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
     isSuperAdmin,
     myApproverName,
     getLeaveTypeStats,
+    leaveTypes,
   });
 
   const isEmployeeSelectorEditable = canManage || isSuperAdmin || formMode !== "self" || employees.length > 1;
@@ -178,6 +182,9 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
               currentStats={currentStats}
               remainingAfterLeave={remainingAfterLeave}
               isOverBalance={isOverBalance}
+              leaveTypes={activeLeaveTypes}
+              activeTypeCfg={activeTypeCfg}
+              selectedEmployee={selectedEmployee}
               handleSelectSpecialCategory={handleSelectSpecialCategory}
               handleSelectMaternityCategory={handleSelectMaternityCategory}
               handleApply90DaysMaternity={handleApply90DaysMaternity}
@@ -202,6 +209,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
               hrApprovers={hrApprovers}
               selectedEmployee={selectedEmployee}
               isDirectHrApproval={isDirectApproval}
+              employees={employees}
             />
 
             {/* Mobile Step 2 Actions: Cancel & Submit (Phone 2 Mockup) */}

@@ -17,6 +17,7 @@ export interface LeaveApprovalFlowGroup {
   id: string;
   flowName: string;
   sortOrder: number;
+  businessUnit?: string[];
   site: string[];
   department: string[];
   position?: string[];
@@ -37,8 +38,8 @@ export const DEFAULT_UNI_TABLE_STEPS: LeaveApprovalFlowStep[] = [
     conditionPrefix: "",
     approvalCondition: "AND",
     flowTitle: "Notified to",
-    flowType: "Employee",
-    description: "Chea Tiengchanvathna",
+    flowType: "Head of Department",
+    description: "Mrs. Chea Tiengchanvathna",
     condition: ">=0",
     step: 1,
     expiredHours: "",
@@ -49,22 +50,22 @@ export const DEFAULT_UNI_TABLE_STEPS: LeaveApprovalFlowStep[] = [
     conditionPrefix: "AND",
     approvalCondition: "AND",
     flowTitle: "Notified to",
-    flowType: "Employee",
-    description: "Chey Tola",
+    flowType: "Head of Division Director",
+    description: "Mr. Chey Tola",
     condition: ">=0",
-    step: 1,
+    step: 2,
     expiredHours: "",
     displayInPrint: true,
   },
   {
     id: "step-uni-3",
-    conditionPrefix: "AND",
+    conditionPrefix: "CC",
     approvalCondition: "AND",
     flowTitle: "Notified to",
-    flowType: "Employee",
-    description: "Thorng Dararithy",
+    flowType: "HR Department",
+    description: "Mr. Thorng Dararithy",
     condition: ">=0",
-    step: 1,
+    step: 3,
     expiredHours: "",
     displayInPrint: true,
   },
@@ -76,25 +77,13 @@ export const DEFAULT_FIRST_FLOW_GROUP: LeaveApprovalFlowGroup = {
   id: "group-1792143481976",
   flowName: "First Flow",
   sortOrder: 1,
+  businessUnit: ["UNI Holding"],
   site: ["UNI Building"],
   department: ["ADMIN & FINANCE"],
   position: ["All"],
   designation: ["All"],
   employeeType: ["All"],
-  steps: [
-    {
-      id: "step-1792143481976-1",
-      conditionPrefix: "",
-      approvalCondition: "AND",
-      flowTitle: "Notified to",
-      flowType: "Employee",
-      description: "Chea Tiengchanvathna",
-      condition: ">=0",
-      step: 1,
-      expiredHours: "",
-      displayInPrint: true,
-    },
-  ],
+  steps: DEFAULT_UNI_TABLE_STEPS,
 };
 
 export const DEFAULT_LEAVE_APPROVAL_GROUPS: LeaveApprovalFlowGroup[] = [
@@ -231,8 +220,13 @@ export function getStoredTableSteps(unitId?: string, unitName?: string): LeaveAp
       const globalRaw = localStorage.getItem(STEPS_STORAGE_PREFIX);
       if (globalRaw !== null) {
         const parsed = JSON.parse(globalRaw);
-        if (Array.isArray(parsed)) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasStale = parsed.some(
+            (p) => p.flowType === "Employee" || p.description === "Chea Tiengchanvathna"
+          );
+          if (!hasStale) {
+            return parsed;
+          }
         }
       }
       return DEFAULT_UNI_TABLE_STEPS;
@@ -359,7 +353,9 @@ export function getLeaveApprovalGroups(): LeaveApprovalFlowGroup[] {
         if (cleaned.length !== parsed.length) {
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-          } catch {}
+          } catch {
+            // ignore storage errors
+          }
         }
         return cleaned;
       }
@@ -421,6 +417,7 @@ export async function fetchLeaveApprovalGroupsFromDb(): Promise<LeaveApprovalFlo
           id: d.id,
           flowName: d.flow_name,
           sortOrder: d.sort_order ?? 15,
+          businessUnit: d.business_units || [],
           site: d.sites || [],
           department: d.departments || [],
           position: d.positions || [],
@@ -439,7 +436,9 @@ export async function fetchLeaveApprovalGroupsFromDb(): Promise<LeaveApprovalFlo
       // Update local cache directly without firing leave_approval_groups_updated event to prevent infinite loops
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
-      } catch {}
+      } catch {
+        // ignore storage errors
+      }
 
       return groups;
     }
@@ -455,6 +454,7 @@ export async function saveLeaveApprovalGroupToDb(group: LeaveApprovalFlowGroup):
       id: group.id || `group-${Date.now()}`,
       flow_name: group.flowName,
       sort_order: group.sortOrder ?? 15,
+      business_units: group.businessUnit || [],
       sites: group.site || [],
       departments: group.department || [],
       positions: group.position || group.designation || [],

@@ -72,7 +72,7 @@ export function useGeofenceCheckIn({
       }
       setCheckInStep("error");
     }
-  }, [branch, branchLoading, onWithinRange, showToast]);
+  }, [branch, showToast]);
 
   return {
     checkInStep,

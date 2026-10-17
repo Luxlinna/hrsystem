@@ -40,18 +40,18 @@ export const DEFAULT_UNI_APPROVAL_FLOW: ApproverStepConfig[] = [
     approvers: [
       {
         id: "086198ca-89e2-477d-ba7f-f37806518bf5",
-        name: "Chea Tiengchanvathna",
-        role: "HR & Admin Manager",
+        name: "Mrs. Chea Tiengchanvathna",
+        role: "Head of Department",
       },
       {
         id: "45c199c5-9319-4dd0-b3f0-8c18a5b1ff06",
-        name: "Chey Tola",
-        role: "Business Development Director",
+        name: "Mr. Chey Tola",
+        role: "Head of Division Director",
       },
       {
         id: "d1d0e910-d472-42c3-8f6e-1eef21bf6f21",
-        name: "Thorng Dararithy",
-        role: "Senior HR & Admin Officer",
+        name: "Mr. Thorng Dararithy",
+        role: "HR Department",
       },
     ],
   },

@@ -10,6 +10,13 @@ import { exportLeaveApplicationSlip } from "../../exports/exportLeaveApplication
 import { matchLeaveEmployee } from "./leaveEmployeeMatch";
 import { findLineManager } from "./leaveFormHelpers";
 import { getLeaveEmployeeName } from "../../utils/leaveDisplayUtils";
+import {
+  type LeaveTypeSetting,
+  getLeaveTypeSlug,
+  getLeaveTypeTheme,
+  getStoredLeaveTypes,
+  fetchLeaveSettings,
+} from "../../services/leaveSettingsService";
 
 interface UseCreateLeaveFormStateParams {
   employees: Employee[];
@@ -19,6 +26,7 @@ interface UseCreateLeaveFormStateParams {
   isSuperAdmin: boolean;
   myApproverName: string;
   getLeaveTypeStats: (empId: string, type: string) => LeaveTypeBalanceStats;
+  leaveTypes?: LeaveTypeSetting[];
 }
 
 export function useCreateLeaveFormState({
@@ -29,6 +37,7 @@ export function useCreateLeaveFormState({
   isSuperAdmin,
   myApproverName,
   getLeaveTypeStats,
+  leaveTypes: propLeaveTypes,
 }: UseCreateLeaveFormStateParams) {
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [isEmpDropdownOpen, setIsEmpDropdownOpen] = useState(false);
@@ -36,6 +45,51 @@ export function useCreateLeaveFormState({
   const [isDragOver, setIsDragOver] = useState(false);
   const empDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic leave types state synced with settings and Supabase
+  const [allLeaveTypes, setAllLeaveTypes] = useState<LeaveTypeSetting[]>(() => {
+    if (propLeaveTypes && propLeaveTypes.length > 0) return propLeaveTypes;
+    return getStoredLeaveTypes();
+  });
+
+  useEffect(() => {
+    if (propLeaveTypes && propLeaveTypes.length > 0) {
+      setAllLeaveTypes(propLeaveTypes);
+    } else {
+      fetchLeaveSettings().then((data) => {
+        if (data && data.length > 0) setAllLeaveTypes(data);
+      });
+    }
+
+    const handleUpdate = (e: any) => {
+      const detail = e.detail;
+      if (Array.isArray(detail)) {
+        setAllLeaveTypes(detail);
+      } else {
+        setAllLeaveTypes(getStoredLeaveTypes());
+      }
+    };
+    window.addEventListener("leave_types_settings_updated", handleUpdate);
+    return () => window.removeEventListener("leave_types_settings_updated", handleUpdate);
+  }, [propLeaveTypes]);
+
+  // Active leave types only (matching Status: Active in Leave Types tab)
+  const activeLeaveTypes = useMemo(() => {
+    const active = allLeaveTypes.filter((t) => t.is_active);
+    return active.length > 0 ? active : allLeaveTypes;
+  }, [allLeaveTypes]);
+
+  // Currently selected leave type setting
+  const currentLeaveTypeSetting = useMemo(() => {
+    return activeLeaveTypes.find((t) => {
+      const slug = getLeaveTypeSlug(t);
+      return (
+        slug === formData.leave_type ||
+        t.code?.toLowerCase() === formData.leave_type?.toLowerCase() ||
+        t.id === formData.leave_type
+      );
+    });
+  }, [activeLeaveTypes, formData.leave_type]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -73,7 +127,30 @@ export function useCreateLeaveFormState({
     return calculateDays(formData.start_date, formData.end_date);
   }, [formData.start_date, formData.end_date]);
 
-  const activeTypeCfg = LEAVE_TYPE_CONFIG[formData.leave_type] || LEAVE_TYPE_CONFIG.annual;
+  // Dynamic leave type configuration
+  const activeTypeCfg = useMemo(() => {
+    const fallback = LEAVE_TYPE_CONFIG[formData.leave_type] || LEAVE_TYPE_CONFIG.annual;
+    const theme = getLeaveTypeTheme(currentLeaveTypeSetting?.code || formData.leave_type);
+    return {
+      code: currentLeaveTypeSetting?.code || fallback.code,
+      label: currentLeaveTypeSetting?.name || fallback.label,
+      icon: theme.icon,
+      bg: theme.bg,
+      text: theme.text,
+      border: theme.border,
+      badgeBg: theme.badgeBg,
+      requiresUpload: currentLeaveTypeSetting
+        ? currentLeaveTypeSetting.require_attachment
+        : fallback.requiresUpload,
+      defaultDays: fallback.defaultDays,
+      isUnpaid: currentLeaveTypeSetting?.is_unpaid ?? false,
+      periodType: currentLeaveTypeSetting?.period_type || "daily",
+      eligibleFor: currentLeaveTypeSetting?.eligible_for || "both",
+      excludedContractTypes: currentLeaveTypeSetting?.excluded_contract_types || [],
+      rate: currentLeaveTypeSetting?.rate ?? 1.0,
+    };
+  }, [currentLeaveTypeSetting, formData.leave_type]);
+
   const currentStats: LeaveTypeBalanceStats = useMemo(() => {
     if (!activeEmpId) return { balance: 0, used: 0, available: 0, pending: 0 };
     return getLeaveTypeStats(activeEmpId, formData.leave_type);
@@ -177,6 +254,8 @@ export function useCreateLeaveFormState({
     supervisorName,
     filteredEmployees,
     requestedDays,
+    activeLeaveTypes,
+    currentLeaveTypeSetting,
     activeTypeCfg,
     currentStats,
     remainingAfterLeave,

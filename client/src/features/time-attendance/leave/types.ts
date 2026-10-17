@@ -34,6 +34,7 @@ export interface Employee {
   last_name: string;
   display_name?: string | null;
   full_name?: string | null;
+  gender?: string | null;
   role: string;
   department: string;
   annual_leave_days?: number;

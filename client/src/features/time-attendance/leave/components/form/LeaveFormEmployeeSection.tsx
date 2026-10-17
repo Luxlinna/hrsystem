@@ -72,9 +72,60 @@ export function LeaveFormEmployeeSection({
     selectedEmployee?.code_bu ||
     "UNI Holding";
   const joiningDate = formatDMY(selectedEmployee?.join_date || selectedEmployee?.start_date);
-  const division = selectedEmployee?.division || selectedEmployee?.department || "N/A";
+  const division = selectedEmployee?.division || selectedEmployee?.department || "---";
   const supervisor = supervisorName || "Mrs. Chea Tiengchanvathna";
   const employeeType = selectedEmployee?.employment_type || "Full Time";
+
+  const detailFields = [
+    // Row 1
+    {
+      id: "employee-code",
+      label: "Employee Code",
+      value: empCode,
+    },
+    {
+      id: "department",
+      label: "Department",
+      value: department,
+    },
+    {
+      id: "site",
+      label: "Site",
+      value: site,
+    },
+    // Row 2
+    {
+      id: "position",
+      label: "Position",
+      value: position,
+    },
+    {
+      id: "business-unit",
+      label: "Business Unit",
+      value: businessUnit,
+    },
+    {
+      id: "joining-date",
+      label: "Joining Date",
+      value: joiningDate,
+    },
+    // Row 3
+    {
+      id: "division",
+      label: "Division",
+      value: division,
+    },
+    {
+      id: "supervisor",
+      label: "Supervisor",
+      value: supervisor,
+    },
+    {
+      id: "employee-type",
+      label: "Employee Type",
+      value: employeeType,
+    },
+  ];
 
   return (
     <div className="space-y-2.5 w-full">
@@ -257,98 +308,98 @@ export function LeaveFormEmployeeSection({
         </div>
       </div>
 
-      {/* Clean Employee Details Panel — Responsive to Phone 1 Mockup */}
-      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 w-full shadow-xs">
-        {/* Top: Avatar + Name + Confirmed Member Badge */}
-        <div className="flex items-center gap-3.5 sm:gap-5 pb-3.5 sm:pb-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-            {selectedEmployee?.avatar_url ? (
-              <img
-                src={selectedEmployee.avatar_url}
-                alt={empName}
-                className="w-full h-full object-cover object-top"
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200/70 dark:from-slate-800 dark:to-slate-900 text-slate-700 dark:text-slate-200">
-                <div className="w-9 h-9 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-white dark:bg-slate-800 shadow-xs flex items-center justify-center font-extrabold text-xs sm:text-xl md:text-2xl text-[#253C7D] dark:text-blue-300 border border-slate-200/80 dark:border-slate-700">
-                  {empInitials}
+      {/* Employee Details Panel — Matching UI Structure from Image 1 */}
+      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4 w-full shadow-xs">
+        <div className="flex flex-col md:flex-row items-stretch gap-3 sm:gap-3.5">
+          {/* Picture Box on Desktop / Tablet (md and up) */}
+          <div className="hidden md:flex md:w-36 lg:w-44 shrink-0 self-stretch min-h-0">
+            <div className="w-full flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60 overflow-hidden relative shadow-2xs flex flex-col items-center justify-center p-2.5">
+              {selectedEmployee?.avatar_url ? (
+                <img
+                  src={selectedEmployee.avatar_url}
+                  alt={empName}
+                  className="w-full h-full object-cover object-top rounded-lg"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-3 text-center">
+                  <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-white dark:bg-slate-800 shadow-xs flex items-center justify-center font-extrabold text-base lg:text-xl text-[#253C7D] dark:text-blue-300 border border-slate-200/80 dark:border-slate-700">
+                    {empInitials}
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 italic">
+                    Picture
+                  </span>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <h3 className="font-bold text-base sm:text-xl md:text-2xl text-slate-900 dark:text-white truncate">
-              {empName}
-            </h3>
-            {selectedEmployee && (
-              <div className="flex items-center gap-2 mt-1 sm:mt-1.5 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
-                  <i className="ri-checkbox-circle-fill text-xs sm:text-sm text-emerald-600" />
+          {/* Right Column: Name Box + 3x3 Grid of 9 Cards */}
+          <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+            {/* Mobile Header: Picture + Name side-by-side (< md) */}
+            <div className="flex md:hidden items-center gap-2.5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                {selectedEmployee?.avatar_url ? (
+                  <img
+                    src={selectedEmployee.avatar_url}
+                    alt={empName}
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="font-extrabold text-sm sm:text-base text-[#253C7D] dark:text-blue-300">
+                    {empInitials}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-2.5 shadow-2xs">
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                  {empName}
+                </h3>
+                {selectedEmployee && (
+                  <div className="mt-1">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                      <i className="ri-checkbox-circle-fill text-[11px] text-emerald-600 dark:text-emerald-400" />
+                      <span>Confirmed Member</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop Name Box (md and up) */}
+            <div className="hidden md:flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-4 py-2.5 lg:py-3 items-center justify-between gap-3 shadow-2xs">
+              <h3 className="font-bold text-base lg:text-lg text-slate-900 dark:text-white truncate">
+                {empName}
+              </h3>
+              {selectedEmployee && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shrink-0">
+                  <i className="ri-checkbox-circle-fill text-xs text-emerald-600 dark:text-emerald-400" />
                   <span>Confirmed Member</span>
                 </span>
-                <span className="text-xs text-slate-400 hidden sm:inline">
-                  &bull; {position}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
+            </div>
 
-        {/* Info Grid: 2 columns on mobile (Phone 1), 3 columns on tablet/desktop */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 pt-3.5">
-          {/* Employee Code */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Employee Code</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{empCode}</div>
-          </div>
-
-          {/* Department */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Department</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{department}</div>
-          </div>
-
-          {/* Position */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Position</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{position}</div>
-          </div>
-
-          {/* Joining Date */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Joining Date</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{joiningDate}</div>
-          </div>
-
-          {/* Business Unit */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Business Unit</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{businessUnit}</div>
-          </div>
-
-          {/* Supervisor */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Supervisor</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{supervisor}</div>
-          </div>
-
-          {/* Site */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Site</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{site}</div>
-          </div>
-
-          {/* Division */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Division</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{division}</div>
-          </div>
-
-          {/* Employee Type */}
-          <div>
-            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">Employee Type</div>
-            <div className="font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white truncate mt-0.5">{employeeType}</div>
+            {/* 3x3 Grid of 9 Information Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-2.5">
+              {detailFields.map((field) => (
+                <div
+                  key={field.id}
+                  className={`rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-2.5 sm:p-3 flex flex-col justify-center shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 transition-colors min-h-[58px] sm:min-h-[62px] ${
+                    field.id === "employee-type" ? "col-span-2 md:col-span-1" : ""
+                  }`}
+                >
+                  <div
+                    className="font-bold text-xs sm:text-[13px] md:text-sm text-slate-900 dark:text-white truncate leading-snug"
+                    title={field.value}
+                  >
+                    {field.value}
+                  </div>
+                  <div className="text-[10.5px] sm:text-xs text-slate-500 dark:text-slate-400 italic truncate mt-0.5 leading-tight">
+                    {field.label}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
