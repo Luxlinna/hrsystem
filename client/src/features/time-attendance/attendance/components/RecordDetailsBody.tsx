@@ -11,7 +11,8 @@ interface RecordDetailsBodyProps {
 export const RecordDetailsBody = memo(function RecordDetailsBody({
   selectedRecord,
 }: RecordDetailsBodyProps) {
-  const cfg = STATUS_CONFIG[selectedRecord.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
+  const isEarly = (selectedRecord.status === "early" || (selectedRecord.early_leave_minutes != null && selectedRecord.early_leave_minutes > 0)) && Boolean(selectedRecord.clock_out);
+  const cfg = isEarly ? STATUS_CONFIG.early : (STATUS_CONFIG[selectedRecord.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present);
   const isVisiting = selectedRecord.work_location_id !== selectedRecord.employees?.default_work_location_id && !!selectedRecord.employees?.default_work_location_id;
 
   return (

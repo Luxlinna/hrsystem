@@ -11,14 +11,14 @@ export const STATUS_CONFIG: Record<
     icon: "ri-checkbox-circle-line",
     dot: "bg-emerald-500",
   },
-  present: {
-    label: "On Time",
-    short: "OT",
-    bg: "bg-emerald-50 dark:bg-emerald-950/60",
-    text: "text-emerald-700 dark:text-emerald-300",
-    border: "border-emerald-200 dark:border-emerald-800/60",
-    icon: "ri-checkbox-circle-line",
-    dot: "bg-emerald-500",
+  early: {
+    label: "Early Check Out",
+    short: "E",
+    bg: "bg-orange-50 dark:bg-orange-950/60",
+    text: "text-orange-700 dark:text-orange-300",
+    border: "border-orange-200 dark:border-orange-800/60",
+    icon: "ri-logout-box-r-line",
+    dot: "bg-orange-500",
   },
   late: {
     label: "Late Arrival",
@@ -66,6 +66,14 @@ export const STATUS_CONFIG: Record<
     dot: "bg-purple-500",
   },
 };
+
+// Backward-compatibility alias for legacy records with status="present"
+Object.defineProperty(STATUS_CONFIG, "present", {
+  value: STATUS_CONFIG.ontime,
+  enumerable: false,
+  writable: true,
+  configurable: true,
+});
 
 export function formatTime(t: string | null) {
   if (!t) return "—";

@@ -44,6 +44,9 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
   } else if (r.clock_in && holiday) {
     cfg = STATUS_CONFIG.holiday;
     badgeLabel = "Holiday Work (2.0x OT)";
+  } else if ((r.status === "early" || (r.early_leave_minutes != null && r.early_leave_minutes > 0)) && r.clock_out) {
+    cfg = STATUS_CONFIG.early;
+    badgeLabel = r.early_leave_minutes ? `Early Leave (${r.early_leave_minutes}m)` : "Early Check Out";
   }
   const emp = r.employees;
   const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;

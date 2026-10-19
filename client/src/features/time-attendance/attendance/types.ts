@@ -55,7 +55,7 @@ export interface AttendanceRecord {
   break_out?: string | null;
   break_in?: string | null;
   hours_worked?: number | null;
-  status: "ontime" | "present" | "absent" | "late" | "half_day" | "remote" | "holiday";
+  status: "ontime" | "present" | "absent" | "late" | "half_day" | "remote" | "holiday" | "early";
   late_minutes: number;
   early_leave_minutes?: number | null;
   notes: string | null;

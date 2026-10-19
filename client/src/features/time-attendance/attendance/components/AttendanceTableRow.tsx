@@ -56,10 +56,10 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   const isClockOutAfterScheduledEnd = clockOutMin != null && scheduledEndMin != null && clockOutMin >= scheduledEndMin;
 
   const isLate = r.status === "late" || (r.late_minutes != null && r.late_minutes > 0);
-  const isEarlyLeave = !isClockOutAfterScheduledEnd && (
+  const isEarlyLeave = r.status === "early" || (!isClockOutAfterScheduledEnd && (
     (r.early_leave_minutes != null && r.early_leave_minutes > 0) ||
     (clockOutMin != null && scheduledEndMin != null && scheduledEndMin - clockOutMin > 5)
-  );
+  ));
 
   const badges: { label: string; bg: string; text: string }[] = [];
   if (r.status === "holiday" || isHoliday) {
@@ -88,7 +88,10 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
       const earlyMins = (clockOutMin != null && scheduledEndMin != null && scheduledEndMin > clockOutMin)
         ? scheduledEndMin - clockOutMin
         : (r.early_leave_minutes || 0);
-      badges.push({ label: `Early ${earlyMins}m`, bg: "bg-orange-500", text: "text-white" });
+      badges.push({ label: earlyMins > 0 ? `Early ${earlyMins}m` : "Early Check Out", bg: "bg-orange-500", text: "text-white" });
+    }
+    if (!isLate && !isEarlyLeave) {
+      badges.push({ label: "On Time", bg: "bg-emerald-600", text: "text-white" });
     }
   }
 

@@ -89,6 +89,19 @@ export function getAttendanceLiveStatus(
     };
   }
 
+  if (r.clock_in && r.clock_out && (r.status === "early" || (r.early_leave_minutes != null && r.early_leave_minutes > 0))) {
+    const cfg = STATUS_CONFIG.early;
+    const earlyMins = r.early_leave_minutes || 0;
+    return {
+      statusLabel: earlyMins > 0 ? `Early Check Out (${earlyMins}m)` : "Early Check Out",
+      statusBg: cfg.bg,
+      statusText: cfg.text,
+      statusBorder: cfg.border,
+      statusIcon: cfg.icon,
+      isPulse: false,
+    };
+  }
+
   const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
   const labelWithMinutes = cfg.label + (r.status === "late" && r.late_minutes && r.late_minutes > 0 ? ` (${r.late_minutes}m)` : "");
 

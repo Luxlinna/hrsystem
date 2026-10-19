@@ -18,7 +18,25 @@ interface MatchParams {
 export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): boolean {
   if (p.filterStatus && p.filterStatus !== "all") {
     const statuses = p.filterStatus.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-    if (statuses.length > 0 && !statuses.includes(r.status.toLowerCase())) return false;
+    if (statuses.length > 0) {
+      const recStatus = (r.status || "").toLowerCase();
+      const hasEarlyLeave = recStatus === "early" || (r.early_leave_minutes != null && r.early_leave_minutes > 0);
+      const isLate = recStatus === "late" || (r.late_minutes != null && r.late_minutes > 0);
+
+      const matches = statuses.some((st) => {
+        if (st === "early") {
+          return hasEarlyLeave;
+        }
+        if (st === "ontime") {
+          return (recStatus === "ontime" || recStatus === "present") && !hasEarlyLeave && !isLate;
+        }
+        if (st === "late") {
+          return isLate;
+        }
+        return recStatus === st;
+      });
+      if (!matches) return false;
+    }
   }
 
   if (p.filterBranch) {
