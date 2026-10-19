@@ -103,9 +103,16 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
 
   const handleTriggerBulkDelete = useCallback(() => {
     if (!onBulkDelete || selectedIds.size === 0) return;
+    if (!isSuperAdmin) {
+      const hasApproved = pagedRows.some((r) => selectedIds.has(r.id) && r.status === "approved");
+      if (hasApproved) {
+        alert("Only Super Admin can delete approved leave requests. Please deselect approved requests first.");
+        return;
+      }
+    }
     onBulkDelete(Array.from(selectedIds));
     setSelectedIds(new Set());
-  }, [onBulkDelete, selectedIds]);
+  }, [onBulkDelete, selectedIds, isSuperAdmin, pagedRows]);
 
   const handleTriggerBulkApprove = useCallback(() => {
     if (!onBulkApprove || selectedIds.size === 0) return;

@@ -25,9 +25,14 @@ export function resolveRecordSchedule(
       ? matchedShift.time_table
       : [{ id: "1", time_in: "08:00 AM", time_out: "05:00 PM", total_work_hours: matchedShift.total_work_hours || 8.0 }];
 
+    const rawCode = matchedShift.code?.trim() || "";
+    const shiftTitle = rawCode && rawCode !== "0817" && rawCode !== "0812"
+      ? `${rawCode} - ${matchedShift.name}`
+      : matchedShift.name;
+
     return {
-      shiftCode: matchedShift.code,
-      shiftTitle: `${matchedShift.code} - ${matchedShift.name}`,
+      shiftCode: rawCode === "0817" ? "" : rawCode,
+      shiftTitle,
       windows,
       totalShiftHours: matchedShift.total_work_hours || 8.0,
     };
@@ -42,15 +47,15 @@ export function resolveRecordSchedule(
   if (isSaturday) {
     return {
       shiftCode: "0812",
-      shiftTitle: "0812 - 08:00AM - 12:00PM",
+      shiftTitle: "08:00 AM - 12:00 PM",
       windows: [{ id: "1", time_in: "08:00 AM", time_out: "12:00 PM", total_work_hours: 4.0 }],
       totalShiftHours: 4.0,
     };
   }
 
   return {
-    shiftCode: "0817",
-    shiftTitle: "0817 - 08:00AM - 05:00PM",
+    shiftCode: "",
+    shiftTitle: "08:00 AM - 05:00 PM",
     windows: [
       { id: "1", time_in: "08:00 AM", time_out: "12:00 PM", total_work_hours: 4.0 },
       { id: "2", time_in: "01:00 PM", time_out: "05:00 PM", total_work_hours: 4.0 },

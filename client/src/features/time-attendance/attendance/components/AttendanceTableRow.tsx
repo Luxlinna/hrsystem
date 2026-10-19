@@ -160,7 +160,7 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         </div>
       </td>
 
-      <AttendanceRowPunchCell record={r} hasClockIn={hasClockIn} hasClockOut={hasClockOut} isRowFourPunch={isRowFourPunch} onEditRecord={onEditRecord} />
+      <AttendanceRowPunchCell record={r} hasClockIn={hasClockIn} hasClockOut={hasClockOut} isRowFourPunch={isRowFourPunch} canManage={canManage} onEditRecord={onEditRecord} />
 
       <td className="py-2.5 px-3 whitespace-nowrap">
         <div className="flex items-center gap-1 flex-wrap">

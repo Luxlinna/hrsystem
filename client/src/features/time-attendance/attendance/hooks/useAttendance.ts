@@ -223,10 +223,11 @@ export function useAttendance() {
 
   const handleUpdateRecord = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage) return;
     if (editingRecord) {
       await mutations.handleUpdateRecord(editingRecord);
     }
-  }, [mutations, editingRecord]);
+  }, [canManage, mutations, editingRecord]);
 
   const isFourPunchMode = false;
 

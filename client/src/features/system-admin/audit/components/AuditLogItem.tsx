@@ -67,7 +67,9 @@ export const AuditLogItem = memo(function AuditLogItem({
             {isCrossBu ? (
               <span className="text-[10px] font-bold bg-amber-50 text-amber-900 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-200">
                 <i className="ri-flashlight-fill text-amber-500 text-[11px]" />
-                Across-Site BU: {primaryBu || "Corporate"} ➔ {targetBu || "BU"}
+                Across-Site BU: {primaryBu || "Corporate"}{" "}
+                <i className="ri-arrow-right-line text-[10px] text-amber-600" />{" "}
+                {targetBu || "BU"}
               </span>
             ) : primaryBu ? (
               <span className="text-[10px] font-semibold bg-blue-50 text-[#253C7D] px-2 py-0.5 rounded-full flex items-center gap-1 border border-blue-100/80">

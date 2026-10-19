@@ -61,19 +61,21 @@ export const AttendanceRowActions = memo(function AttendanceRowActions({
 
         {actionMenuOpen && (
           <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700 rounded-xl shadow-lg py-1 z-30 text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setActionMenuOpen(false);
-                onEditRecord(r);
-              }}
-              className="w-full px-3 py-1.5 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-            >
-              <i className="ri-edit-line text-[#253C7D] dark:text-sky-400" />
-              <span>Edit Log</span>
-            </button>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActionMenuOpen(false);
+                  onEditRecord(r);
+                }}
+                className="w-full px-3 py-1.5 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+              >
+                <i className="ri-edit-line text-[#253C7D] dark:text-sky-400" />
+                <span>Edit Log</span>
+              </button>
+            )}
 
-            {onLogTimeForEmployee && emp?.id && (
+            {canManage && onLogTimeForEmployee && emp?.id && (
               <button
                 type="button"
                 onClick={() => {

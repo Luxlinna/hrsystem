@@ -66,6 +66,7 @@ export function useLeaveMutations({
     hasRoleApprovalAccess,
     hasManagerEndorseAccess,
     hasBuAdminEndorseAccess,
+    requests,
     loadData,
     setToast,
   });

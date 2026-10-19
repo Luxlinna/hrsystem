@@ -40,7 +40,8 @@ export function deriveShiftCode(
   if (startTime && endTime) {
     const sH = startTime.slice(0, 2);
     const eH = endTime.slice(0, 2);
-    return `${sH}${eH}`;
+    const code = `${sH}${eH}`;
+    return code === "0817" ? "DAY" : code;
   }
 
   return trimmed ? trimmed.slice(0, 4).toUpperCase() : "SHIFT";

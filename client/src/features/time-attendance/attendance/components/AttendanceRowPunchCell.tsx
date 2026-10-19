@@ -7,6 +7,7 @@ interface AttendanceRowPunchCellProps {
   hasClockIn: boolean;
   hasClockOut: boolean;
   isRowFourPunch?: boolean;
+  canManage?: boolean;
   onEditRecord: (record: AttendanceRecord) => void;
 }
 
@@ -14,6 +15,7 @@ export const AttendanceRowPunchCell = memo(function AttendanceRowPunchCell({
   record: r,
   hasClockIn,
   hasClockOut,
+  canManage = false,
   onEditRecord,
 }: AttendanceRowPunchCellProps) {
   const netHours = calcNetHours(r.clock_in, r.clock_out, null, null, r.hours_worked);
@@ -33,14 +35,16 @@ export const AttendanceRowPunchCell = memo(function AttendanceRowPunchCell({
             ({netHours})
           </span>
         )}
-        <button
-          type="button"
-          onClick={() => onEditRecord(r)}
-          className="p-0.5 text-gray-400 hover:text-[#253C7D] dark:hover:text-sky-400 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ml-0.5"
-          title="Edit Punch"
-        >
-          <i className="ri-edit-line text-[11px]" />
-        </button>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => onEditRecord(r)}
+            className="p-0.5 text-gray-400 hover:text-[#253C7D] dark:hover:text-sky-400 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ml-0.5"
+            title="Edit Punch"
+          >
+            <i className="ri-edit-line text-[11px]" />
+          </button>
+        )}
       </div>
     </td>
   );

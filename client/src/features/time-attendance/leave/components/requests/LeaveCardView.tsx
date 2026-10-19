@@ -44,7 +44,9 @@ export const LeaveCardView = memo(function LeaveCardView({
         const simpleTypeName = typeInfo.fullName.split("(")[0].trim();
         const isOwn = r.employee_id === myEmployeeId;
         const canCancel = r.status === "pending" || ((isOwn || isSuperAdmin || isBranchAdmin || _canApproveLeave) && r.status === "approved");
-        const canDelete = isSuperAdmin || isBranchAdmin || _canApproveLeave || isOwn;
+        const canDelete = r.status === "approved"
+          ? Boolean(isSuperAdmin)
+          : Boolean(isSuperAdmin || isBranchAdmin || _canApproveLeave || isOwn);
         
         const empName = getLeaveEmployeeName(r.employees);
         const deptName = r.employees?.department || "General";

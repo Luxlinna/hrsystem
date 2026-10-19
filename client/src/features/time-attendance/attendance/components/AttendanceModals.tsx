@@ -68,6 +68,7 @@ export const AttendanceModals = memo(function AttendanceModals({
         setEditingRecord={setEditingRecord}
         workLocations={workLocations}
         saving={saving}
+        canManage={canManage}
         onClose={() => setEditingRecord(null)}
         onSubmit={onUpdateRecord}
       />

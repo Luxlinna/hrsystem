@@ -21,6 +21,7 @@ interface UseLeaveApprovalDecisionProps {
   hasRoleApprovalAccess?: boolean;
   hasManagerEndorseAccess?: boolean;
   hasBuAdminEndorseAccess?: boolean;
+  requests?: LeaveRequest[];
   loadData: () => Promise<void>;
   setToast: (toast: { type: "success" | "error" | "info"; message: string } | null) => void;
 }
@@ -37,6 +38,7 @@ export function useLeaveApprovalDecision({
   hasRoleApprovalAccess,
   hasManagerEndorseAccess,
   hasBuAdminEndorseAccess,
+  requests,
   loadData,
   setToast,
 }: UseLeaveApprovalDecisionProps) {
@@ -182,6 +184,10 @@ export function useLeaveApprovalDecision({
   }, [cancelTargetRequest, cancelReason, actorName, actorRole, loadData, setToast]);
 
   const handleDeleteRequest = useCallback(async (req: LeaveRequest) => {
+    if (req.status === "approved" && !isSuperAdmin) {
+      setToast({ type: "error", message: "Only Super Admin can delete approved leave requests." });
+      return;
+    }
     if (!window.confirm(`Are you sure you want to delete this ${req.leave_type} leave request?`)) return;
     try {
       const { error } = await supabase
@@ -209,10 +215,17 @@ export function useLeaveApprovalDecision({
     } catch (err: any) {
       setToast({ type: "error", message: err.message || "Failed to delete request" });
     }
-  }, [actorName, actorRole, loadData, setToast]);
+  }, [actorName, actorRole, isSuperAdmin, loadData, setToast]);
 
   const handleBulkDelete = useCallback(async (ids: string[]) => {
     if (!ids.length) return;
+    if (!isSuperAdmin) {
+      const hasApproved = requests?.some((r) => ids.includes(r.id) && r.status === "approved");
+      if (hasApproved) {
+        setToast({ type: "error", message: "Only Super Admin can delete approved leave requests. Please deselect approved requests." });
+        return;
+      }
+    }
     if (!window.confirm(`Are you sure you want to delete ${ids.length} selected leave request(s)?`)) return;
     try {
       const { error } = await supabase
@@ -238,7 +251,7 @@ export function useLeaveApprovalDecision({
     } catch (err: any) {
       setToast({ type: "error", message: err.message || "Failed to bulk delete requests" });
     }
-  }, [actorName, actorRole, loadData, setToast]);
+  }, [actorName, actorRole, isSuperAdmin, requests, loadData, setToast]);
 
   const handleBulkApprove = useCallback(async (ids: string[]) => {
     if (!ids.length) return;

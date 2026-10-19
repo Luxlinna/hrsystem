@@ -8,6 +8,7 @@ interface EditAttendanceModalProps {
   setEditingRecord: React.Dispatch<React.SetStateAction<AttendanceRecord | null>>;
   workLocations: WorkLocation[];
   saving: boolean;
+  canManage?: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -17,10 +18,11 @@ export const EditAttendanceModal = memo(function EditAttendanceModal({
   setEditingRecord,
   workLocations,
   saving,
+  canManage = true,
   onClose,
   onSubmit,
 }: EditAttendanceModalProps) {
-  if (!editingRecord) return null;
+  if (!editingRecord || !canManage) return null;
 
   return (
     <div

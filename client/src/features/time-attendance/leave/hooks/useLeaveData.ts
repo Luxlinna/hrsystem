@@ -22,7 +22,13 @@ export function useLeaveData() {
   const { role, isAdmin, isSuperAdmin: isSuperRole, loading: permsLoading } = usePermissions();
   const { isSuperAdmin: isBranchSuperAdmin, isBranchAdmin, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
-  const isSuperAdmin = Boolean(isSuperRole || isBranchSuperAdmin || isAdmin || role?.name === "Super Admin");
+  const isSuperAdmin = Boolean(
+    isSuperRole ||
+    isBranchSuperAdmin ||
+    role?.is_admin ||
+    role?.name === "Super Admin" ||
+    role?.allowed_modules?.includes("*")
+  );
 
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [calendarRequests, setCalendarRequests] = useState<LeaveRequest[]>([]);
