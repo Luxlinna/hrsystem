@@ -207,6 +207,8 @@ export function usePermissions(): UsePermissionsReturn {
         if (module === "leave-calendar") return allowed.includes("leave-calendar") || allowed.includes("leave");
         if (module === "leave") return allowed.includes("leave") || allowed.includes("leave-calendar");
         if (module === "assets") return allowed.includes("it-management") || allowed.includes("assets");
+        // Security guardrail: Normal employees can never access system audit logs
+        if (module === "audit-log" && (cat === "employee" || isEmployee)) return false;
         return allowed.includes(module);
       }
 

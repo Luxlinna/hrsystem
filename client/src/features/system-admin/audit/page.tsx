@@ -1,5 +1,6 @@
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useBranchScope } from "@/context/BranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useAudit } from "./hooks/useAudit";
 import { AuditHeader } from "./components/AuditHeader";
 import { AuditFilters } from "./components/AuditFilters";
@@ -7,9 +8,28 @@ import { ModuleStatsRow } from "./components/ModuleStatsRow";
 import { AuditTimeline } from "./components/AuditTimeline";
 
 export default function AuditLogPage() {
-  const { isPartnerBranch, userBranchName, isSuperAdmin, isHrDivision } = useBranchScope();
+  const { isPartnerBranch, userBranchName, isSuperAdmin, isHrDivision, isBranchAdmin } = useBranchScope();
+  const { isAdmin, isEmployee } = usePermissions();
 
   const { logsData, filters } = useAudit();
+
+  const canViewAudit = isSuperAdmin || isAdmin || isBranchAdmin || isHrDivision;
+
+  if (isEmployee || !canViewAudit) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50/60 dark:bg-slate-950 p-6 font-sans">
+        <div className="text-center max-w-md p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 border border-rose-100 dark:border-rose-900/40 shadow-xs">
+            <i className="ri-shield-keyhole-line" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Access Restricted</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            The Activity Audit Log contains sensitive enterprise security records and is strictly restricted to system administrators.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isPartnerBranch && !isSuperAdmin && !isHrDivision) {
     return (
