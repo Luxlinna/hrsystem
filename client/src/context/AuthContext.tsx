@@ -15,6 +15,7 @@ import {
 import { isPhoneIdentifier, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 import { resolveAuthEmail, sendOTPService, verifyOTPService } from "./authOtpService";
 import { api } from "@/shared/lib/apiClient";
+import { recordCurrentDeviceLogin } from "@/lib/deviceSessionCache";
 
 export type { AuthContextType };
 
@@ -76,6 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         markSessionAlive();
         recordUserActivity();
+        if (session.user?.email) {
+          recordCurrentDeviceLogin(session.user.email);
+        }
       }
     });
 
@@ -86,6 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         markSessionAlive();
         recordUserActivity();
+        if (session.user?.email) {
+          recordCurrentDeviceLogin(session.user.email);
+        }
       }
     });
 
@@ -209,6 +216,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       recordUserActivity();
+      if (resolvedEmail) {
+        recordCurrentDeviceLogin(resolvedEmail);
+      }
       // Keep existing 3-day window from OTP verification intact; do not reset countdown on routine login
       return { otpRequired: false };
     }
@@ -263,6 +273,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (sessionError) throw new Error(sessionError.message);
 
     recordUserActivity();
+    if (resolvedEmail) {
+      recordCurrentDeviceLogin(resolvedEmail);
+    }
     if (rememberDevice !== false) {
       setDeviceRemembered(resolvedEmail);
       if (identifier) setDeviceRemembered(identifier);

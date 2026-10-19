@@ -25,11 +25,10 @@ const SCOPE_CONFIG: {
   value: CrossBuScopeFilter;
   label: string;
   icon: string;
-  iconColor: string;
 }[] = [
-  { value: "all", label: "All Scopes", icon: "ri-global-line", iconColor: "text-sky-600" },
-  { value: "local", label: "Local BU Actions", icon: "ri-map-pin-2-line", iconColor: "text-blue-600" },
-  { value: "cross_bu", label: "Across-Site BU Actions", icon: "ri-flashlight-fill", iconColor: "text-amber-500" },
+  { value: "all", label: "All Scopes", icon: "ri-organization-chart" },
+  { value: "local", label: "Local BU Actions", icon: "ri-building-line" },
+  { value: "cross_bu", label: "Across-Site BU Actions", icon: "ri-arrow-left-right-line" },
 ];
 
 const MODULE_ICONS: Record<string, string> = {
@@ -206,14 +205,16 @@ export const AuditFilters = memo(function AuditFilters({
           type="button"
           onClick={() => setActiveDropdown((prev) => (prev === "scope" ? null : "scope"))}
           className={`h-[38px] px-3 border rounded-lg text-sm font-medium transition-colors cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
-            scopeFilter === "cross_bu"
-              ? "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100/60"
-              : scopeFilter === "local"
-              ? "bg-blue-50 border-blue-200 text-blue-900 hover:bg-blue-100/60"
+            scopeFilter !== "all"
+              ? "bg-blue-50 border-blue-200 text-blue-900"
               : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100/70"
           }`}
         >
-          <i className={`${activeScope.icon} ${activeScope.iconColor} text-base shrink-0`} />
+          <i
+            className={`${activeScope.icon} ${
+              scopeFilter !== "all" ? "text-blue-600" : "text-slate-500"
+            } text-base shrink-0`}
+          />
           <span>{activeScope.label}</span>
           <i
             className={`ri-arrow-down-s-line text-gray-400 text-base shrink-0 transition-transform duration-150 ${
@@ -241,7 +242,11 @@ export const AuditFilters = memo(function AuditFilters({
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <i className={`${opt.icon} ${opt.iconColor} text-base shrink-0`} />
+                    <i
+                      className={`${opt.icon} ${
+                        isSelected ? "text-[#253C7D]" : "text-slate-400"
+                      } text-base shrink-0`}
+                    />
                     <span>{opt.label}</span>
                   </div>
                   {isSelected && <i className="ri-check-line text-[#253C7D] font-bold text-sm shrink-0" />}

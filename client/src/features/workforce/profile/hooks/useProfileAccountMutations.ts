@@ -78,7 +78,25 @@ export function useProfileAccountMutations({
           first_name: fName,
           last_name: lName,
         };
-        if (empCode) {
+        if (empCode && empCode !== employee.employee_code) {
+          const { data: existingCode } = await supabase
+            .from("employees")
+            .select("id, first_name, last_name, employee_code")
+            .is("deleted_at", null)
+            .ilike("employee_code", empCode)
+            .neq("id", employee.id)
+            .limit(1);
+
+          if (existingCode && existingCode.length > 0) {
+            toast(
+              "Employee Code Already Exists",
+              `Employee code "${empCode}" is already in use by another employee. Employee code must be unique.`,
+              "error"
+            );
+            setSavingName(false);
+            return;
+          }
+
           empUpdates.employee_code = empCode;
         }
         if (newEmail) {

@@ -375,6 +375,33 @@ export function useEmployeesMutations({
           resolvedBiometricId = String(maxPin + 1).padStart(3, "0");
         }
 
+        // Check for duplicate employee code
+        const candidateEmpCode = form.employee_code?.trim() || resolvedBiometricId;
+        if (candidateEmpCode) {
+          let codeQuery = supabase
+            .from("employees")
+            .select("id, first_name, last_name, employee_code")
+            .is("deleted_at", null)
+            .ilike("employee_code", candidateEmpCode);
+
+          if (editingEmployeeId) {
+            codeQuery = codeQuery.neq("id", editingEmployeeId);
+          }
+
+          const { data: existingCodeRows } = await codeQuery.limit(1);
+
+          if (existingCodeRows && existingCodeRows.length > 0) {
+            const dupCodeEmp = existingCodeRows[0];
+            toast(
+              "Employee Code Already Exists",
+              `An employee (${formatKhmerFullName(dupCodeEmp)}) already has the employee code "${candidateEmpCode}". Employee code must be unique.`,
+              "error"
+            );
+            setSubmitting(false);
+            return;
+          }
+        }
+
         let cleanGender = "Male";
         if (form.gender) {
           const gLower = form.gender.toLowerCase().trim();

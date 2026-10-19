@@ -52,7 +52,13 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
     if (email) setUserEmail(email);
   }, [employee, email]);
 
-  const handleSave = () => onSaveName({ firstName, lastName, username, email: isSuperAdmin ? userEmail : undefined, timezone: isSuperAdmin ? timezone : undefined });
+  const handleSave = () => onSaveName({
+    firstName,
+    lastName,
+    username: isSuperAdmin ? username : undefined,
+    email: isSuperAdmin ? userEmail : undefined,
+    timezone: isSuperAdmin ? timezone : undefined,
+  });
   const handleDiscard = () => {
     setFirstName(employee?.first_name || "");
     setLastName(employee?.last_name || "");
@@ -128,10 +134,28 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-200 block mb-1.5">Username / Employee Code</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Username / Employee Code</label>
+                  {!isSuperAdmin && (
+                    <span className="text-[11px] text-slate-400 font-medium inline-flex items-center gap-1">
+                      <i className="ri-lock-line" /> Read Only
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <i className="ri-id-card-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
-                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full pl-9 pr-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#0088cc]" />
+                  <input
+                    type="text"
+                    value={username}
+                    disabled={!isSuperAdmin}
+                    readOnly={!isSuperAdmin}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={`w-full pl-9 pr-3.5 py-2 rounded-lg text-xs font-semibold ${
+                      !isSuperAdmin
+                        ? "bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                        : "bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#0088cc]"
+                    }`}
+                  />
                 </div>
               </div>
 
