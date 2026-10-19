@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSelfServiceData } from "./hooks/useSelfServiceData";
+import { useCheckInData } from "./hooks/useCheckInData";
 import { ProfileBanner } from "./components/ProfileBanner";
 import { TabsNav } from "./components/TabsNav";
 import { TabContent } from "./components/TabContent";
@@ -38,6 +39,15 @@ export default function SelfServicePage() {
     }
   }, [searchParams]);
 
+  const employeeName = selectedEmployee ? formatKhmerFullName(selectedEmployee) : "";
+
+  const checkInData = useCheckInData({
+    employeeId: selectedEmployee?.id || "",
+    employeeName,
+    autoStart: quickCheckIn,
+    autoCheckOut: quickCheckOut,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex items-center justify-center">
@@ -65,10 +75,20 @@ export default function SelfServicePage() {
     );
   }
 
-  const employeeName = selectedEmployee ? formatKhmerFullName(selectedEmployee) : "";
-
   return (
     <div className="min-h-screen bg-[#F4F7FB] dark:bg-slate-950 px-0 md:px-6 lg:px-8 pt-0 md:pt-8 pb-24 font-sans">
+      {/* Toast Notification */}
+      {checkInData.toast && (
+        <div
+          className={`fixed left-4 right-4 sm:left-auto sm:right-5 sm:max-w-sm z-50 px-5 py-3 rounded-2xl text-[13px] font-semibold text-white shadow-xl border border-slate-700/40 ${
+            checkInData.toast.type === "success" ? "bg-[#253C7D]" : "bg-[#1E3066] border-[#29ABE2]/50"
+          }`}
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 14px)" }}
+        >
+          {checkInData.toast.message}
+        </div>
+      )}
+
       {/* ── Mobile View: Presence Structure (< md) ── */}
       <div className="block md:hidden max-w-md mx-auto">
         {selectedEmployee && mobileViewMode === "presence" ? (
@@ -136,9 +156,43 @@ export default function SelfServicePage() {
           <ProfileBanner
             employee={selectedEmployee}
             managerName={managerName}
-            todayAttendance={todayAttendance}
-            onGoToCheckIn={activeTab !== "checkin" ? () => setActiveTab("checkin") : undefined}
+            todayAttendance={checkInData.todayRecord || todayAttendance}
+            onClockIn={checkInData.handleRequestClockIn}
+            onClockOut={checkInData.handleClockOut}
+            processing={checkInData.processing || checkInData.checkInStep === "locating"}
           />
+        )}
+
+        {/* Desktop 100m Geofence Warning Banner if Outside */}
+        {(checkInData.checkInStep === "denied" || checkInData.checkInStep === "error") && (
+          <div className="bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-700/60 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+              <i className="ri-map-pin-range-line text-lg" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-rose-900 dark:text-rose-200 text-xs uppercase tracking-wide">
+                  Outside 100m Building Area
+                </p>
+                <button
+                  type="button"
+                  onClick={checkInData.resetCheckInFlow}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  <i className="ri-close-line text-sm" />
+                </button>
+              </div>
+              <p className="text-[12px] text-rose-700 dark:text-rose-300 leading-snug mt-1">
+                {checkInData.checkInMessage}
+              </p>
+              {checkInData.checkInDistance != null && (
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-rose-100/80 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 text-[11px] font-semibold">
+                  <i className="ri-compass-3-line text-xs" />
+                  <span>Current: {checkInData.checkInDistance}m (Allowed: max {checkInData.branch?.geofence_radius_m || 100}m)</span>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Tab Navigation Strip */}

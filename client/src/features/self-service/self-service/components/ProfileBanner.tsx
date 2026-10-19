@@ -7,9 +7,20 @@ interface Props {
   managerName: string;
   todayAttendance?: any;
   onGoToCheckIn?: () => void;
+  onClockIn?: () => void;
+  onClockOut?: () => void;
+  processing?: boolean;
 }
 
-export function ProfileBanner({ employee, managerName, todayAttendance, onGoToCheckIn }: Props) {
+export function ProfileBanner({
+  employee,
+  managerName,
+  todayAttendance,
+  onGoToCheckIn,
+  onClockIn,
+  onClockOut,
+  processing = false,
+}: Props) {
   const [imgError, setImgError] = useState(false);
   const yearsAtCompany = employee.join_date
     ? Math.floor((new Date().getTime() - new Date(employee.join_date).getTime()) / (365.25 * 86400000))
@@ -31,6 +42,17 @@ export function ProfileBanner({ employee, managerName, todayAttendance, onGoToCh
   const initials = fullName
     ? fullName.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : `${employee.last_name?.[0] || ""}${employee.first_name?.[0] || ""}`.toUpperCase();
+
+  const handlePunchClick = () => {
+    if (isDayDone) return;
+    if (isClockedIn) {
+      if (onClockOut) onClockOut();
+      else if (onGoToCheckIn) onGoToCheckIn();
+    } else {
+      if (onClockIn) onClockIn();
+      else if (onGoToCheckIn) onGoToCheckIn();
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 mb-5 shadow-xs">
@@ -94,21 +116,31 @@ export function ProfileBanner({ employee, managerName, todayAttendance, onGoToCh
 
         {/* Right: Quick Punch Action & Org Info */}
         <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 pt-3 md:pt-0 border-t md:border-t-0 md:border-l md:pl-5 border-slate-100 dark:border-slate-800 shrink-0">
-          {onGoToCheckIn && (
+          {(onClockIn || onGoToCheckIn) && (
             <div className="w-full sm:w-auto">
               <button
                 type="button"
-                onClick={onGoToCheckIn}
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs shadow-xs transition-all cursor-pointer select-none active:scale-98 ${
+                onClick={handlePunchClick}
+                disabled={processing || isDayDone}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs shadow-xs transition-all cursor-pointer select-none active:scale-98 disabled:opacity-75 ${
                   isDayDone
-                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 cursor-default"
                     : isClockedIn
                     ? "bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554] text-white border border-[#253C7D] shadow-sm"
                     : "bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554] text-white border border-[#253C7D] shadow-sm"
                 }`}
               >
-                <i className={`${isDayDone ? "ri-checkbox-circle-fill text-emerald-600 dark:text-emerald-400" : isClockedIn ? "ri-logout-box-r-line text-[#29ABE2]" : "ri-fingerprint-line text-[#29ABE2]"} text-base`} />
-                <span>{isDayDone ? "Shift Completed" : isClockedIn ? "Check Out Now" : "Check In Now"}</span>
+                {processing ? (
+                  <>
+                    <i className="ri-loader-4-line animate-spin text-base" />
+                    <span>{isClockedIn ? "Checking Out..." : "Checking In..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <i className={`${isDayDone ? "ri-checkbox-circle-fill text-emerald-600 dark:text-emerald-400" : isClockedIn ? "ri-logout-box-r-line text-[#29ABE2]" : "ri-fingerprint-line text-[#29ABE2]"} text-base`} />
+                    <span>{isDayDone ? "Shift Completed" : isClockedIn ? "Check Out Now" : "Check In Now"}</span>
+                  </>
+                )}
               </button>
             </div>
           )}

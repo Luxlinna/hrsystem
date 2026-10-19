@@ -1,4 +1,5 @@
 import { memo } from "react";
+import type { CheckInStep } from "../types";
 
 interface MobileAttendanceHeaderProps {
   isCheckedIn: boolean;
@@ -6,8 +7,10 @@ interface MobileAttendanceHeaderProps {
   clockInTime?: string;
   isOnTimeToCheckout?: boolean;
   processing?: boolean;
+  checkInStep?: CheckInStep;
   onClockOut: () => void;
-  onGoToCheckIn: () => void;
+  onClockIn: () => void;
+  onGoToCheckIn?: () => void;
 }
 
 export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
@@ -16,7 +19,9 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
   clockInTime,
   isOnTimeToCheckout,
   processing = false,
+  checkInStep = "idle",
   onClockOut,
+  onClockIn,
   onGoToCheckIn,
 }: MobileAttendanceHeaderProps) {
   return (
@@ -90,8 +95,8 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
 
         <button
           type="button"
-          disabled={processing || isCheckedOut}
-          onClick={isCheckedIn && !isCheckedOut ? onClockOut : onGoToCheckIn}
+          disabled={processing || isCheckedOut || checkInStep === "locating"}
+          onClick={isCheckedIn && !isCheckedOut ? onClockOut : onClockIn}
           className={`relative px-5 py-3 min-w-[115px] text-center rounded-2xl text-[14px] font-bold text-white tracking-wide transition-all active:scale-95 cursor-pointer shrink-0 shadow-lg flex items-center justify-center gap-1.5 disabled:opacity-75 ${
             isCheckedOut
               ? "bg-emerald-600 cursor-default shadow-emerald-600/25"
@@ -100,16 +105,16 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
               : "bg-[#29ABE2] hover:bg-[#2096C7] active:bg-[#1984B2] shadow-[#29ABE2]/35"
           }`}
         >
-          {isOnTimeToCheckout && !processing && (
+          {isOnTimeToCheckout && !processing && checkInStep !== "locating" && (
             <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 border-2 border-white dark:border-slate-900" />
             </span>
           )}
-          {processing ? (
+          {processing || checkInStep === "locating" ? (
             <>
               <i className="ri-loader-4-line animate-spin text-base" />
-              <span>Checking out...</span>
+              <span>{isCheckedIn && !isCheckedOut ? "Checking out..." : "Checking in..."}</span>
             </>
           ) : (
             <>

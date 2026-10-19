@@ -74,6 +74,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     departments,
     positions,
     employeeTypes,
+    employeeLevels,
     contractTypes,
     getBranchCode,
     deriveBuHandle,
@@ -228,6 +229,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                 departments={departments}
                 positions={positions}
                 employeeTypes={employeeTypes}
+                employeeLevels={employeeLevels}
                 contractTypes={contractTypes}
               />
             </div>

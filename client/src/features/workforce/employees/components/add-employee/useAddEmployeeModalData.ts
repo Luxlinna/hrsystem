@@ -45,6 +45,7 @@ export function useAddEmployeeModalData(
   const [dbDepartments, setDbDepartments] = useState<Array<{ id: string; name: string; branch_id?: string | null; status?: string | null }>>([]);
   const [dbPositions, setDbPositions] = useState<Array<{ id: string; name: string; branch_id?: string | null; status?: string | null }>>([]);
   const [dbEmployeeTypes, setDbEmployeeTypes] = useState<Array<{ id: string; name: string; branch_id?: string | null }>>([]);
+  const [dbEmployeeLevels, setDbEmployeeLevels] = useState<Array<{ id: string; name: string; branch_id?: string | null; status?: string | null }>>([]);
   const [dbContractTypes, setDbContractTypes] = useState<Array<{ id: string; name: string; term?: string; branch_id?: string | null; status?: string | null }>>([]);
 
   useEffect(() => {
@@ -59,13 +60,15 @@ export function useAddEmployeeModalData(
       supabase.from("departments").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
       supabase.from("positions").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
       supabase.from("contract_types").select("id, name, term, branch_id, status").is("deleted_at", null).order("name"),
-    ]).then(([bRes, wRes, eRes, uRes, divRes, dRes, pRes, cRes]) => {
+      supabase.from("employee_levels").select("id, name, branch_id, status").is("deleted_at", null).order("name"),
+    ]).then(([bRes, wRes, eRes, uRes, divRes, dRes, pRes, cRes, lvlRes]) => {
       if (bRes.data) setDbBranches(bRes.data);
       if (wRes.data) setDbWorkLocations((wRes.data as any[]).filter((w) => !w.status || w.status !== "disabled"));
       if (divRes.data) setDbDivisions(divRes.data.filter((d) => !d.status || d.status !== "disabled"));
       if (dRes.data) setDbDepartments(dRes.data.filter((d) => !d.status || d.status !== "disabled"));
       if (pRes.data) setDbPositions(pRes.data.filter((p) => !p.status || p.status !== "disabled"));
       if (cRes.data) setDbContractTypes(cRes.data.filter((c) => !c.status || c.status !== "disabled"));
+      if (lvlRes?.data) setDbEmployeeLevels((lvlRes.data as any[]).filter((l) => !l.status || l.status !== "disabled"));
 
       const rawEmployees = (eRes.data || []) as any[];
       const assignments = (uRes.data || []) as any[];
@@ -142,6 +145,23 @@ export function useAddEmployeeModalData(
     return list.length > 0 ? Array.from(new Set(list)) : ["Full-Time", "Part-Time", "Probationary", "Internship", "Casual"];
   }, [dbEmployeeTypes]);
 
+  const employeeLevels = useMemo(() => {
+    const list = dbEmployeeLevels.map((l) => l.name?.trim()).filter(Boolean);
+    return list.length > 0
+      ? Array.from(new Set(list))
+      : [
+          "Intern",
+          "Junior",
+          "Mid-level",
+          "Senior",
+          "Lead",
+          "Supervisor",
+          "Manager",
+          "Director",
+          "Executive",
+        ];
+  }, [dbEmployeeLevels]);
+
   const contractTypes = useMemo(() => {
     const list = dbContractTypes.map((c) => c.name?.trim()).filter(Boolean);
     return list.length > 0 ? Array.from(new Set(list)) : ["1-YEAR FDC", "2-YEAR FDC", "3-YEAR FDC", "PERMANENT (UDC)", "PROBATION", "Internship"];
@@ -161,6 +181,7 @@ export function useAddEmployeeModalData(
     departments,
     positions,
     employeeTypes,
+    employeeLevels,
     contractTypes,
     buManagers,
     buCeos: buManagers,

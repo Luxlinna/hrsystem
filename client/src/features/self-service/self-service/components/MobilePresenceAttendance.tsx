@@ -32,8 +32,19 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
     employeeName,
   });
 
+  const handleMobileClockOut = async () => {
+    const res = await d.verifyLocation("check out");
+    if (!res.allowed) return;
+
+    if (d.isEarlyCheckoutNow) {
+      setShowCheckoutModal(true);
+    } else {
+      await d.handleClockOut({ skipLocationCheck: true });
+    }
+  };
+
   const handleConfirmModalClockOut = async () => {
-    await d.handleClockOut();
+    await d.handleClockOut({ skipLocationCheck: true });
     setShowCheckoutModal(false);
   };
 
@@ -103,15 +114,53 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
         clockInTime={d.todayRecord?.clock_in}
         isOnTimeToCheckout={d.isCheckedIn && !d.isCheckedOut && !d.isEarlyCheckoutNow}
         processing={d.processing}
-        onClockOut={() => {
-          if (d.isEarlyCheckoutNow) {
-            setShowCheckoutModal(true);
-          } else {
-            d.handleClockOut();
-          }
-        }}
-        onGoToCheckIn={() => setActiveTab("checkin")}
+        checkInStep={d.checkInStep}
+        onClockOut={handleMobileClockOut}
+        onClockIn={d.handleRequestClockIn}
       />
+
+      {/* 100m Geofence Warning Card if Outside Allowed Building Area */}
+      {(d.checkInStep === "denied" || d.checkInStep === "error") && (
+        <div className="mx-4 bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-700/60 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+              <i className="ri-map-pin-range-line text-xl" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-rose-900 dark:text-rose-200 uppercase tracking-wide">
+                  Outside 100m Building Area
+                </h4>
+                <button
+                  type="button"
+                  onClick={d.resetCheckInFlow}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs cursor-pointer"
+                >
+                  <i className="ri-close-line text-sm" />
+                </button>
+              </div>
+              <p className="text-[12px] text-rose-700 dark:text-rose-300 mt-1 leading-snug">
+                {d.checkInMessage}
+              </p>
+              {d.checkInDistance != null && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100/80 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 text-[11px] font-semibold">
+                  <i className="ri-compass-3-line text-xs" />
+                  <span>Current Distance: {d.checkInDistance}m (Max allowed: {d.branch?.geofence_radius_m || 100}m)</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={d.isCheckedIn && !d.isCheckedOut ? handleMobileClockOut : d.handleRequestClockIn}
+            disabled={d.processing || d.checkInStep === "locating"}
+            className="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-60"
+          >
+            <i className="ri-refresh-line text-sm" />
+            <span>{d.isCheckedIn && !d.isCheckedOut ? "Retry Check Out" : "Retry Check In"}</span>
+          </button>
+        </div>
+      )}
 
       {/* Early Check Out Reason Modal (Only shown if leaving before shift end time) */}
       <CheckoutReasonModal

@@ -23,6 +23,7 @@ interface AddEmployeeTabRouterProps {
   departments?: string[];
   positions?: string[];
   employeeTypes?: string[];
+  employeeLevels?: string[];
   contractTypes?: string[];
 }
 
@@ -42,6 +43,7 @@ export const AddEmployeeTabRouter = memo(function AddEmployeeTabRouter({
   departments = [],
   positions = [],
   employeeTypes = [],
+  employeeLevels,
   contractTypes = [],
 }: AddEmployeeTabRouterProps) {
   switch (activeTab) {
@@ -64,6 +66,7 @@ export const AddEmployeeTabRouter = memo(function AddEmployeeTabRouter({
           departments={departments}
           positions={positions}
           employeeTypes={employeeTypes}
+          employeeLevels={employeeLevels}
           contractTypes={contractTypes}
         />
       );

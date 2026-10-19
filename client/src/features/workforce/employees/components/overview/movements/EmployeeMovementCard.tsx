@@ -148,128 +148,158 @@ export const EmployeeMovementCard = memo(function EmployeeMovementCard({
   const salaryDisplay = baseSalary > 0 ? baseSalary.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "100.00";
   const salaryAfterDisplay = afterSalary > 0 ? afterSalary.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : salaryDisplay;
 
+  const rawTaxMethod = m.new_values?.tax_method || (employee as any)?.tax_method;
+  const rawSalaryFreq = m.new_values?.contract_rate_frequency || (employee as any)?.contract_rate_frequency;
+  const salaryBadge =
+    rawTaxMethod && rawTaxMethod !== "Resident"
+      ? rawTaxMethod
+      : rawTaxMethod === "Resident"
+      ? "Gross"
+      : rawSalaryFreq || "Gross";
+
   const remarks = m.remarks || "";
   const hasRemark = Boolean(remarks.trim());
+
+  const lowerTitle = title.toLowerCase();
+  const isExit =
+    lowerTitle.includes("exit") ||
+    lowerTitle.includes("resign") ||
+    lowerTitle.includes("terminat");
+  const isTransfer = lowerTitle.includes("transfer");
+  const isPromote = lowerTitle.includes("promot");
+  const isProbation = lowerTitle.includes("probation");
+
+  const accentBorder = isExit
+    ? "border-l-4 border-l-rose-500"
+    : isCurrent
+    ? "border-l-4 border-l-[#00a884]"
+    : isTransfer
+    ? "border-l-4 border-l-sky-500"
+    : isPromote || isProbation
+    ? "border-l-4 border-l-indigo-500"
+    : "border-l-4 border-l-[#00a884]";
 
   return (
     <div
       onClick={() => onClickDetails && onClickDetails(m)}
-      className="space-y-2 font-sans cursor-pointer group"
+      className={`bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 rounded-sm sm:rounded-md pl-4 pr-5 py-3.5 relative shadow-xs hover:shadow-sm transition-all cursor-pointer ${accentBorder}`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">
-          <span className="underline underline-offset-2">{title}</span> : {dateStr}
-        </h3>
+      {/* Card Header */}
+      <div className="flex items-center gap-2 mb-3.5 flex-wrap">
+        <span className="font-bold text-[13px] text-gray-900 dark:text-slate-100">
+          {title}
+        </span>
+        <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400 font-medium">
+          <i className="ri-calendar-line text-xs" />
+          {dateStr}
+        </span>
         {isCurrent && (
-          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
-            Current Status
+          <span className="px-2 py-0.5 text-[10px] font-semibold text-white bg-[#00a884] rounded shadow-2xs">
+            Current
           </span>
         )}
       </div>
 
-      {/* 5-Column x 2-Row Solid Border Table */}
-      <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse border border-black dark:border-slate-500 table-fixed bg-white dark:bg-slate-900">
-          <tbody>
-            <tr>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {division}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Division
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {department}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Department
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {position}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Position
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {bu}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Business Unit
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {contractPeriod}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Contract Type
-                </div>
-              </td>
-            </tr>
+      {/* 5-Column x 2-Row Data Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-3.5 gap-x-5 text-[13px]">
+        {/* Row 1, Col 1: Division */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={division}>
+            {division}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Division</p>
+        </div>
 
-            <tr>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {site}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Site
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {empType}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Employee Type
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight">
-                  {supervisor}
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Supervisor
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight flex items-center flex-wrap gap-1">
-                  <span>USD {privacyHidden ? "*****" : salaryDisplay}</span>
-                  <span className="bg-[#FFFF00] text-black px-1 font-bold inline-block">Gross</span>
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Salary
-                </div>
-              </td>
-              <td className="border border-black dark:border-slate-500 p-2 sm:p-2.5 align-top w-1/5">
-                <div className="font-bold text-black dark:text-white text-xs sm:text-[13px] leading-tight flex items-center flex-wrap gap-1">
-                  <span>USD {privacyHidden ? "*****" : salaryAfterDisplay}</span>
-                  <span className="bg-[#FFFF00] text-black px-1 font-bold inline-block">Gross</span>
-                </div>
-                <div className="italic text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs mt-1">
-                  Salary After Probation
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {/* Row 1, Col 2: Department */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={department}>
+            {department}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Department</p>
+        </div>
+
+        {/* Row 1, Col 3: Position */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={position}>
+            {position}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Position</p>
+        </div>
+
+        {/* Row 1, Col 4: Business Unit */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={bu}>
+            {bu}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Business Unit</p>
+        </div>
+
+        {/* Row 1, Col 5: Contract Type */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={contractPeriod}>
+            {contractPeriod}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Contract Type</p>
+        </div>
+
+        {/* Row 2, Col 1: Site */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={site}>
+            {site}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Site</p>
+        </div>
+
+        {/* Row 2, Col 2: Employee Type */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={empType}>
+            {empType}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Employee Type</p>
+        </div>
+
+        {/* Row 2, Col 3: Supervisor */}
+        <div>
+          <p className="font-bold text-gray-800 dark:text-slate-200 text-[13px] leading-snug break-words" title={supervisor}>
+            {supervisor}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Supervisor</p>
+        </div>
+
+        {/* Row 2, Col 4: Salary */}
+        <div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold text-gray-800 dark:text-slate-200 text-[13px]">
+              USD {privacyHidden ? "*****" : salaryDisplay}
+            </span>
+            <span className="bg-[#0284c7] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-2xs">
+              {salaryBadge}
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Salary</p>
+        </div>
+
+        {/* Row 2, Col 5: Salary After Probation */}
+        <div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold text-gray-800 dark:text-slate-200 text-[13px]">
+              USD {privacyHidden ? "*****" : salaryAfterDisplay}
+            </span>
+            <span className="bg-[#0284c7] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-2xs">
+              {salaryBadge}
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Salary After Probation</p>
+        </div>
       </div>
 
       {/* Remark Footer */}
       {hasRemark && (
-        <div className="pt-0.5 text-slate-800 dark:text-slate-200 text-xs sm:text-[13px]">
-          <span className="underline underline-offset-2">Remark</span> : <span>{remarks}</span>
+        <div className="text-[11.5px] text-gray-600 dark:text-slate-300 mt-2.5">
+          <span className="font-medium text-gray-700 dark:text-slate-200">Remark: </span>
+          <span>{remarks}</span>
         </div>
       )}
     </div>
   );
 });
-

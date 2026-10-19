@@ -21,6 +21,7 @@ interface OrgJoiningInfoSectionProps {
   departments?: string[];
   positions?: string[];
   employeeTypes?: string[];
+  employeeLevels?: string[];
 }
 
 export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
@@ -36,6 +37,17 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
   departments = [],
   positions = [],
   employeeTypes = [],
+  employeeLevels = [
+    "Intern",
+    "Junior",
+    "Mid-level",
+    "Senior",
+    "Lead",
+    "Supervisor",
+    "Manager",
+    "Director",
+    "Executive",
+  ],
 }: OrgJoiningInfoSectionProps) {
   const currentPos = form.position || form.role || "";
   const allPositions = currentPos && !positions.includes(currentPos) ? [currentPos, ...positions] : positions;
@@ -48,6 +60,11 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
   const allDepartments = Array.from(new Set([
     ...(currentDept ? [currentDept] : []),
     ...departments,
+  ]));
+  const currentLvl = form.employee_level || "";
+  const allEmployeeLevels = Array.from(new Set([
+    ...(currentLvl ? [currentLvl] : []),
+    ...employeeLevels,
   ]));
 
   return (
@@ -154,7 +171,24 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
           </div>
         </div>
 
-        {/* 8. Supervisor Name */}
+        {/* 8. Employee Level */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
+          <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
+            Employee Level
+          </label>
+          <div className="sm:col-span-2">
+            <SearchableSelect
+              options={allEmployeeLevels}
+              value={form.employee_level || ""}
+              onChange={(val) => onChange("employee_level", val)}
+              placeholder="Select Employee Level"
+              searchPlaceholder="Search employee level..."
+              showClear
+            />
+          </div>
+        </div>
+
+        {/* 9. Supervisor Name */}
         <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">Supervisor Name</label>
           <div className="sm:col-span-2">

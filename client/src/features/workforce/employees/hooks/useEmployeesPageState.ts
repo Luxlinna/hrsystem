@@ -68,6 +68,7 @@ export function useEmployeesPageState({
       department: "",
       role: "",
       position: "",
+      employee_level: "",
     });
     setShowAddModal(true);
   }, [isSuperAdmin, userBranchId, targetBranch, branches, setForm, setShowAddModal, setEditingEmployeeId]);

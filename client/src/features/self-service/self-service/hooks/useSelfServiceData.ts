@@ -15,14 +15,14 @@ export function useSelfServiceData() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [activeTab, setActiveTabState] = useState(searchParams.get("tab") || "attendance");
+  const [activeTab, setActiveTabState] = useState(searchParams.get("tab") || "checkin");
 
   const setActiveTab = useCallback(
     (tab: string) => {
       setActiveTabState(tab);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
-        if (tab === "attendance") {
+        if (tab === "checkin") {
           next.delete("tab");
         } else {
           next.set("tab", tab);

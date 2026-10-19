@@ -10,6 +10,7 @@ interface Props {
   isCheckedOut: boolean;
   checkInStep: CheckInStep;
   checkInMessage: string;
+  checkInDistance?: number | null;
   processing: boolean;
   notes: string;
   setNotes: (v: string) => void;
@@ -21,7 +22,7 @@ interface Props {
   branchLoading: boolean;
   todayRecord: AttendanceRecord | null;
   onRequestClockIn: () => void;
-  onConfirmClockIn: () => void;
+  onConfirmClockIn?: () => void;
   onClockOut: () => void;
   onResetCheckInFlow: () => void;
 }
@@ -29,9 +30,9 @@ interface Props {
 export const LiveClockActions = memo(function LiveClockActions(props: Props) {
   const {
     activeOutsideWork, todayOutsideWork, isCheckedIn, isCheckedOut, checkInStep,
-    checkInMessage, processing, notes, setNotes, earlyCheckoutReason,
+    checkInMessage, checkInDistance, processing, notes, setNotes, earlyCheckoutReason,
     setEarlyCheckoutReason, earlyCheckoutMinutesNow, isEarlyCheckoutNow,
-    branch, branchLoading, todayRecord, onRequestClockIn, onConfirmClockIn,
+    branch, branchLoading, todayRecord, onRequestClockIn,
     onClockOut, onResetCheckInFlow,
   } = props;
 
@@ -59,85 +60,119 @@ export const LiveClockActions = memo(function LiveClockActions(props: Props) {
         </div>
       )}
 
-      {!hasOutsideToday && !isCheckedIn && checkInStep === "idle" && (
+      {!hasOutsideToday && !isCheckedIn && (
         <div className="space-y-2">
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Optional note (e.g. Office / WFH)..."
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#253C7D] dark:focus:border-[#29ABE2] focus:ring-1 focus:ring-[#253C7D]/25 transition-all shadow-2xs"
-          />
+          {checkInStep !== "denied" && checkInStep !== "error" && (
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional note (e.g. Office / WFH)..."
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#253C7D] dark:focus:border-[#29ABE2] focus:ring-1 focus:ring-[#253C7D]/25 transition-all shadow-2xs"
+            />
+          )}
+
+          {(checkInStep === "denied" || checkInStep === "error") && (
+            <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700/60 rounded-xl p-3 text-xs space-y-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+                  <i className="ri-map-pin-range-line text-base" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-rose-900 dark:text-rose-200 text-xs uppercase tracking-wide">
+                      Outside 100m Building Area
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onResetCheckInFlow}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      <i className="ri-close-line text-sm" />
+                    </button>
+                  </div>
+                  <p className="text-[11.5px] text-rose-700 dark:text-rose-300 leading-snug mt-1">
+                    {checkInMessage}
+                  </p>
+                  {checkInDistance != null && (
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-100/80 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 text-[10.5px] font-semibold">
+                      <i className="ri-compass-3-line text-[11px]" />
+                      <span>Current: {checkInDistance}m (Allowed: max {branch?.geofence_radius_m || 100}m)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={onRequestClockIn}
-            disabled={processing || branchLoading}
+            disabled={processing || branchLoading || checkInStep === "locating"}
             className="w-full flex items-center justify-center gap-2 bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554] text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-all disabled:opacity-60 cursor-pointer active:scale-98 shadow-sm"
           >
-            <i className="ri-fingerprint-line text-base" />
-            <span>Check In</span>
+            {processing || checkInStep === "locating" ? (
+              <>
+                <i className="ri-loader-4-line animate-spin text-base" />
+                <span>Checking In...</span>
+              </>
+            ) : checkInStep === "denied" || checkInStep === "error" ? (
+              <>
+                <i className="ri-refresh-line text-base" />
+                <span>Retry Check In</span>
+              </>
+            ) : (
+              <>
+                <i className="ri-fingerprint-line text-base" />
+                <span>Check In</span>
+              </>
+            )}
           </button>
+
           {branch?.latitude && (
             <p className="text-slate-500 dark:text-slate-400 text-[10.5px] text-center truncate flex items-center justify-center gap-1">
               <i className="ri-map-pin-line text-xs text-slate-400" />
-              <span>Within {branch.geofence_radius_m}m of {branch.name}</span>
+              <span>Within {branch.geofence_radius_m || 100}m of {branch.name}</span>
             </p>
           )}
         </div>
       )}
 
-      {!hasOutsideToday && !isCheckedIn && checkInStep === "locating" && (
-        <div className="bg-slate-50 dark:bg-slate-800/90 rounded-xl p-3.5 text-center border border-slate-200 dark:border-slate-700">
-          <div className="w-5 h-5 border-2 border-[#253C7D] dark:border-[#29ABE2] border-t-transparent dark:border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-          <p className="text-xs text-slate-700 dark:text-slate-200 font-medium">Verifying GPS location...</p>
-        </div>
-      )}
-
-      {!hasOutsideToday && !isCheckedIn && checkInStep === "confirm" && (
-        <div className="space-y-2">
-          <div className="bg-[#253C7D]/5 dark:bg-[#29ABE2]/10 rounded-xl p-2.5 flex items-start gap-2 border border-[#253C7D]/30 dark:border-[#29ABE2]/40 text-xs">
-            <i className="ri-checkbox-circle-fill text-[#253C7D] dark:text-[#29ABE2] text-base shrink-0 mt-0.5" />
-            <p className="text-[11.5px] text-[#253C7D] dark:text-slate-200 leading-snug font-medium">{checkInMessage}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onConfirmClockIn}
-            disabled={processing}
-            className="w-full flex items-center justify-center gap-2 bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554] text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-colors disabled:opacity-60 cursor-pointer shadow-sm active:scale-98"
-          >
-            <i className="ri-checkbox-circle-line text-base" />
-            <span>{processing ? "Checking In..." : "Confirm Check In"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={onResetCheckInFlow}
-            disabled={processing}
-            className="w-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white text-[11.5px] text-center block transition-colors cursor-pointer py-0.5 font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {!hasOutsideToday && !isCheckedIn && (checkInStep === "denied" || checkInStep === "error") && (
-        <div className="space-y-2">
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5 flex items-start gap-2 border border-slate-300 dark:border-slate-700 text-xs">
-            <i className="ri-error-warning-line text-[#253C7D] dark:text-[#29ABE2] text-base shrink-0 mt-0.5" />
-            <p className="text-[11.5px] text-slate-800 dark:text-slate-200 leading-snug">{checkInMessage}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onRequestClockIn}
-            className="w-full flex items-center justify-center gap-1.5 bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554] text-white font-semibold py-2 px-3 rounded-lg text-xs transition-colors cursor-pointer shadow-xs"
-          >
-            <i className="ri-refresh-line text-xs" />
-            <span>Try Again</span>
-          </button>
-        </div>
-      )}
-
       {!hasOutsideToday && isCheckedIn && !isCheckedOut && (
         <div className="space-y-2">
+          {(checkInStep === "denied" || checkInStep === "error") && (
+            <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700/60 rounded-xl p-3 text-xs space-y-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+                  <i className="ri-map-pin-range-line text-base" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-rose-900 dark:text-rose-200 text-xs uppercase tracking-wide">
+                      Outside 100m Building Area
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onResetCheckInFlow}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      <i className="ri-close-line text-sm" />
+                    </button>
+                  </div>
+                  <p className="text-[11.5px] text-rose-700 dark:text-rose-300 leading-snug mt-1">
+                    {checkInMessage}
+                  </p>
+                  {checkInDistance != null && (
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-100/80 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 text-[10.5px] font-semibold">
+                      <i className="ri-compass-3-line text-[11px]" />
+                      <span>Current: {checkInDistance}m (Allowed: max {branch?.geofence_radius_m || 100}m)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {isEarlyCheckoutNow ? (
             <div className="space-y-1.5">
               <div className="bg-amber-50 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-400/30 rounded-lg px-2.5 py-1.5">
@@ -170,15 +205,24 @@ export const LiveClockActions = memo(function LiveClockActions(props: Props) {
           <button
             type="button"
             onClick={onClockOut}
-            disabled={processing}
+            disabled={processing || checkInStep === "locating"}
             className={`w-full flex items-center justify-center gap-2 text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-all disabled:opacity-60 cursor-pointer active:scale-98 shadow-sm ${
               !isEarlyCheckoutNow
                 ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 active:from-amber-700 ring-2 ring-amber-400/40 shadow-amber-500/25 animate-pulse"
                 : "bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554]"
             }`}
           >
-            <i className={`text-base ${!isEarlyCheckoutNow ? "ri-alarm-warning-fill text-white" : "ri-logout-box-r-line text-[#29ABE2]"}`} />
-            <span>{processing ? "Checking Out..." : !isEarlyCheckoutNow ? "Check Out Now" : "Check Out"}</span>
+            {processing || checkInStep === "locating" ? (
+              <>
+                <i className="ri-loader-4-line animate-spin text-base" />
+                <span>Checking Out...</span>
+              </>
+            ) : (
+              <>
+                <i className={`text-base ${!isEarlyCheckoutNow ? "ri-alarm-warning-fill text-white" : "ri-logout-box-r-line text-[#29ABE2]"}`} />
+                <span>{!isEarlyCheckoutNow ? "Check Out Now" : "Check Out"}</span>
+              </>
+            )}
           </button>
         </div>
       )}

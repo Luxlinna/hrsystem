@@ -5,7 +5,7 @@ import type { BranchGeofence, CheckInStep } from "../types";
 interface UseGeofenceCheckInProps {
   branch: BranchGeofence | null;
   branchLoading: boolean;
-  onWithinRange: () => void;
+  onWithinRange: (dist: number) => Promise<void> | void;
   showToast: (type: string, message: string) => void;
 }
 
@@ -27,52 +27,77 @@ export function useGeofenceCheckIn({
     setCheckInAccuracy(null);
   }, []);
 
-  const requestGeofenceVerification = useCallback(async (hasOutsideWork: boolean) => {
-    if (hasOutsideWork) {
-      showToast("error", "You have an outside work task today. Please check in via Task Management.");
-      return;
-    }
-    if (!branch?.latitude || !branch?.longitude) {
-      setCheckInMessage(
-        `Branch GPS coordinates are not configured for "${branch?.name || "your branch"}". Check-in is strictly restricted to within ${branch?.geofence_radius_m || 100}m of the office building. Please contact HR Admin.`
-      );
-      setCheckInStep("denied");
-      return;
-    }
+  const verifyLocation = useCallback(
+    async (action: "check in" | "check out" = "check in"): Promise<{ allowed: boolean; distance: number | null }> => {
+      // If branch coordinates are still loading, wait briefly instead of failing prematurely
+      if (branchLoading) {
+        let attempts = 0;
+        while (branchLoading && attempts < 15) {
+          await new Promise((r) => setTimeout(r, 200));
+          attempts++;
+        }
+      }
 
-    setCheckInStep("locating");
-    try {
-      const pos = await getCurrentPosition();
-      const dist = Math.round(distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude, branch.longitude));
-      const accuracy = Math.round(pos.coords.accuracy);
-      setCheckInDistance(dist);
-      setCheckInAccuracy(accuracy);
-
-      if (dist <= branch.geofence_radius_m) {
-        setCheckInMessage(`You're ${dist}m from ${branch.name} — within range. Confirm to check in.`);
-        setCheckInStep("confirm");
-      } else {
-        const accuracyNote =
-          accuracy > branch.geofence_radius_m
-            ? ` Your device's location is only accurate to about ±${accuracy}m right now (common on desktop/laptop computers without GPS), so this reading may not be exact — try again on a phone with GPS/location services on for a more precise result.`
-            : "";
-        setCheckInMessage(`You're ${dist}m from ${branch.name} — you need to be within ${branch.geofence_radius_m}m to check in.${accuracyNote}`);
+      if (!branch?.latitude || !branch?.longitude) {
+        const msg = `Branch GPS coordinates are not configured for "${branch?.name || "your branch"}". Check-${action === "check in" ? "in" : "out"} is strictly restricted to within ${branch?.geofence_radius_m || 100}m of the office building. Please contact HR Admin.`;
+        setCheckInMessage(msg);
         setCheckInStep("denied");
+        showToast("error", msg);
+        return { allowed: false, distance: null };
       }
-    } catch (err: any) {
-      const codeNote = err?.code != null ? ` (code ${err.code}${err?.message ? `: ${err.message}` : ""})` : err?.message ? ` (${err.message})` : "";
-      if (err?.code === 1) {
-        setCheckInMessage(
-          `Location access was denied. Please check: 1) In Chrome address bar, click the tune/lock icon next to the URL and set Location to "Allow". 2) In Windows Settings > Privacy & security > Location, ensure "Location services" & "Let desktop apps access your location" are ON.${codeNote}`
-        );
-      } else {
-        setCheckInMessage(
-          `Couldn't get your location. On a laptop/desktop, ensure OS-level Location Services are ON (Windows Settings > Privacy > Location or Mac System Settings > Privacy > Location Services) and Wi-Fi is active, then try again.${codeNote}`
-        );
+
+      setCheckInStep("locating");
+      try {
+        const pos = await getCurrentPosition();
+        const dist = Math.round(distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude, branch.longitude));
+        const accuracy = Math.round(pos.coords.accuracy);
+        const maxRadius = branch.geofence_radius_m || 100;
+        setCheckInDistance(dist);
+        setCheckInAccuracy(accuracy);
+
+        if (dist <= maxRadius) {
+          setCheckInStep("idle");
+          setCheckInMessage("");
+          return { allowed: true, distance: dist };
+        } else {
+          const accuracyNote = accuracy > maxRadius ? ` (Device GPS accuracy ±${accuracy}m)` : "";
+          const msg = `You are ${dist}m away from ${branch.name}. You must be within ${maxRadius}m around the building to ${action}.${accuracyNote}`;
+          setCheckInMessage(msg);
+          setCheckInStep("denied");
+          showToast("error", `📍 Location outside 100m: You are ${dist}m from ${branch.name}. Must be within ${maxRadius}m to ${action}.`);
+          return { allowed: false, distance: dist };
+        }
+      } catch (err: any) {
+        const codeNote = err?.code != null ? ` (code ${err.code}${err?.message ? `: ${err.message}` : ""})` : err?.message ? ` (${err.message})` : "";
+        let msg = "";
+        if (err?.code === 1) {
+          msg = `Location access was denied. Please allow location access in your browser to verify you are within 100m of the office building.${codeNote}`;
+        } else {
+          msg = `Couldn't get your GPS location. Please ensure location services are turned ON on your device to verify you are within 100m of the office building.${codeNote}`;
+        }
+        setCheckInMessage(msg);
+        setCheckInStep("error");
+        showToast("error", msg);
+        return { allowed: false, distance: null };
       }
-      setCheckInStep("error");
-    }
-  }, [branch, showToast]);
+    },
+    [branch, branchLoading, showToast]
+  );
+
+  const requestGeofenceVerification = useCallback(
+    async (hasOutsideWork: boolean) => {
+      if (hasOutsideWork) {
+        showToast("error", "You have an outside work task today. Please check in via Task Management.");
+        return;
+      }
+      const { allowed, distance } = await verifyLocation("check in");
+      if (allowed && distance != null) {
+        // Direct single-click execution without extra confirmation step
+        await onWithinRange(distance);
+      }
+    },
+    [verifyLocation, onWithinRange, showToast]
+  );
 
   return {
     checkInStep,
@@ -80,6 +105,7 @@ export function useGeofenceCheckIn({
     checkInDistance,
     checkInAccuracy,
     resetCheckInFlow,
+    verifyLocation,
     requestGeofenceVerification,
   };
 }

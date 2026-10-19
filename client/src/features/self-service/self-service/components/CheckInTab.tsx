@@ -54,6 +54,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         branchLoading={d.branchLoading}
         checkInStep={d.checkInStep}
         checkInMessage={d.checkInMessage}
+        checkInDistance={d.checkInDistance}
         processing={d.processing}
         notes={d.notes}
         setNotes={d.setNotes}

@@ -40,7 +40,7 @@ export function useClockInOutActions({
 }: UseClockInOutActionsProps) {
   const [processing, setProcessing] = useState(false);
 
-  const handleClockIn = useCallback(async () => {
+  const handleClockIn = useCallback(async (distance?: number | null) => {
     if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
       showToast("error", "You have an outside work task today. Please check in via Task Management.");
       return;
@@ -84,7 +84,8 @@ export function useClockInOutActions({
         : rawLateMinutes > 0
         ? ` — On time (${rawLateMinutes}m within grace period)`
         : " — On time!";
-      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMessage}`);
+      const distInfo = distance != null ? ` (📍 ${distance}m from ${branch?.name || "building"})` : "";
+      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${distInfo}${lateMessage}`);
       setNotes("");
       setEarlyCheckoutReason("");
       loadRecords();
@@ -95,7 +96,7 @@ export function useClockInOutActions({
     }
   }, [todayOutsideWork, daySchedule, scheduleSettings, workStartTime, employeeId, today, notes, defaultWorkLocationId, resetCheckInFlow, showToast, setNotes, setEarlyCheckoutReason, loadRecords, employeeName, branch]);
 
-  const handleClockOut = useCallback(async () => {
+  const handleClockOut = useCallback(async (opts?: { distance?: number | null }) => {
     if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
       showToast("error", "You have an outside work assignment today. Please check out via Task Management.");
       return;
@@ -137,19 +138,21 @@ export function useClockInOutActions({
       .eq("id", todayRecord.id);
 
     setProcessing(false);
+    resetCheckInFlow();
     if (error) {
       showToast("error", "Failed to check out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
       const earlyNote = isEarlyLeave ? ` — ${earlyLeaveMinutes} min early` : "";
-      showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
+      const distInfo = opts?.distance != null ? ` (📍 ${opts.distance}m from ${branch?.name || "building"})` : "";
+      showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${distInfo}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
       notifyAttendanceEvent({
         employeeName, employeeId, type: "out", isException: isEarlyLeave,
         exceptionMinutes: isEarlyLeave ? earlyLeaveMinutes : 0, date: today, time: timeStr, branchName: branch?.name,
       });
     }
-  }, [todayOutsideWork, todayRecord, scheduleSettings, today, workEndTime, earlyCheckoutReason, showToast, loadRecords, employeeName, employeeId, branch]);
+  }, [todayOutsideWork, todayRecord, scheduleSettings, today, workEndTime, earlyCheckoutReason, showToast, loadRecords, employeeName, employeeId, branch, resetCheckInFlow]);
 
   return { processing, setProcessing, handleClockIn, handleClockOut };
 }

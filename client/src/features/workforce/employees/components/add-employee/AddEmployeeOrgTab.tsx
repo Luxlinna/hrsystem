@@ -23,6 +23,7 @@ interface AddEmployeeOrgTabProps {
   departments?: string[];
   positions?: string[];
   employeeTypes?: string[];
+  employeeLevels?: string[];
   contractTypes?: string[];
 }
 
@@ -40,6 +41,7 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
   departments = [],
   positions = [],
   employeeTypes = [],
+  employeeLevels,
   contractTypes = [],
 }: AddEmployeeOrgTabProps) {
   return (
@@ -60,6 +62,7 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
           departments={departments}
           positions={positions}
           employeeTypes={employeeTypes}
+          employeeLevels={employeeLevels}
         />
 
         {/* 2. Contract Info with dynamic BU contractTypes */}

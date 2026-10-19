@@ -19,6 +19,7 @@ interface Props {
   branchLoading: boolean;
   checkInStep: CheckInStep;
   checkInMessage: string;
+  checkInDistance?: number | null;
   processing: boolean;
   notes: string;
   setNotes: (v: string) => void;
@@ -29,7 +30,7 @@ interface Props {
   scheduleSettings: any;
   daySchedule: any;
   onRequestClockIn: () => void;
-  onConfirmClockIn: () => void;
+  onConfirmClockIn?: () => void;
   onClockOut: () => void;
   onResetCheckInFlow: () => void;
 }
