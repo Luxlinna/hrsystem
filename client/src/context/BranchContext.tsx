@@ -60,10 +60,10 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       return userBranchId;
     }
     if (isSuperAdmin || isHrDivision) {
-      if (storedBranchId === "all") return "all";
+      if (!storedBranchId || storedBranchId === "all") return "all";
       if (storedBranchId && branches.some((b) => b.id === storedBranchId)) return storedBranchId;
       if (userBranchId && branches.some((b) => b.id === userBranchId)) return userBranchId;
-      return branches[0]?.id || "";
+      return "all";
     }
     if (storedBranchId && branches.some((b) => b.id === storedBranchId && (b.id === userBranchId || b.branch_id === userBranchId))) {
       return storedBranchId;

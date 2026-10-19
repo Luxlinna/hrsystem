@@ -3,7 +3,7 @@ import type { AuditLog, CrossBuScopeFilter, ExportFormat } from "../types";
 import { MODULES } from "../constants";
 import { downloadCSV, exportExcel, exportPDF } from "../exportUtils";
 
-export function useAuditFilters(logs: AuditLog[]) {
+export function useAuditFilters(logs: AuditLog[], branches: { id: string; name: string; is_site?: boolean }[] = []) {
   const [moduleFilter, setModuleFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
   const [buFilter, setBuFilter] = useState("all");
@@ -36,6 +36,9 @@ export function useAuditFilters(logs: AuditLog[]) {
 
   const availableBusinessUnits = useMemo(() => {
     const buSet = new Set<string>();
+    for (const b of branches || []) {
+      if (b.name && !b.is_site) buSet.add(b.name);
+    }
     for (const l of logs) {
       if (l.branches?.name) buSet.add(l.branches.name);
       if (l.metadata?.business_unit && typeof l.metadata.business_unit === "string") {
@@ -46,7 +49,7 @@ export function useAuditFilters(logs: AuditLog[]) {
       }
     }
     return Array.from(buSet).sort();
-  }, [logs]);
+  }, [logs, branches]);
 
   const filtered = useMemo(() => {
     return logs.filter((l) => {
@@ -62,6 +65,16 @@ export function useAuditFilters(logs: AuditLog[]) {
           l.metadata?.target_business_unit === buFilter;
         if (!buMatches) return false;
       }
+
+      // Module filter
+      if (moduleFilter !== "all" && l.module !== moduleFilter) return false;
+
+      // Action filter
+      if (actionFilter !== "all" && l.action !== actionFilter) return false;
+
+      // Date range filter
+      if (dateFrom && l.created_at < dateFrom) return false;
+      if (dateTo && l.created_at > dateTo + "T23:59:59") return false;
 
       // Search query
       if (search) {
@@ -79,7 +92,7 @@ export function useAuditFilters(logs: AuditLog[]) {
 
       return true;
     });
-  }, [logs, search, buFilter, scopeFilter]);
+  }, [logs, search, buFilter, scopeFilter, moduleFilter, actionFilter, dateFrom, dateTo]);
 
   const auditTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const auditSafePage = Math.min(page, auditTotalPages);

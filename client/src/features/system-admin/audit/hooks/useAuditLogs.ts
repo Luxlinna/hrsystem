@@ -3,19 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
 import type { AuditLog } from "../types";
 
-interface UseAuditLogsProps {
-  moduleFilter: string;
-  actionFilter: string;
-  dateFrom: string;
-  dateTo: string;
-}
-
-export function useAuditLogs({
-  moduleFilter,
-  actionFilter,
-  dateFrom,
-  dateTo,
-}: UseAuditLogsProps) {
+export function useAuditLogs() {
   const { isSuperAdmin, targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -37,22 +25,20 @@ export function useAuditLogs({
       .order("created_at", { ascending: false })
       .limit(300);
 
-    // Filter by branch if a specific branch is selected or user is branch-scoped
-    if (targetBranch) {
-      q = q.eq("branch_id", targetBranch);
-    } else if (!isSuperAdmin && userBranchId) {
-      q = q.eq("branch_id", userBranchId);
+    // Only scope to branch for non-superadmins. Super Admin has enterprise-wide
+    // audit visibility and filters by Business Unit on the page using the BU filter.
+    if (!isSuperAdmin) {
+      const branchToScope = targetBranch || userBranchId;
+      if (branchToScope) {
+        q = q.eq("branch_id", branchToScope);
+      }
     }
 
-    if (moduleFilter !== "all") q = q.eq("module", moduleFilter);
-    if (actionFilter !== "all") q = q.eq("action", actionFilter);
-    if (dateFrom) q = q.gte("created_at", dateFrom);
-    if (dateTo) q = q.lte("created_at", dateTo + "T23:59:59");
     const { data, error } = await q;
     if (error) console.error("Failed to fetch audit logs:", error);
     setLogs((data as unknown as AuditLog[]) || []);
     setLoading(false);
-  }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, userBranchId, moduleFilter, actionFilter, dateFrom, dateTo]);
+  }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, userBranchId]);
 
   useEffect(() => {
     fetchLogs();
@@ -65,7 +51,7 @@ export function useAuditLogs({
       .channel("audit-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, async (payload) => {
         const newLogRaw = payload.new as AuditLog;
-        const effectiveBranch = targetBranch || (!isSuperAdmin ? userBranchId : null);
+        const effectiveBranch = !isSuperAdmin ? (targetBranch || userBranchId) : null;
         if (!effectiveBranch || newLogRaw.branch_id === effectiveBranch) {
           let branchName: string | undefined;
           if (newLogRaw.branch_id) {
