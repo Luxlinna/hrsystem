@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { LeaveRequest } from "../../types";
 import { getLeaveTypeDisplay, formatDMY, formatDateTime, getLeaveEmployeeName, getLeaveEmployeeInitials } from "../../utils/leaveDisplayUtils";
 import { LeaveRowActionsDropdown } from "./LeaveRowActionsDropdown";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface LeaveTableRowProps {
   request: LeaveRequest;
@@ -38,6 +39,11 @@ export const LeaveTableRow = memo(function LeaveTableRow({
   const isHalfDay = r.days < 1 || (r.reason && r.reason.toLowerCase().includes("half day"));
   const empName = getLeaveEmployeeName(r.employees);
   const empCode = r.employees?.employee_code || r.employees?.biometric_user_id || r.employee_id.slice(0, 5);
+  const rawBio = r.employees?.biometric_user_id || r.employees?.employee_code;
+  const bName = Array.isArray((r.employees as any)?.branches)
+    ? (r.employees as any)?.branches[0]?.name
+    : (r.employees as any)?.branches?.name || (r.employees as any)?.bu_full_name || "";
+  const bioId = formatBiometricId(rawBio, bName);
 
   const cleanReason = (r.reason || "—")
     .replace(/\[Stage:[^\]]+\]/g, "")
@@ -94,11 +100,23 @@ export const LeaveTableRow = memo(function LeaveTableRow({
               {getLeaveEmployeeInitials(r.employees)}
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             <div className="font-bold text-gray-800 text-[13px]">{empName}</div>
-            <span className="inline-block mt-0.5 px-1 py-0.1 border border-gray-300 rounded text-[10px] text-gray-500 font-mono">
-              {empCode}
-            </span>
+            {bioId ? (
+              <div className="mt-0.5">
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 border border-slate-200/90 text-slate-600 shrink-0"
+                  title={`Biometric ID: ${bioId}`}
+                >
+                  <i className="ri-fingerprint-line text-[10.5px] text-[#253C7D]" />
+                  <span>{bioId}</span>
+                </span>
+              </div>
+            ) : (
+              <span className="inline-block mt-0.5 px-1 py-0.1 border border-gray-300 rounded text-[10px] text-gray-500 font-mono">
+                {empCode}
+              </span>
+            )}
           </div>
         </div>
       </td>

@@ -103,7 +103,7 @@ export function useLeaveData() {
         const allTeam = [...mySiblings, ...(team || []).filter((e) => !myEmpIds.includes(e.id))];
         setEmployees(allTeam);
 
-        let reqQuery = supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id)").is("deleted_at", null).order("created_at", { ascending: false });
+        let reqQuery = supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id, branches(id, name))").is("deleted_at", null).order("created_at", { ascending: false });
         if (targetBranch && !isSuperAdmin) {
           const ids = allTeam.map((e) => e.id);
           if (ids.length > 0) reqQuery = reqQuery.in("employee_id", ids);
@@ -123,7 +123,7 @@ export function useLeaveData() {
       setEmployees(combinedTeam);
 
       const targetIds = combinedTeam.map((e) => e.id);
-      const { data: lr } = await supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id)").in("employee_id", targetIds).is("deleted_at", null).order("created_at", { ascending: false });
+      const { data: lr } = await supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(id, first_name, last_name, display_name, full_name, role, department, avatar_url, email, branch_id, employee_code, biometric_user_id, branches(id, name))").in("employee_id", targetIds).is("deleted_at", null).order("created_at", { ascending: false });
       const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({ ...x, employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null }));
       setRequests(allReqs);
       setCalendarRequests(allReqs.filter((r) => r.status === "approved"));

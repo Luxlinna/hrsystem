@@ -245,6 +245,8 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
               safePage={safePage}
               totalPages={totalPages}
               setPage={setPage}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
             />
           </>
         )}
