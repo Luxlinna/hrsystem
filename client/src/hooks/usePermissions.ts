@@ -233,7 +233,7 @@ export function usePermissions(): UsePermissionsReturn {
 
       return false;
     },
-    [loading, role, user?.email]
+    [loading, role, user?.email, isEmployee]
   );
 
   return {

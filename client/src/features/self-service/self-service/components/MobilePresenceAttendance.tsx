@@ -153,7 +153,7 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
           <button
             type="button"
             onClick={d.isCheckedIn && !d.isCheckedOut ? handleMobileClockOut : d.handleRequestClockIn}
-            disabled={d.processing || d.checkInStep === "locating"}
+            disabled={d.processing}
             className="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-60"
           >
             <i className="ri-refresh-line text-sm" />

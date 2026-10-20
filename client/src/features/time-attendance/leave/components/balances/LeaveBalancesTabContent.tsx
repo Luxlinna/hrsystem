@@ -13,7 +13,7 @@ interface LeaveBalancesTabContentProps {
   getUsedDays: (empId: string, type: string) => number;
   getPendingDays: (empId: string, type: string) => number;
   getRemaining: (empId: string, type: string) => number | null;
-  onRequestLeaveForEmp: (empId: string) => void;
+  onRequestLeaveForEmp: (empId: string, leaveType?: string) => void;
 }
 
 export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
@@ -137,9 +137,16 @@ export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
                 </div>
 
                 {/* Annual Leave Progress Gauge */}
-                <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 mb-4">
+                <div
+                  onClick={() => onRequestLeaveForEmp(emp.id, "annual")}
+                  className="p-3.5 bg-gray-50 hover:bg-[#253C7D]/5 hover:border-[#253C7D]/30 rounded-2xl border border-gray-100 mb-4 cursor-pointer transition-all group"
+                  title="Click to request Annual Leave"
+                >
                   <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="font-bold text-gray-700">Annual Leave Allowance</span>
+                    <span className="font-bold text-gray-700 group-hover:text-[#253C7D] transition-colors flex items-center gap-1.5">
+                      <span>Annual Leave Allowance</span>
+                      <i className="ri-arrow-right-up-line text-xs opacity-0 group-hover:opacity-100 transition-opacity text-[#253C7D]" />
+                    </span>
                     <span className="font-extrabold text-[#253C7D]">
                       {annualRemaining} days left
                     </span>
@@ -166,12 +173,21 @@ export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
                     const used = getUsedDays(emp.id, t);
                     const ent = getEntitlement(emp.id, t);
                     return (
-                      <div key={t} className="p-2 rounded-xl bg-gray-50/70 border border-gray-100 flex items-center justify-between">
-                        <span className="text-[11px] text-gray-500 font-medium truncate">{cfg?.label || t}</span>
-                        <span className="text-[11px] font-bold text-gray-900 shrink-0">
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => onRequestLeaveForEmp(emp.id, t)}
+                        className="p-2 rounded-xl bg-gray-50/70 hover:bg-[#253C7D]/5 hover:border-[#253C7D]/30 border border-gray-100 flex items-center justify-between transition-all cursor-pointer text-left group"
+                        title={`Request ${cfg?.label || t}`}
+                      >
+                        <span className="text-[11px] text-gray-600 group-hover:text-[#253C7D] font-medium truncate flex items-center gap-1">
+                          <span>{cfg?.label || t}</span>
+                          <i className="ri-arrow-right-up-line text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[#253C7D]" />
+                        </span>
+                        <span className="text-[11px] font-bold text-gray-900 shrink-0 ml-1">
                           {used} {ent !== null ? `/ ${ent}` : "days"}
                         </span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

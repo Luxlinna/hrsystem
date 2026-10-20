@@ -69,7 +69,8 @@ export const ScheduleMatrixTable = memo(function ScheduleMatrixTable({
                 </th>
               )}
               {dayColumns.map((col) => {
-                const isToday = col.dateString === "2026-09-28";
+                const todayStr = new Date().toISOString().slice(0, 10);
+                const isToday = col.dateString === todayStr;
                 return (
                   <th
                     key={col.dayNumber}

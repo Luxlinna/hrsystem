@@ -53,13 +53,25 @@ export function AttendancePunchCells({ record: r, isFourPunchMode }: AttendanceP
   return (
     <>
       <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-800 dark:text-slate-100">
-        {formatTime(r.clock_in)}
+        {r.clock_in ? (
+          formatTime(r.clock_in)
+        ) : (
+          <span className="text-gray-300 dark:text-slate-600 font-extrabold text-sm select-none">—</span>
+        )}
       </td>
       <td className="px-5 py-3.5 whitespace-nowrap">
-        <span className="font-bold text-gray-800 dark:text-slate-100">{formatTime(r.clock_out)}</span>
-        {r.early_leave_minutes && r.early_leave_minutes > 0 ? (
-          <span className="block text-[10px] font-semibold text-amber-600 dark:text-amber-400">({r.early_leave_minutes}m early)</span>
-        ) : null}
+        {r.clock_out ? (
+          <>
+            <span className="font-bold text-gray-800 dark:text-slate-100">{formatTime(r.clock_out)}</span>
+            {r.early_leave_minutes && r.early_leave_minutes > 0 ? (
+              <span className="block text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                ({r.early_leave_minutes}m early)
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <span className="text-gray-300 dark:text-slate-600 font-extrabold text-sm select-none">—</span>
+        )}
       </td>
     </>
   );

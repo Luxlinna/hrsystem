@@ -13,7 +13,7 @@ interface LeaveFormDatesSectionProps {
   showDeductionPeriod: boolean;
   setShowDeductionPeriod: React.Dispatch<React.SetStateAction<boolean>>;
   currentStats: LeaveTypeBalanceStats;
-  remainingAfterLeave: number;
+  remainingAfterLeave: number | string;
   isOverBalance: boolean;
   leaveTypes?: LeaveTypeSetting[];
   activeTypeCfg?: {
@@ -267,7 +267,7 @@ export function LeaveFormDatesSection({
             <div className="flex justify-between items-center font-bold border-t border-slate-200 dark:border-slate-700 pt-1.5">
               <span className="text-slate-700 dark:text-slate-200">Balance After Leave:</span>
               <span className={isOverBalance ? "text-rose-600 font-extrabold" : "text-emerald-600 font-extrabold"}>
-                {remainingAfterLeave} days
+                {typeof remainingAfterLeave === "number" ? `${remainingAfterLeave} days` : remainingAfterLeave}
               </span>
             </div>
           </div>

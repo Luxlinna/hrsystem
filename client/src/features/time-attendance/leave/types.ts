@@ -66,6 +66,7 @@ export interface Employee {
 export interface LeaveTypePolicy {
   type: string;
   default_days: number | null;
+  is_unpaid?: boolean;
 }
 
 export interface LeaveFormData {
@@ -78,13 +79,16 @@ export interface LeaveFormData {
   category_law?: string;
   attachment_url?: string | null;
   attachment_file?: File | null;
+  attachment_files?: File[];
+  attachment_urls?: string[];
 }
 
 export interface LeaveTypeBalanceStats {
-  balance: number;
+  balance: number | string;
   used: number;
-  available: number;
+  available: number | string;
   pending: number;
+  isUnpaid?: boolean;
 }
 
 export interface LeaveStats {

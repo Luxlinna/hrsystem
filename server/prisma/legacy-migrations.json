@@ -165,6 +165,7 @@
     "20261002000000_fix_room_bookings_rls_and_permissions.sql",
     "20261003190000_fix_positions_rls_policies.sql",
     "20261009140000_fix_employee_movements_rls_policies.sql",
-    "20261009141000_allow_all_audit_logs.sql"
+    "20261009141000_allow_all_audit_logs.sql",
+    "20261020083000_add_employee_level_to_employees.sql"
   ]
 }

@@ -5,6 +5,7 @@ import { calculateDays, rangesOverlap } from "@/features/time-attendance/leave/d
 import { uploadMediaToS3 } from "@/lib/s3-storage";
 import { logActivity } from "@/lib/audit";
 import { notifyNewLeaveRequest } from "@/features/time-attendance/leave/services/leaveNotificationService";
+import { getLeaveTypeSlug } from "@/features/time-attendance/leave/services/leaveSettingsService";
 import { formatKhmerFullName } from "@/features/workforce/employees/nameUtils";
 import type {
   Employee,
@@ -52,19 +53,23 @@ export function useSelfServiceLeaveMutations({
         return;
       }
       const cleanReason = (formData.reason || "").trim();
-      if (!cleanReason || cleanReason.length < 5) {
+      if (!cleanReason) {
         showToast("error", "Please provide a reason for taking leave.");
         return;
       }
 
       const days = calculateDays(formData.start_date, formData.end_date);
-      const stats = getLeaveTypeStats(employeeId, formData.leave_type);
-      if (stats.balance > 0 && days > stats.available) {
-        showToast(
-          "error",
-          `Requested ${days} days exceeds remaining allowance (${stats.available} days available).`
-        );
-        return;
+      const slug = getLeaveTypeSlug(formData.leave_type);
+      if (slug === "annual") {
+        const stats = getLeaveTypeStats(employeeId, "annual");
+        const numAvailable = typeof stats.available === "number" ? stats.available : 999;
+        if (typeof stats.balance === "number" && stats.balance > 0 && days > numAvailable && !isSuperAdmin) {
+          showToast(
+            "error",
+            `Requested ${days} days exceeds remaining Annual Leave allowance (${stats.available} days available).`
+          );
+          return;
+        }
       }
 
       const conflict = requests.find(
@@ -82,13 +87,37 @@ export function useSelfServiceLeaveMutations({
 
       setSubmitting(true);
       try {
-        let uploadedUrl = formData.attachment_url || null;
-        if (formData.attachment_file) {
+        const filesToUpload: File[] =
+          formData.attachment_files && formData.attachment_files.length > 0
+            ? formData.attachment_files
+            : formData.attachment_file
+            ? [formData.attachment_file]
+            : [];
+
+        const uploadedUrls: string[] = [];
+        if (formData.attachment_url) {
+          uploadedUrls.push(formData.attachment_url);
+        }
+        if (formData.attachment_urls && formData.attachment_urls.length > 0) {
+          for (const u of formData.attachment_urls) {
+            if (u && !uploadedUrls.includes(u)) uploadedUrls.push(u);
+          }
+        }
+
+        if (filesToUpload.length > 0) {
           try {
-            const media = await uploadMediaToS3(formData.attachment_file, "leave/attachments");
-            uploadedUrl = media.url;
-          } catch (uploadErr) {
-            console.error("Leave attachment upload error:", uploadErr);
+            const uploadResults = await Promise.allSettled(
+              filesToUpload.map((file) => uploadMediaToS3(file, "leave/attachments"))
+            );
+            for (const res of uploadResults) {
+              if (res.status === "fulfilled" && res.value?.url) {
+                uploadedUrls.push(res.value.url);
+              } else {
+                console.error("Leave attachment upload error:", res.status === "rejected" ? res.reason : "No URL");
+              }
+            }
+          } catch (uploadBatchErr) {
+            console.error("Leave batch upload error:", uploadBatchErr);
           }
         }
 
@@ -99,8 +128,9 @@ export function useSelfServiceLeaveMutations({
         if (formData.remark?.trim()) {
           fullReason = `${fullReason}\n\n[Remark: ${formData.remark.trim()}]`;
         }
-        if (uploadedUrl) {
-          fullReason = `${fullReason}\n\n[Attachment: ${uploadedUrl}]`;
+        if (uploadedUrls.length > 0) {
+          const attachmentLines = uploadedUrls.map((u) => `[Attachment: ${u}]`).join("\n");
+          fullReason = `${fullReason}\n\n${attachmentLines}`;
         }
 
         const { data: newRow, error } = await supabase
@@ -146,12 +176,16 @@ export function useSelfServiceLeaveMutations({
           roleLower.includes("be admin")
         );
 
-        await notifyNewLeaveRequest({
-          request: newRow,
-          requester: currentEmployee,
-          actorName,
-          isDirectHr,
-        });
+        try {
+          await notifyNewLeaveRequest({
+            request: newRow,
+            requester: currentEmployee,
+            actorName,
+            isDirectHr,
+          });
+        } catch (notifyErr) {
+          console.warn("Notification error (leave request was saved):", notifyErr);
+        }
 
         showToast("success", "Leave request submitted successfully!");
         setFormData({ ...INITIAL_LEAVE_FORM, employee_id: employeeId });

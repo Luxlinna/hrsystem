@@ -29,7 +29,12 @@ function formatLeaveDateRange(start: string, end: string, days: number): string 
 
 function cleanReason(reason?: string | null): string {
   if (!reason) return "";
-  return stripEmojis(reason.replace(/\[Stage:[^\]]+\]/g, "")).trim();
+  return stripEmojis(
+    reason
+      .replace(/\[Stage:[^\]]+\]/g, "")
+      .replace(/\[Attachment:[^\]]+\]/g, "")
+      .replace(/\[Category:[^\]]+\]/g, "")
+  ).trim();
 }
 
 export const LeaveRequestsList: React.FC<LeaveRequestsListProps> = ({
@@ -150,9 +155,20 @@ export const LeaveRequestsList: React.FC<LeaveRequestsListProps> = ({
                     </p>
                   )}
 
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                    Requested {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                      Requested {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </p>
+                    {((r.reason?.match(/\[Attachment:\s*(https?:\/\/[^\]\s]+)\]/gi) || []).length > 0 || r.attachment_url) && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400">
+                        <i className="ri-attachment-line text-[11px]" />
+                        <span>
+                          {((r.reason?.match(/\[Attachment:\s*(https?:\/\/[^\]\s]+)\]/gi) || []).length || (r.attachment_url ? 1 : 0))}{" "}
+                          attachment(s)
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

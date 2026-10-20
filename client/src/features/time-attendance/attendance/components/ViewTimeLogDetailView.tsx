@@ -60,9 +60,10 @@ export const ViewTimeLogDetailView = memo(function ViewTimeLogDetailView({
     (emp?.branches as any)?.name ||
     "HBHQ";
 
-  const joiningDate = formatDMY(empDetail?.join_date || empDetail?.start_date || (emp as any)?.join_date || "2024-12-26");
+  const rawJoinDate = empDetail?.join_date || empDetail?.start_date || (emp as any)?.join_date || (emp as any)?.start_date;
+  const joiningDate = rawJoinDate ? formatDMY(rawJoinDate) : "—";
   const formattedLogDate = formatDMY(r.date);
-  const punchInTime = r.clock_in ? formatTime(r.clock_in) : "07:47 AM";
+  const punchInTime = r.clock_in ? formatTime(r.clock_in) : null;
   const punchOutTime = r.clock_out ? formatTime(r.clock_out) : null;
   const deviceName = r.work_location?.name || (r as any).device_name || site;
 

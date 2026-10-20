@@ -1,12 +1,13 @@
 import { memo } from "react";
 import type { AttendanceRecord } from "../types";
+import { STATUS_CONFIG } from "../constants";
 
 interface Props {
   record: AttendanceRecord;
   deviceName: string;
   site: string;
   formattedLogDate: string;
-  punchInTime: string;
+  punchInTime: string | null;
   punchOutTime: string | null;
 }
 
@@ -18,6 +19,8 @@ export const TimeLogRecordInfoSection = memo(function TimeLogRecordInfoSection({
   punchInTime,
   punchOutTime,
 }: Props) {
+  const statusCfg = r.status ? STATUS_CONFIG[r.status.toLowerCase()] : null;
+
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-bold text-[#253C7D] dark:text-sky-400 uppercase tracking-wider">
@@ -34,7 +37,7 @@ export const TimeLogRecordInfoSection = memo(function TimeLogRecordInfoSection({
           <div className="py-2.5 flex items-center">
             <span className="w-36 text-gray-500 dark:text-slate-400 font-medium">Log Type</span>
             <span className="font-semibold text-gray-800 dark:text-slate-200">
-              Standalone Terminal
+              {punchInTime || punchOutTime ? "Standalone Terminal" : "No punch recorded"}
             </span>
           </div>
 
@@ -53,12 +56,18 @@ export const TimeLogRecordInfoSection = memo(function TimeLogRecordInfoSection({
           <div className="py-2.5 flex items-center">
             <span className="w-36 text-gray-500 dark:text-slate-400 font-medium">Time Log</span>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-gray-800 dark:text-slate-200">{punchInTime}</span>
-                <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 text-[10px] rounded font-semibold">
-                  Time In
+              {punchInTime ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-gray-800 dark:text-slate-200">{punchInTime}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 text-[10px] rounded font-semibold">
+                    Time In
+                  </span>
+                </div>
+              ) : (
+                <span className="text-gray-400 dark:text-slate-500 font-medium italic text-[11px]">
+                  Not checked in yet (No punch log)
                 </span>
-              </div>
+              )}
 
               {punchOutTime && (
                 <div className="flex items-center gap-1.5">
@@ -82,9 +91,22 @@ export const TimeLogRecordInfoSection = memo(function TimeLogRecordInfoSection({
 
           <div className="py-2.5 flex items-center">
             <span className="w-36 text-gray-500 dark:text-slate-400 font-medium">Status</span>
-            <span className="px-2 py-0.5 rounded bg-emerald-400 text-white font-bold text-[10px] shadow-2xs uppercase">
-              Active
-            </span>
+            {statusCfg ? (
+              <span
+                className={`px-2 py-0.5 rounded ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border} border font-bold text-[10px] shadow-2xs uppercase inline-flex items-center gap-1`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                {statusCfg.label}
+              </span>
+            ) : r.clock_in ? (
+              <span className="px-2 py-0.5 rounded bg-emerald-500 text-white font-bold text-[10px] shadow-2xs uppercase">
+                {r.status || "Present"}
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-bold text-[10px] shadow-2xs uppercase">
+                {r.status || "Not Checked In"}
+              </span>
+            )}
           </div>
         </div>
       </div>

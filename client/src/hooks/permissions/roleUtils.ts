@@ -2,20 +2,24 @@ import { supabase } from "@/lib/supabase";
 import type { UserRole } from "./types";
 
 export async function fetchRoleFromFunction(): Promise<any | null> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return null;
 
-  const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/get-my-role`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${session.access_token}`,
-      "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
-    },
-  });
+    const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/get-my-role`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${session.access_token}`,
+        "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+      },
+    });
 
-  if (!res.ok) return null;
-  const result = await res.json().catch(() => null);
-  return result?.assignment || null;
+    if (!res.ok) return null;
+    const result = await res.json().catch(() => null);
+    return result?.assignment || null;
+  } catch {
+    return null;
+  }
 }
 
 export function toUserRole(data: any): UserRole | null {

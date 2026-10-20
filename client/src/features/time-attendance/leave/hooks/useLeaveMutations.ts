@@ -7,6 +7,7 @@ import type { LeaveRequest, Employee, LeaveFormData } from "../types";
 import { INITIAL_LEAVE_FORM } from "../constants";
 import { calculateDays, rangesOverlap } from "../dateUtils";
 import { getLeaveEmployeeName } from "../utils/leaveDisplayUtils";
+import { getLeaveTypeSlug } from "../services/leaveSettingsService";
 import { useLeaveApprovalDecision } from "./useLeaveApprovalDecision";
 
 interface UseLeaveMutationsProps {
@@ -79,12 +80,20 @@ export function useLeaveMutations({
       if (!formData.start_date || !formData.end_date) return setToast({ type: "error", message: "Please select start and end dates" });
       if (new Date(formData.end_date) < new Date(formData.start_date)) return setToast({ type: "error", message: "End date cannot be before start date" });
       const cleanReason = (formData.reason || "").trim();
-      if (!cleanReason || cleanReason.length < 5) return setToast({ type: "error", message: "Please provide a valid reason for this leave request." });
+      if (!cleanReason) return setToast({ type: "error", message: "Please provide a reason for this leave request." });
 
       const days = calculateDays(formData.start_date, formData.end_date);
-      const remaining = getRemaining(targetEmpId, formData.leave_type);
-      if (remaining !== null && days > remaining && !isSuperAdmin) {
-        return setToast({ type: "error", message: `Requested ${days} days exceeds remaining allowance (${remaining} days available).` });
+      const slug = getLeaveTypeSlug(formData.leave_type);
+
+      // Strict quota check ONLY applies to Annual Leave when remaining allowance is exceeded
+      if (slug === "annual") {
+        const remaining = getRemaining(targetEmpId, "annual");
+        if (remaining !== null && days > remaining && !isSuperAdmin) {
+          return setToast({
+            type: "error",
+            message: `Requested ${days} days exceeds remaining Annual Leave allowance (${remaining} days available).`,
+          });
+        }
       }
 
       const overlap = requests.find(
@@ -104,23 +113,56 @@ export function useLeaveMutations({
 
       setSubmitting(true);
       try {
-        let uploadedUrl = formData.attachment_url || null;
-        if (formData.attachment_file) {
-          try {
-            const media = await uploadMediaToS3(formData.attachment_file, "leave/attachments");
-            uploadedUrl = media.url;
-          } catch (uploadErr) {
-            console.error("Leave attachment upload error:", uploadErr);
-            // Continue with submission even if storage upload fails, but warn user
-            setToast({ type: "info", message: "Attachment upload had an issue; continuing submission..." });
+        const filesToUpload: File[] =
+          formData.attachment_files && formData.attachment_files.length > 0
+            ? formData.attachment_files
+            : formData.attachment_file
+            ? [formData.attachment_file]
+            : [];
+
+        const uploadedUrls: string[] = [];
+        if (formData.attachment_url) {
+          uploadedUrls.push(formData.attachment_url);
+        }
+        if (formData.attachment_urls && formData.attachment_urls.length > 0) {
+          for (const u of formData.attachment_urls) {
+            if (u && !uploadedUrls.includes(u)) uploadedUrls.push(u);
           }
         }
 
-        // Build composite reason with category, remark, and attachment link
+        if (filesToUpload.length > 0) {
+          try {
+            const uploadResults = await Promise.allSettled(
+              filesToUpload.map((file) => uploadMediaToS3(file, "leave/attachments"))
+            );
+            let failCount = 0;
+            for (const res of uploadResults) {
+              if (res.status === "fulfilled" && res.value?.url) {
+                uploadedUrls.push(res.value.url);
+              } else {
+                failCount++;
+                console.error("Leave attachment upload error:", res.status === "rejected" ? res.reason : "No URL");
+              }
+            }
+            if (failCount > 0) {
+              setToast({
+                type: "info",
+                message: `${failCount} attachment(s) failed to upload; continuing submission...`,
+              });
+            }
+          } catch (uploadBatchErr) {
+            console.error("Leave batch upload error:", uploadBatchErr);
+          }
+        }
+
+        // Build composite reason with category, remark, and attachment links
         let fullReason = cleanReason;
         if (formData.category_law) fullReason = `[Category: ${formData.category_law}]\n${fullReason}`;
         if (formData.remark?.trim()) fullReason = `${fullReason}\n\n[Remark: ${formData.remark.trim()}]`;
-        if (uploadedUrl) fullReason = `${fullReason}\n\n[Attachment: ${uploadedUrl}]`;
+        if (uploadedUrls.length > 0) {
+          const attachmentLines = uploadedUrls.map((u) => `[Attachment: ${u}]`).join("\n");
+          fullReason = `${fullReason}\n\n${attachmentLines}`;
+        }
 
         const newStatus = isSuperAdmin ? "approved" : "pending";
 
@@ -169,19 +211,23 @@ export function useLeaveMutations({
           isSuperAdmin || roleLower.includes("super admin") || roleLower.includes("branch admin") || roleLower.includes("bu admin") || roleLower.includes("be admin")
         );
 
-        await notifyNewLeaveRequest({
-          request: {
-            id: data?.id,
-            leave_type: formData.leave_type,
-            days,
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            reason: fullReason,
-          },
-          requester,
-          actorName,
-          isDirectHr: isApplicantDirectHr,
-        });
+        try {
+          await notifyNewLeaveRequest({
+            request: {
+              id: data?.id,
+              leave_type: formData.leave_type,
+              days,
+              start_date: formData.start_date,
+              end_date: formData.end_date,
+              reason: fullReason,
+            },
+            requester,
+            actorName,
+            isDirectHr: isApplicantDirectHr,
+          });
+        } catch (notifyErr) {
+          console.warn("Notification error after leave creation:", notifyErr);
+        }
 
         await loadData();
       } catch (err: any) {

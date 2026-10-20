@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from "react";
-import type { LeaveRequest, Employee, LeaveTypePolicy, LeaveStats } from "../types";
+import type { LeaveRequest, Employee, LeaveTypePolicy, LeaveStats, LeaveTypeBalanceStats } from "../types";
 import { toYMD } from "../dateUtils";
 import { isContractAllowedAL, calculateJoinMonthProrateAL } from "../utils/annualLeaveProrateUtils";
 import { getLeaveTypeSlug } from "../services/leaveSettingsService";
@@ -63,19 +63,32 @@ export function useLeaveBalances({
         return policy ? policy.default_days : 7;
       }
 
-      if (slug === "compensatory") {
-        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "compensatory");
-        return policy ? policy.default_days : 0;
+      if (slug === "paternity") {
+        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "paternity");
+        return policy ? policy.default_days : 3;
       }
 
-      if (slug === "unpaid") {
-        return 0;
+      if (slug === "bereavement") {
+        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "bereavement");
+        return policy ? policy.default_days : 3;
+      }
+
+      if (slug === "study") {
+        const policy = leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === "study");
+        return policy ? policy.default_days : 5;
+      }
+
+      if (slug === "compensatory" || slug === "unpaid") {
+        return null; // As approved by manager & HR without predefined hard cap
       }
 
       const policy = leaveTypePolicies.find(
         (p) => getLeaveTypeSlug(p.type) === slug || p.type.toLowerCase() === type.toLowerCase()
       );
-      return policy ? policy.default_days : 0;
+      if (policy?.is_unpaid || !policy?.default_days) {
+        return null;
+      }
+      return policy.default_days;
     },
     [employees, myEmployee, leaveTypePolicies, currentYear]
   );
@@ -124,19 +137,22 @@ export function useLeaveBalances({
   );
 
   const getLeaveTypeStats = useCallback(
-    (employeeId: string, type: string) => {
-      const entitlement = getEntitlement(employeeId, type) ?? 0;
+    (employeeId: string, type: string): LeaveTypeBalanceStats => {
+      const slug = getLeaveTypeSlug(type);
+      const isUnpaid = slug === "unpaid" || leaveTypePolicies.find((p) => getLeaveTypeSlug(p.type) === slug)?.is_unpaid;
+      const entitlement = getEntitlement(employeeId, type);
       const used = getUsedDays(employeeId, type);
       const pending = getPendingDays(employeeId, type);
-      const available = Math.max(0, entitlement - used - pending);
+      const available = entitlement !== null ? Math.max(0, entitlement - used - pending) : (isUnpaid ? "Unlimited" : 999);
       return {
-        balance: entitlement,
+        balance: entitlement !== null ? entitlement : (isUnpaid ? "No limit" : 0),
         used,
-        available,
+        available: isUnpaid ? "Unlimited" : available,
         pending,
+        isUnpaid: Boolean(isUnpaid),
       };
     },
-    [getEntitlement, getUsedDays, getPendingDays]
+    [getEntitlement, getUsedDays, getPendingDays, leaveTypePolicies]
   );
 
   const stats: LeaveStats = useMemo(() => {

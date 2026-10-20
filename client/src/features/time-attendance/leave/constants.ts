@@ -217,4 +217,6 @@ export const INITIAL_LEAVE_FORM: LeaveFormData = {
   category_law: "",
   attachment_url: null,
   attachment_file: null,
+  attachment_files: [],
+  attachment_urls: [],
 };

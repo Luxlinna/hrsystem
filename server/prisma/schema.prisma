@@ -1585,6 +1585,7 @@ model employees {
   working_hour                                                     String?
   total_working_days                                               String?
   employment_type                                                  String?                         @default("Full Time")
+  employee_level                                                   String?
   start_date                                                       DateTime?                       @db.Date
   line_manager                                                     String?
   contract_type                                                    String?                         @default("FDC")
@@ -1692,6 +1693,7 @@ model employees {
   @@index([biometric_user_id], map: "idx_employees_biometric_user_id")
   @@index([code_bu], map: "idx_employees_code_bu")
   @@index([employee_code], map: "idx_employees_employee_code")
+  @@index([employee_level], map: "idx_employees_employee_level")
   @@index([kh_name], map: "idx_employees_kh_name")
   @@index([national_id_number], map: "idx_employees_national_id")
   @@index([nssf_number], map: "idx_employees_nssf_number")

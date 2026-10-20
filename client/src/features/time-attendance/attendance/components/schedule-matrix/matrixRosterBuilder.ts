@@ -77,7 +77,7 @@ export function buildRosterRows({
       let status: CellScheduleData["status"] = "future";
       let tooltipText = `Shift: ${baseShift}`;
 
-      const todayDateStr = "2026-09-28";
+      const todayDateStr = new Date().toISOString().slice(0, 10);
       const isPast = col.dateString < todayDateStr;
       const isToday = col.dateString === todayDateStr;
       const isPastOrToday = isPast || isToday;

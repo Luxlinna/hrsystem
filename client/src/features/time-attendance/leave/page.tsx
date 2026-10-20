@@ -47,9 +47,14 @@ export default function Leave() {
     l.setShowCancelModal(true);
   }, [l]);
 
-  const handleOpenRequestModalForEmp = useCallback((empId: string) => {
-    setFormMode("for_employee");
-    l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: empId });
+  const handleOpenRequestModalForEmp = useCallback((empId: string, leaveType?: string) => {
+    const isSelf = empId === l.myEmployee?.id;
+    setFormMode(isSelf ? "self" : "for_employee");
+    l.setFormData({
+      ...INITIAL_LEAVE_FORM,
+      employee_id: empId,
+      ...(leaveType ? { leave_type: leaveType } : {}),
+    });
     l.setShowForm(true);
   }, [l]);
 

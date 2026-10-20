@@ -28,10 +28,12 @@ export function exportLeaveApplicationSlip({
     year: "numeric",
   });
 
-  const balanceVal = stats ? `${stats.balance} days` : "—";
+  const balanceVal = stats ? (typeof stats.balance === "number" ? `${stats.balance} days` : stats.balance) : "—";
   const usedVal = stats ? `${stats.used} days` : "—";
-  const availVal = stats ? `${stats.available} days` : "—";
-  const remainingAfter = stats ? `${Math.max(0, stats.available - requestedDays)} days` : "—";
+  const numAvailable = typeof stats?.available === "number" ? stats.available : 999;
+  const isUnpaidSlip = stats?.isUnpaid || typeof stats?.available === "string";
+  const availVal = stats ? (typeof stats.available === "number" ? `${stats.available} days` : stats.available) : "—";
+  const remainingAfter = stats ? (isUnpaidSlip ? "Unlimited" : `${Math.max(0, numAvailable - requestedDays)} days`) : "—";
 
   const printWindow = window.open("", "_blank", "width=900,height=750");
   if (!printWindow) return false;

@@ -156,8 +156,17 @@ export function useCreateLeaveFormState({
     return getLeaveTypeStats(activeEmpId, formData.leave_type);
   }, [activeEmpId, formData.leave_type, getLeaveTypeStats]);
 
-  const remainingAfterLeave = Math.max(0, currentStats.available - requestedDays);
-  const isOverBalance = requestedDays > currentStats.available && !isSuperAdmin;
+  const slug = getLeaveTypeSlug(formData.leave_type);
+  const isNoLimit = Boolean(
+    activeTypeCfg.isUnpaid ||
+    slug === "unpaid" ||
+    slug === "compensatory" ||
+    currentStats.isUnpaid ||
+    currentStats.available === "Unlimited"
+  );
+  const numAvailable = typeof currentStats.available === "number" ? currentStats.available : 999;
+  const remainingAfterLeave: number | string = isNoLimit ? "Unlimited" : Math.max(0, numAvailable - requestedDays);
+  const isOverBalance = !isNoLimit && slug === "annual" && requestedDays > numAvailable && !isSuperAdmin;
 
   const handleSelectSpecialCategory = (catId: string) => {
     const cat = SPECIAL_LEAVE_LABOUR_LAW_CATEGORIES.find((c) => c.id === catId);
@@ -207,23 +216,57 @@ export function useCreateLeaveFormState({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, attachment_file: file }));
+    const newFiles = Array.from(e.target.files || []);
+    if (newFiles.length > 0) {
+      setFormData((prev) => {
+        const existing = prev.attachment_files || (prev.attachment_file ? [prev.attachment_file] : []);
+        const combined = [...existing, ...newFiles];
+        return {
+          ...prev,
+          attachment_files: combined,
+          attachment_file: combined[0] || null,
+        };
+      });
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, attachment_file: file }));
+    const newFiles = Array.from(e.dataTransfer.files || []);
+    if (newFiles.length > 0) {
+      setFormData((prev) => {
+        const existing = prev.attachment_files || (prev.attachment_file ? [prev.attachment_file] : []);
+        const combined = [...existing, ...newFiles];
+        return {
+          ...prev,
+          attachment_files: combined,
+          attachment_file: combined[0] || null,
+        };
+      });
     }
   };
 
-  const handleRemoveAttachment = () => {
-    setFormData((prev) => ({ ...prev, attachment_file: null, attachment_url: null }));
+  const handleRemoveAttachment = (index?: number) => {
+    setFormData((prev) => {
+      const existing = prev.attachment_files || (prev.attachment_file ? [prev.attachment_file] : []);
+      if (typeof index === "number") {
+        const updated = existing.filter((_, i) => i !== index);
+        return {
+          ...prev,
+          attachment_files: updated,
+          attachment_file: updated[0] || null,
+          attachment_url: updated.length === 0 ? null : prev.attachment_url,
+        };
+      }
+      return {
+        ...prev,
+        attachment_files: [],
+        attachment_file: null,
+        attachment_url: null,
+      };
+    });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 

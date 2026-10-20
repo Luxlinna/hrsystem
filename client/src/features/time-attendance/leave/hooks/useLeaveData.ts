@@ -135,7 +135,24 @@ export function useLeaveData() {
   }, [user?.email, canViewAll, canViewOwnBranch, isPartnerBranchBlocked, targetBranch, isSuperAdmin]);
 
   useEffect(() => {
-    supabase.from("leave_type_policies").select("type, default_days").then(({ data }) => setLeaveTypePolicies(data || []));
+    supabase
+      .from("leave_types")
+      .select("*")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const policies: LeaveTypePolicy[] = data.map((t: any) => ({
+            type: t.code?.toLowerCase() || t.name?.toLowerCase(),
+            default_days: t.is_unpaid ? null : (t.default_days ?? null),
+            is_unpaid: Boolean(t.is_unpaid),
+          }));
+          setLeaveTypePolicies(policies);
+        } else {
+          supabase
+            .from("leave_type_policies")
+            .select("type, default_days")
+            .then(({ data: altData }) => setLeaveTypePolicies(altData || []));
+        }
+      });
   }, []);
 
   useEffect(() => {
