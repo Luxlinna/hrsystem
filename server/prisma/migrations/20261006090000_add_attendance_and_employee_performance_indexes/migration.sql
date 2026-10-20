@@ -92,4 +92,5 @@ CREATE INDEX IF NOT EXISTS idx_biometric_raw_logs_user_punch
   ON biometric_raw_logs (biometric_user_id, punch_time DESC);
 
 CREATE INDEX IF NOT EXISTS idx_biometric_raw_logs_device_punch
-  ON biometric_raw_logs (device_id, punch_time DESC);
+  ON biometric_raw_logs (device_serial, punch_time DESC);
+

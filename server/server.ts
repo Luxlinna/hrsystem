@@ -14,6 +14,18 @@ let server: any = null;
 let watchdogInterval: NodeJS.Timeout | null = null;
 
 async function bootstrap() {
+  // ─── Safety: Log which DB target we're connected to ──────────────────
+  const dbTarget = env.DB_TARGET;
+  if (dbTarget === 'PRODUCTION' && env.NODE_ENV !== 'production') {
+    logger.warn('━'.repeat(64));
+    logger.warn('⚠️  DEV SERVER IS CONNECTED TO THE PRODUCTION DATABASE!');
+    logger.warn('   Create server/.env.local with test project credentials.');
+    logger.warn('   Test project: https://mltkqbcjavgfclitgvin.supabase.co');
+    logger.warn('━'.repeat(64));
+  } else {
+    logger.info(`[DB Target] ${dbTarget} — ${env.SUPABASE_URL}`);
+  }
+
   // 1. Ensure Redis Server is active & connected (with zero-error fallback)
   try {
     const embeddedStarted = await startEmbeddedRedis(6379);

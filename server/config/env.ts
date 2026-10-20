@@ -1,16 +1,31 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serverRoot = path.resolve(__dirname, '..');
+
+// .env.local takes priority (dev overrides), then .env as fallback.
+// dotenv will NOT overwrite vars already set by the first call.
+dotenv.config({ path: path.join(serverRoot, '.env.local') });
+dotenv.config({ path: path.join(serverRoot, '.env') });
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: Number(process.env.PORT) || 4000,
   DATABASE_URL: process.env.DATABASE_URL || '',
   DIRECT_URL: process.env.DIRECT_URL || '',
+  /** Identifies which Supabase project the server is pointing at (derived from DATABASE_URL). */
+  DB_TARGET: (process.env.DATABASE_URL || '').includes('mltkqbcjavgfclitgvin')
+    ? 'TEST'
+    : (process.env.DATABASE_URL || '').includes('jnrozihprpjvnofjlbtd')
+      ? 'PRODUCTION'
+      : 'UNKNOWN',
   SUPABASE_URL:
     process.env.SUPABASE_URL ||
     process.env.VITE_PUBLIC_SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
-    'https://jnrozihprpjvnofjlbtd.supabase.co',
+    '',
   SUPABASE_SERVICE_ROLE_KEY:
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
